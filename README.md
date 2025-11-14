@@ -41,6 +41,17 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 
 ## Work Remaining
 
+
+### Spaced Repetition Engine (SRS)
+- Speed-Adaptive Leitner + SM-2 hybrid logic defined.
+- Reaction-time based card movement:
+  - Under 2 seconds: promote one box.
+  - 3–4 seconds: remain in current box.
+  - Over 4–7 seconds: demote two boxes.
+  - Incorrect answer: reset to box 1.
+- Timestamp-based scheduling via nextDueTime.
+- Conceptual design for a priority queue to always surface due cards first.
+
 ### Frontend and User Experience
 - Improve UI presentation, animations, and responsiveness.
 - Add level progression interface (show locked/unlocked tables).
