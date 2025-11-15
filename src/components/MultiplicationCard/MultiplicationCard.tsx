@@ -1,5 +1,4 @@
-import type { FC, KeyboardEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type FC, type KeyboardEvent } from 'react'
 
 import { Box, Card, Grid, TextField, Typography } from '@mui/material'
 import useFirebase from '../../contexts/firebase/useFirebase'
@@ -11,8 +10,8 @@ export const MultiplicationCard: FC = () => {
   const { userCards } = useFirebase()
   const [answer, setAnswer] = useState('')
   const logger = useLogger()
-
   const { time, startTimer, resetTimer } = useTimerContext()
+  const prevTimeRef = useRef(time)
   const { currentCard, getNextCard, queue, submitAnswer } =
     useCardScheduler(userCards)
 
@@ -22,37 +21,34 @@ export const MultiplicationCard: FC = () => {
       resetTimer()
       startTimer()
     }
-  }, [currentCard, resetTimer, startTimer])
+  }, [currentCard])
 
-  // If no card is ready yet
-  if (!currentCard) {
-    return (
-      <Typography variant="h4" textAlign="center">
-        Loading cards...
-      </Typography>
-    )
-  }
-
-  const { top, bottom, value } = currentCard
+  const { top, bottom, value } = currentCard ?? {}
+  useEffect(() => {
+    if (prevTimeRef.current > 0 && time <= 0 && currentCard) {
+      submitAnswer(currentCard, false, 7000)
+      getNextCard()
+      setAnswer('')
+    }
+    prevTimeRef.current = time
+  }, [time, currentCard, submitAnswer, getNextCard])
 
   const handleSubmit = () => {
-    if (answer === '') return
+    if (answer.length && currentCard) {
+      // time is from 7 → 0 (means elapsed = 7 - time)
+      const elapsed = (7 - time) * 1000 // convert to ms
+      const userAnswer = Number(answer)
+      const correct = userAnswer === value
 
-    const userAnswer = Number(answer)
-    const correct = userAnswer === value
+      submitAnswer(currentCard, correct, elapsed)
 
-    // time is from 7 → 0 (means elapsed = 7 - time)
-    const elapsed = (7 - time) * 1000 // convert to ms
+      // Persist to Firebase someday before getting next card. Or batch write em.
+      getNextCard()
 
-    submitAnswer(currentCard, correct, elapsed)
-
-    // Persist to Firebase
-
-    // Move to next card
-    getNextCard()
-
-    // Reset UI
-    setAnswer('')
+      // Reset UI
+      setAnswer('')
+    }
+    return
   }
 
   const handleKeyDown = (
@@ -64,26 +60,26 @@ export const MultiplicationCard: FC = () => {
   }
 
   logger(queue)
-  return (
+  return currentCard ? (
     <Box display="flex" justifyContent="center" mt={6}>
       <Card sx={{ padding: 4, minWidth: 300 }}>
         <Grid container spacing={2}>
           {/* Problem Display */}
-          <Grid>
+          <Grid size={12}>
             <Typography variant="h2" align="center">
               {top} × {bottom}
             </Typography>
           </Grid>
 
           {/* Timer */}
-          <Grid>
+          <Grid size={12}>
             <Typography variant="h5" textAlign="center" sx={{ opacity: 0.7 }}>
               Time: {time.toFixed(1)}s
             </Typography>
           </Grid>
 
           {/* Input */}
-          <Grid>
+          <Grid size={12}>
             <TextField
               type="number"
               value={answer}
@@ -96,5 +92,9 @@ export const MultiplicationCard: FC = () => {
         </Grid>
       </Card>
     </Box>
+  ) : (
+    <Typography variant="h4" textAlign="center">
+      Loading cards...
+    </Typography>
   )
 }
