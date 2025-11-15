@@ -20,8 +20,8 @@ const App: FC = () => {
       >
         <TimerContextProvider>
           <Timer />
+          <MultiplicationCard />
         </TimerContextProvider>
-        <MultiplicationCard />
       </Box>
     </Box>
   )

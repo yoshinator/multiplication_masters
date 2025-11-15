@@ -11,7 +11,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import useFirebase from '../../contexts/firebase/useFirebase'
-import { useLogger } from '../hooks/useLogger'
+import { useLogger } from '../../hooks/useLogger'
 
 export const useLogin = () => {
   const { app, loadUserCards } = useFirebase()
