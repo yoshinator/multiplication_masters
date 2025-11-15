@@ -47,3 +47,6 @@ export const BOX_TIMES = [
   BOX14TIME,
   BOX15TIME,
 ]
+
+// This should come from the user's data. For POC only.
+export const MAX_UNLOCKED_GROUP = 1

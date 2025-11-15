@@ -5,6 +5,7 @@ import { createContext } from 'react'
 export type UserCard = {
   avgResponseTime: number | null
   bottom: number
+  box: number
   correct: number
   difficulty: 'basic' | 'advanced'
   expression: string
@@ -12,9 +13,9 @@ export type UserCard = {
   id: string
   incorrect: number
   isPrimary: boolean
-  lastReviewed: string | null
+  lastReviewed: number | null
   mirrorOf: string
-  nextDueTime: string | null
+  nextDueTime: number
   seen: number
   table: number
   top: number
