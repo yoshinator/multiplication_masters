@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FC, type KeyboardEvent } from 'react'
 
-import { Box, Card, Grid, TextField, Typography } from '@mui/material'
+import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
 import useFirebase from '../../contexts/firebase/useFirebase'
 import useCardScheduler from '../../hooks/useCardScheduler'
 import { useTimerContext } from '../../contexts/timer/timerContext'
@@ -9,25 +9,49 @@ import { useLogger } from '../../hooks/useLogger'
 export const MultiplicationCard: FC = () => {
   const { userCards } = useFirebase()
   const [answer, setAnswer] = useState('')
+  const timeoutRef = useRef<number | null>(null)
+  const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
   const logger = useLogger()
-  const { time, startTimer, resetTimer } = useTimerContext()
+  const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
   const prevTimeRef = useRef(time)
   const { currentCard, getNextCard, queue, submitAnswer } =
     useCardScheduler(userCards)
 
-  // Start timer automatically when new card loads
+  const [cardBackgroundColor, setCardBackgroundColor] = useState<
+    'red' | 'green' | 'white' | 'yellow' | 'orange'
+  >('white')
+
   useEffect(() => {
+    if (!currentCard || showCorrectAnswer) {
+      return
+    }
     if (currentCard) {
       resetTimer()
       startTimer()
     }
-  }, [currentCard])
+  }, [currentCard, showCorrectAnswer])
 
   const { top, bottom, value } = currentCard ?? {}
+
+  const handleResume = () => {
+    setShowCorrectAnswer(false)
+    setCardBackgroundColor('white')
+    setAnswer('')
+
+    getNextCard()
+    resetTimer()
+    startTimer()
+  }
+
   useEffect(() => {
+    // Don't move forward while showing the answer
+    if (showCorrectAnswer) {
+      return
+    }
     if (prevTimeRef.current > 0 && time <= 0 && currentCard) {
       submitAnswer(currentCard, false, 7000)
-      getNextCard()
+      setShowCorrectAnswer(true)
+      setCardBackgroundColor('red')
       setAnswer('')
     }
     prevTimeRef.current = time
@@ -36,19 +60,54 @@ export const MultiplicationCard: FC = () => {
   const handleSubmit = () => {
     if (answer.length && currentCard) {
       // time is from 7 → 0 (means elapsed = 7 - time)
-      const elapsed = (7 - time) * 1000 // convert to ms
-      const userAnswer = Number(answer)
-      const correct = userAnswer === value
+      const correct = Number(answer) === value
+      const elapsedSeconds = 7 - time
+      const elapsedMs = elapsedSeconds * 1000
 
-      submitAnswer(currentCard, correct, elapsed)
+      /**
+       *  Determine highlight color immediately
+       *  SM2 + speed-based Leitner rules:
+       * - < 2s → up 1 box
+       * - 2–4s → stay
+       * - 4–7s → down 2 boxes
+       * - incorrect → box = 1
+       * - > 7s → box = 1
+       * (Note: box min = 1, max = 15)
+       */
+      let color: typeof cardBackgroundColor = 'white'
+      if (correct) {
+        if (elapsedSeconds <= 2) {
+          color = 'green'
+        } else if (elapsedSeconds <= 4) {
+          color = 'yellow'
+        } else {
+          color = 'orange'
+        }
+      } else {
+        // WRONG ANSWER BEHAVIOR
+        submitAnswer(currentCard, false, elapsedMs)
+        setCardBackgroundColor('red')
+        setShowCorrectAnswer(true)
+        stopTimer()
+        return
+      }
 
-      // Persist to Firebase someday before getting next card. Or batch write em.
-      getNextCard()
-
-      // Reset UI
-      setAnswer('')
+      setCardBackgroundColor(color)
+      if (correct) {
+        submitAnswer(currentCard, correct, elapsedMs)
+        getNextCard()
+        setAnswer('')
+        // clear any previous revert timeout, then schedule revert to white
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+        }
+        timeoutRef.current = window.setTimeout(() => {
+          setCardBackgroundColor('white')
+          timeoutRef.current = null
+        }, 1200) // show color briefly, then revert
+      }
+      return
     }
-    return
   }
 
   const handleKeyDown = (
@@ -59,10 +118,17 @@ export const MultiplicationCard: FC = () => {
     }
   }
 
-  logger(queue)
+  // logger(queue)
   return currentCard ? (
     <Box display="flex" justifyContent="center" mt={6}>
-      <Card sx={{ padding: 4, minWidth: 300 }}>
+      <Card
+        sx={{
+          padding: 4,
+          minWidth: 300,
+          backgroundColor: cardBackgroundColor,
+          transition: 'background-color 0.5s ease-in',
+        }}
+      >
         <Grid container spacing={2}>
           {/* Problem Display */}
           <Grid size={12}>
@@ -70,24 +136,33 @@ export const MultiplicationCard: FC = () => {
               {top} × {bottom}
             </Typography>
           </Grid>
-
           {/* Timer */}
           <Grid size={12}>
             <Typography variant="h5" textAlign="center" sx={{ opacity: 0.7 }}>
               Time: {time.toFixed(1)}s
             </Typography>
           </Grid>
-
           {/* Input */}
           <Grid size={12}>
-            <TextField
-              type="number"
-              value={answer}
-              autoFocus
-              fullWidth
-              onKeyDown={handleKeyDown}
-              onChange={(e) => setAnswer(e.target.value)}
-            />
+            {showCorrectAnswer ? (
+              <>
+                <Typography variant="h6" color="error" mt={2}>
+                  Correct answer: {value}
+                </Typography>
+                <Button variant="contained" onClick={handleResume}>
+                  Resume
+                </Button>
+              </>
+            ) : (
+              <TextField
+                type="number"
+                value={answer}
+                autoFocus
+                fullWidth
+                onKeyDown={handleKeyDown}
+                onChange={(e) => setAnswer(e.target.value)}
+              />
+            )}
           </Grid>
         </Grid>
       </Card>

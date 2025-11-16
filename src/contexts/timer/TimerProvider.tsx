@@ -20,7 +20,14 @@ export const TimerContextProvider: FC<Props> = ({ children }) => {
   const startTimer = () => {
     if (ref.current) return
     ref.current = setInterval(() => {
-      setTime((prev) => (prev === 0 ? TIMER_LENGTH_SECS : prev - 1))
+      setTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(ref.current!)
+          ref.current = null
+          return 0
+        }
+        return prev - 1
+      })
     }, 1000)
   }
 
