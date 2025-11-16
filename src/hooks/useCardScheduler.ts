@@ -18,7 +18,9 @@ function buildQueue(cards: UserCard[]) {
   let selected: UserCard[] = []
 
   while (activeGroup <= MAX_UNLOCKED_GROUP) {
-    const groupCards = cards.filter((c) => c.group === activeGroup)
+    const groupCards = cards.filter(
+      (c) => c.group === activeGroup && c.table === 12
+    )
 
     // 1. Due cards first
     const due = groupCards.filter((c) => c.nextDueTime <= now)
@@ -131,10 +133,6 @@ export function useCardScheduler(userCards: UserCard[]) {
 
     // Reinsert into the PQ
     queueRef.current?.enqueue(updated)
-
-    // Immediately load the next card
-    const next = getNextCard()
-    setCurrentCard(next)
 
     return updated
   }
