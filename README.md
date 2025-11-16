@@ -37,11 +37,6 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Input handling, reaction timer, and feedback logic operational.
 - Core logic for answer evaluation and SRS routing functional.
 
----
-
-## Work Remaining
-
-
 ### Spaced Repetition Engine (SRS)
 - Speed-Adaptive Leitner + SM-2 hybrid logic defined.
 - Reaction-time based card movement:
@@ -51,6 +46,15 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
   - Incorrect answer: reset to box 1.
 - Timestamp-based scheduling via nextDueTime.
 - Conceptual design for a priority queue to always surface due cards first.
+
+---
+
+## Work Remaining
+
+### User Sign Up and Auth
+- create email password sign up 
+- Sign in with Google
+
 
 ### Frontend and User Experience
 - Improve UI presentation, animations, and responsiveness.
@@ -62,7 +66,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 
 ### Backend and Data Logic
 - Finalize and document Firebase data schema.
-- Improve synchronization logic for card updates during and after review sessions.
+- Implelement synchronization logic for card updates during and after review sessions.
 - Implement secure Firebase rules to isolate user data.
 - Add session-level statistics (session length, cards reviewed, accuracy).
 - Add data export/import feature for portability.
@@ -110,7 +114,8 @@ VITE_FIREBASE_AUTH_DOMAIN=yourDomain
 VITE_FIREBASE_PROJECT_ID=yourProject
 ```
 
-run the firebase script to build the Card Documents in Firebase. (Currently in another repo will add as a cloudfunction and stand alone script in the next week.)
+Currently a firebase instance attaches to the window object if running in dev to simplify seeding initial card deck. This deck is the deck used to create new cards for every new user. 
+In development once you have your firebase project setup variables needed in your env file above you can run window.seedCards(). See firebaseProvider.tsx for implementation. 
 
 
 4. Run development server  
