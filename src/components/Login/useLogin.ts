@@ -9,16 +9,38 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
+  type FieldValue,
 } from 'firebase/firestore'
 import useFirebase from '../../contexts/firebase/useFirebase'
 import { useLogger } from '../../hooks/useLogger'
+
+export interface User {
+  username: string
+  createdAt: FieldValue | null
+  activeGroup: number
+  table: number
+  totalAccuracy: number
+  highestGroupAccuracy: number
+  totalReps: number
+}
+
+const initialUser: User = {
+  username: '',
+  createdAt: null,
+  activeGroup: 1,
+  table: 12,
+  totalAccuracy: 100,
+  highestGroupAccuracy: 100,
+  totalReps: 0,
+}
 
 export const useLogin = () => {
   const { app, loadUserCards } = useFirebase()
   const [cards, setCards] = useState<Array<Record<string, unknown>>>([])
   const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const logger = useLogger()
+  const logger = useLogger('useLogin')
 
   const handleLogin = useCallback(
     async (username: string) => {
@@ -36,9 +58,13 @@ export const useLogin = () => {
         const userRef = doc(db, 'users', username)
         const userSnap = await getDoc(userRef)
         if (!userSnap.exists()) {
-          await setDoc(userRef, { username, createdAt: serverTimestamp() })
+          await setDoc(userRef, {
+            ...initialUser,
+            username,
+            createdAt: serverTimestamp(),
+          })
         }
-
+        setUser(userSnap.data() as User)
         // ensure user has UserCards sub-collection; if empty, create copies
         const userCardsCol = collection(db, 'users', username, 'UserCards')
         const userCardsSnap = await getDocs(userCardsCol)
@@ -81,7 +107,7 @@ export const useLogin = () => {
         try {
           await loadUserCards(username)
         } catch {
-          // ignore
+          logger('Failed to load user cards after login.')
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -93,5 +119,5 @@ export const useLogin = () => {
     [app, loadUserCards, cards.length, logger]
   )
 
-  return { login: handleLogin, cards, loading, error }
+  return { login: handleLogin, cards, loading, error, user }
 }

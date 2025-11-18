@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { MinPriorityQueue } from 'datastructures-js'
 import type { UserCard } from '../contexts/firebase/firebaseContext'
-import { BOX_TIMES, MAX_UNLOCKED_GROUP } from '../constants/appConstants'
+import { BOX_TIMES } from '../constants/appConstants'
+import { type User } from '../components/Login/useLogin'
+import { useLogger } from './useLogger'
+import { debugQueue } from '../utilities/debugQueue'
 
 /**
  * Build the priority queue based on SRS rules:
@@ -9,17 +12,16 @@ import { BOX_TIMES, MAX_UNLOCKED_GROUP } from '../constants/appConstants'
  * - If group has no due cards, load up to 15 new cards
  * - Move to next group only when necessary
  */
-function buildQueue(cards: UserCard[]) {
+function buildQueue(cards: UserCard[], user: User) {
   const now = Date.now()
 
   const queue = new MinPriorityQueue<UserCard>((card) => card.nextDueTime)
 
-  let activeGroup = 1
   let selected: UserCard[] = []
-
-  while (activeGroup <= MAX_UNLOCKED_GROUP) {
+  let activeGroup = 1
+  while (activeGroup <= user.activeGroup) {
     const groupCards = cards.filter(
-      (c) => c.group === activeGroup && c.table === 12
+      (c) => c.group === activeGroup && c.table === user.table
     )
 
     // 1. Due cards first
@@ -78,10 +80,11 @@ function computeNewBox(card: UserCard, elapsed: number, correct: boolean) {
  * - getNextCard()
  * - isQueueEmpty
  */
-export function useCardScheduler(userCards: UserCard[]) {
+export function useCardScheduler(userCards: UserCard[], user: User) {
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
+  const logger = useLogger('useCardScheduler')
 
   //
   // Build the queue when Firebase cards load
@@ -89,8 +92,17 @@ export function useCardScheduler(userCards: UserCard[]) {
   useEffect(() => {
     if (!userCards || userCards.length === 0 || queueRef.current) return
 
-    queueRef.current = buildQueue(userCards)
+    logger('🧱 Building new queue for user', {
+      activeGroup: user.activeGroup,
+      table: user.table,
+    })
+    queueRef.current = buildQueue(userCards, user)
+
+    logger('📥 Queue built with cards:', debugQueue(queueRef.current))
+    logger('📊 Queue size:', queueRef.current.size())
     const first = queueRef.current.dequeue() ?? null
+
+    log('➡️ First card dequeued:', first)
 
     setCurrentCard(first)
     setIsQueueEmpty(queueRef.current.size() === 0)
@@ -100,9 +112,20 @@ export function useCardScheduler(userCards: UserCard[]) {
   //
   function getNextCard(): UserCard | null {
     const q = queueRef.current
-    if (!q) return null
+    if (!q) {
+      logger('❌ getNextCard called but queue is null')
+      return null
+    }
 
     const next = q.dequeue() ?? null
+
+    logger('➡️ getNextCard dequeued:', next)
+    logger('📉 Queue size now:', q.size())
+
+    if (!next) {
+      logger('⚠️ Queue empty after dequeue — need to refill')
+    }
+
     setCurrentCard(next)
     setIsQueueEmpty(q.size() === 0)
     return next
@@ -133,6 +156,9 @@ export function useCardScheduler(userCards: UserCard[]) {
 
     // Reinsert into the PQ
     queueRef.current?.enqueue(updated)
+
+    logger('📥 Re-queued updated card. Queue size:', queueRef.current?.size())
+    logger('📥 Current queue snapshot:', debugQueue(queueRef.current!))
 
     return updated
   }
