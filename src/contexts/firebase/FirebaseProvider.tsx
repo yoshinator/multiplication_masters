@@ -15,6 +15,7 @@ import {
   Firestore,
 } from 'firebase/firestore'
 import { seedCardsData } from '../../utilities/seedFirestore'
+import { useLogger } from '../../hooks/useLogger'
 
 type Props = {
   children: ReactNode
@@ -53,6 +54,7 @@ const configFromEnv = () => {
 
 export const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
+  const logger = useLogger('Firebase Povider')
 
   const firebaseApp = useMemo<FirebaseApp | null>(() => {
     const cfg = configFromEnv()
@@ -93,6 +95,7 @@ export const FirebaseProvider: FC<Props> = ({ children }) => {
         const data = snap.docs.map(
           (d) => ({ id: d.id, ...d.data() }) as UserCard
         )
+        logger('setting user cards. ', data)
         setUserCards(data)
       } catch (e) {
         console.error('Error loading user cards:', e)

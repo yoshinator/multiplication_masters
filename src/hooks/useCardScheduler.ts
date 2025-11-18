@@ -13,6 +13,7 @@ import { debugQueue } from '../utilities/debugQueue'
  * - Move to next group only when necessary
  */
 function buildQueue(cards: UserCard[], user: User) {
+  if (!user) return null
   const now = Date.now()
 
   const queue = new MinPriorityQueue<UserCard>((card) => card.nextDueTime)
@@ -80,7 +81,7 @@ function computeNewBox(card: UserCard, elapsed: number, correct: boolean) {
  * - getNextCard()
  * - isQueueEmpty
  */
-export function useCardScheduler(userCards: UserCard[], user: User) {
+export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
@@ -90,7 +91,9 @@ export function useCardScheduler(userCards: UserCard[], user: User) {
   // Build the queue when Firebase cards load
   //
   useEffect(() => {
-    if (!userCards || userCards.length === 0 || queueRef.current) return
+    logger('Checking to build queue...', user)
+    if (!userCards || userCards.length === 0 || queueRef.current || !user)
+      return
 
     logger('🧱 Building new queue for user', {
       activeGroup: user.activeGroup,
@@ -98,15 +101,15 @@ export function useCardScheduler(userCards: UserCard[], user: User) {
     })
     queueRef.current = buildQueue(userCards, user)
 
-    logger('📥 Queue built with cards:', debugQueue(queueRef.current))
-    logger('📊 Queue size:', queueRef.current.size())
-    const first = queueRef.current.dequeue() ?? null
+    logger('📥 Queue built with cards:', debugQueue(queueRef?.current))
+    logger('📊 Queue size:', queueRef?.current?.size())
+    const first = queueRef?.current?.dequeue() ?? null
 
-    log('➡️ First card dequeued:', first)
+    logger('➡️ First card dequeued:', first)
 
     setCurrentCard(first)
-    setIsQueueEmpty(queueRef.current.size() === 0)
-  }, [userCards])
+    setIsQueueEmpty(!queueRef.current || queueRef.current.size() === 0)
+  }, [userCards, user, logger])
   //
   // Return the next card in the queue
   //

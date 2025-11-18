@@ -42,24 +42,27 @@ export const UserProvider: FC<Props> = ({ children }) => {
     }
   }, [app, user, logger])
 
-  const updateUser = useCallback((fields: Partial<User>) => {
-    // Updating the UI, null check seems redundant.
-    // It's not. prevUser can be null so keep it null until its not
-    setUser((prevUser) => (prevUser ? { ...prevUser, ...fields } : prevUser))
+  const updateUser = useCallback(
+    (fields: Partial<User>) => {
+      // Updating the UI, null check seems redundant.
+      // It's not. prevUser can be null so keep it null until its not
+      setUser((prevUser) => (prevUser ? { ...prevUser, ...fields } : prevUser))
 
-    pendingUpdateRef.current = {
-      ...pendingUpdateRef.current,
-      ...fields,
-    }
+      pendingUpdateRef.current = {
+        ...pendingUpdateRef.current,
+        ...fields,
+      }
 
-    // This is the magic of the debounce. Rapid fire updates keep
-    // clearing the timeout until there is no more then update below.
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
-    }
+      // This is the magic of the debounce. Rapid fire updates keep
+      // clearing the timeout until there is no more then update below.
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
 
-    debounceTimerRef.current = setTimeout(commitUserUpdates, 300)
-  }, [])
+      debounceTimerRef.current = setTimeout(commitUserUpdates, 300)
+    },
+    [commitUserUpdates]
+  )
 
   return (
     <UserContext.Provider value={{ user, setUser, updateUser }}>

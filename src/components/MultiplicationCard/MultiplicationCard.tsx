@@ -4,6 +4,7 @@ import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
 import useFirebase from '../../contexts/firebase/useFirebase'
 import useCardScheduler from '../../hooks/useCardScheduler'
 import { useTimerContext } from '../../contexts/timer/timerContext'
+import { useUser } from '../../contexts/user/useUserContext'
 
 export const MultiplicationCard: FC = () => {
   const { userCards } = useFirebase()
@@ -12,7 +13,11 @@ export const MultiplicationCard: FC = () => {
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
   const prevTimeRef = useRef(time)
-  const { currentCard, getNextCard, submitAnswer } = useCardScheduler(userCards)
+  const { user } = useUser()
+  const { currentCard, getNextCard, submitAnswer } = useCardScheduler(
+    userCards,
+    user
+  )
 
   const [cardBackgroundColor, setCardBackgroundColor] = useState<
     'red' | 'green' | 'white' | 'yellow' | 'orange'

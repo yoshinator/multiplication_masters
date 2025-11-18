@@ -1,11 +1,11 @@
 import type { MinPriorityQueue } from 'datastructures-js'
 import type { UserCard } from '../contexts/firebase/firebaseContext'
 
-export function debugQueue(queue: MinPriorityQueue<UserCard>) {
+export function debugQueue(queue?: MinPriorityQueue<UserCard> | null) {
   try {
     // warning: queue.toArray() is allowed and safe for read-only debugging
-    const arr = queue.toArray()
-    return arr.map((c) => ({
+    const arr = queue?.toArray()
+    return (arr ?? []).map((c) => ({
       id: c.id,
       expr: c.expression,
       box: c.box,

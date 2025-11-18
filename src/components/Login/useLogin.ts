@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import useFirebase from '../../contexts/firebase/useFirebase'
 import { useLogger } from '../../hooks/useLogger'
+import { useUser } from '../../contexts/user/useUserContext'
 
 export interface User {
   username: string
@@ -38,13 +39,14 @@ export const useLogin = () => {
   const { app, loadUserCards } = useFirebase()
   const [cards, setCards] = useState<Array<Record<string, unknown>>>([])
   const [loading, setLoading] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const { user, setUser } = useUser()
   const [error, setError] = useState<string | null>(null)
   const logger = useLogger('useLogin')
 
   const handleLogin = useCallback(
     async (username: string) => {
       setError(null)
+      logger(`Logging in user: ${username}`)
       try {
         if (!app) {
           setError('Firebase app not initialized')
@@ -57,14 +59,21 @@ export const useLogin = () => {
         // check/create user
         const userRef = doc(db, 'users', username)
         const userSnap = await getDoc(userRef)
+        let finalUser: User
+
         if (!userSnap.exists()) {
-          await setDoc(userRef, {
+          finalUser = {
             ...initialUser,
             username,
             createdAt: serverTimestamp(),
-          })
+          }
+          await setDoc(userRef, finalUser)
+        } else {
+          finalUser = userSnap.data() as User
         }
-        setUser(userSnap.data() as User)
+
+        logger('User logged in:', finalUser)
+        setUser(finalUser)
         // ensure user has UserCards sub-collection; if empty, create copies
         const userCardsCol = collection(db, 'users', username, 'UserCards')
         const userCardsSnap = await getDocs(userCardsCol)
@@ -105,6 +114,7 @@ export const useLogin = () => {
         }
         // load user cards into context
         try {
+          logger('Loading user cards for', username)
           await loadUserCards(username)
         } catch {
           logger('Failed to load user cards after login.')
