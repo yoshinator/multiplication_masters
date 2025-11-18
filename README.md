@@ -31,6 +31,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Card metadata and user progress states prepared for persistence.
 - Frontend hooks and service structure in place for ongoing Firebase communication.
 - Note: Firebase `apiKey` exposure is not inherently sensitive; however, service account keys or admin SDK keys should not appear in the repo. The repository should be audited for any sensitive configuration.
+- Include firebase to seed master deck
 
 ### UI Foundations
 - Initial flash card interface implemented.
@@ -51,22 +52,21 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 
 ## Work Remaining
 
-### User Sign Up and Auth
-- create email password sign up 
-- Sign in with Google
-
 
 ### Frontend and User Experience
 - Improve UI presentation, animations, and responsiveness.
 - Add level progression interface (show locked/unlocked tables).
 - Build performance dashboard (accuracy, response times, weakest facts).
+  - Show total accuracy across all cards
+  - Show group accuracy for the highest times table group you're in, (1-3, 4-6, etc...)
+  - Reset all stats if user wants to start fresh
 - Add practice modes (timed drill, review-only, mixed tables).
-- Add error states, loading screens, and improved input feedback.
+- Add better error states, loading screens, and improved input feedback. (Use mui built in colors instead "red")
 - Implement local caching or offline-first support using IndexedDB or localStorage.
 
 ### Backend and Data Logic
 - Finalize and document Firebase data schema.
-- Implelement synchronization logic for card updates during and after review sessions.
+- Implement synchronization logic for card updates during and after review sessions.
 - Implement secure Firebase rules to isolate user data.
 - Add session-level statistics (session length, cards reviewed, accuracy).
 - Add data export/import feature for portability.
@@ -80,16 +80,17 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Add mastery thresholds per table group and unlocking workflow.
 
 ### Deployment and Production Readiness
-- Include Firebase script to seed intial cards. 
 - Add build pipeline for production deployment (Firebase Hosting, Vercel, or Netlify).
 - Set up CI for linting, type checks, and test running.
 - Add screenshots, GIF demos, and installation guides.
-- Add environment variable documentation and `.env` template.
 - Add proper licensing.
+
+### User Sign Up and Auth
+- create email password sign up 
+- Sign in with Google
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
-- Move all Firebase config into `.env` files if not already.
 - Add privacy policy and terms of use for public release.
 - Ensure compliance with Firebase security rules.
 
