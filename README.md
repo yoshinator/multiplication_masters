@@ -30,8 +30,9 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Firebase project integrated for backend data storage.
 - Card metadata and user progress states prepared for persistence.
 - Frontend hooks and service structure in place for ongoing Firebase communication.
-- Note: Firebase `apiKey` exposure is not inherently sensitive; however, service account keys or admin SDK keys should not appear in the repo. The repository should be audited for any sensitive configuration.
-- Include firebase to seed master deck
+- Firebase seeding utility added for development use (window.seedCards).
+- Repository reviewed to ensure no sensitive keys (service accounts) are committed.
+- Added logic to hydrate a user's personal card collection by copying from the master deck.
 
 ### UI Foundations
 - Initial flash card interface implemented.
@@ -46,88 +47,94 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
   - Over 4–7 seconds: demote two boxes.
   - Incorrect answer: reset to box 1.
 - Timestamp-based scheduling via nextDueTime.
-- Conceptual design for a priority queue to always surface due cards first.
+- Priority queue implemented to surface the correct next card.
+- Full session scheduler implemented:
+  - Sessions capped at 35 cards.
+  - Session built from all due cards first, then active learning cards (box ≤ 3), then unseen cards (seen = 0).
+  - Only cards with box ≤ 3 are requeued during the session.
+  - Cards moved to box ≥ 4 are removed from the active queue for the rest of the session.
+
+### Review Session Context
+- ReviewSessionContext created to accumulate all updated cards during a session.
+- Tracks correct and incorrect counts per session.
+- Updated cards stored in memory until flush.
+- Batched write implemented using Firestore writeBatch.
+- flushUpdates persists:
+  - All updated UserCards
+  - User’s session-level correct and incorrect totals
+- clearUpdates resets session state after persistence.
 
 ---
 
 ## Work Remaining
 
-
 ### Frontend and User Experience
 - Improve UI presentation, animations, and responsiveness.
 - Add level progression interface (show locked/unlocked tables).
 - Build performance dashboard (accuracy, response times, weakest facts).
-  - Show total accuracy across all cards
-  - Show group accuracy for the highest times table group you're in, (1-3, 4-6, etc...)
-  - Reset all stats if user wants to start fresh
+  - Show total accuracy across all cards.
+  - Show group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
+  - Reset all stats if user wants to start fresh.
 - Add practice modes (timed drill, review-only, mixed tables).
-- Add better error states, loading screens, and improved input feedback. (Use mui built in colors instead "red")
-- Implement local caching or offline-first support using IndexedDB or localStorage.
+- Add better error states, loading screens, and improved input feedback using MUI theme colors.
+- Implement offline-first caching with IndexedDB or localStorage.
 
 ### Backend and Data Logic
 - Finalize and document Firebase data schema.
-- Implement synchronization logic for card updates during and after review sessions.
-- Implement secure Firebase rules to isolate user data.
+- Add secure Firebase rules to isolate user data.
 - Add session-level statistics (session length, cards reviewed, accuracy).
 - Add data export/import feature for portability.
 
 ### SRS Improvements
-- Finish full implementation of the priority queue scheduler.
 - Add mirror card activation logic (unlock mirrored versions after mastery).
 - Implement weighting for mirrored cards if needed.
 - Add decay logic for overdue cards (automatic demotion after long inactivity).
-- Tune the long-range box intervals if required after user testing.
-- Add mastery thresholds per table group and unlocking workflow.
+- Tune long-range intervals after user testing.
+- Add mastery thresholds and unlocking workflow for advancing activeGroup.
 
 ### Deployment and Production Readiness
-- Add build pipeline for production deployment (Firebase Hosting, Vercel, or Netlify).
+- Add build pipeline for production deployment.
 - Set up CI for linting, type checks, and test running.
-- Add screenshots, GIF demos, and installation guides.
+- Add screenshots, GIF demos, and installation instructions.
 - Add proper licensing.
 
 ### User Sign Up and Auth
-- create email password sign up 
-- Sign in with Google
+- Add email/password signup.
+- Add Google sign-in.
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
-- Add privacy policy and terms of use for public release.
-- Ensure compliance with Firebase security rules.
-
----
-
+- Add privacy policy and terms of use.
+- Ensure compliance with Firebase rules.
 
 ---
 
 ## Getting Started
 
 1. Clone the repository  
-   `git clone https://github.com/yoshinator/multiplication_masters.git` or ssh if you prefer
+   `git clone https://github.com/yoshinator/multiplication_masters.git`
 
 2. Install dependencies  
    `npm install`
 
 3. Configure environment variables in `.env.local`  
-
+Minimum config required:
 ```shell
 VITE_FIREBASE_API_KEY=yourKey
 VITE_FIREBASE_AUTH_DOMAIN=yourDomain
 VITE_FIREBASE_PROJECT_ID=yourProject
 ```
 
-Currently a firebase instance attaches to the window object if running in dev to simplify seeding initial card deck. This deck is the deck used to create new cards for every new user. 
-In development once you have your firebase project setup variables needed in your env file above you can run window.seedCards(). See firebaseProvider.tsx for implementation. 
+A Firebase instance and seeding utilities attach to the window object in development mode for initializing the master deck.
+Run window.seedCards() after configuring Firebase.
+See firebaseProvider.tsx for implementation details.
 
+4. Run development server
+5. npm run dev
 
-4. Run development server  
-`npm run dev`
+Build for production but I'm still not there. 
+npm run build
 
-5. Build for production  
-`npm run build`
+Summary
 
----
-
-## Summary
-Multiplication Masters combines a speed-adaptive Leitner system with SM-2 scheduling to produce a highly effective multiplication fact trainer. The project already includes core models, SRS logic, card generation, and Firebase setup. Remaining tasks involve improving UI/UX, completing the scheduler, refining algorithms, securing the backend, and preparing for deployment.
-
----
+Multiplication Masters combines a speed-adaptive Leitner system with SM-2 scheduling to create a highly effective multiplication fact trainer. The project now includes a complete session scheduler, a session update pipeline with batching, and logic to persist card states to Firestore. Remaining tasks involve UI refinement, improved analytics, enhanced SRS logic, and production hardening.

@@ -14,10 +14,7 @@ export const MultiplicationCard: FC = () => {
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
   const prevTimeRef = useRef(time)
   const { user } = useUser()
-  const { currentCard, getNextCard, submitAnswer } = useCardScheduler(
-    userCards,
-    user
-  )
+  const { currentCard, submitAnswer } = useCardScheduler(userCards, user)
 
   const [cardBackgroundColor, setCardBackgroundColor] = useState<
     'red' | 'green' | 'white' | 'yellow' | 'orange'
@@ -39,10 +36,6 @@ export const MultiplicationCard: FC = () => {
     setShowCorrectAnswer(false)
     setCardBackgroundColor('white')
     setAnswer('')
-
-    getNextCard()
-    resetTimer()
-    startTimer()
   }
 
   useEffect(() => {
@@ -57,7 +50,7 @@ export const MultiplicationCard: FC = () => {
       setAnswer('')
     }
     prevTimeRef.current = time
-  }, [time, currentCard, submitAnswer, getNextCard])
+  }, [time, currentCard, submitAnswer])
 
   const handleSubmit = () => {
     if (answer.length && currentCard) {
@@ -97,7 +90,6 @@ export const MultiplicationCard: FC = () => {
       setCardBackgroundColor(color)
       if (correct) {
         submitAnswer(currentCard, correct, elapsedMs)
-        getNextCard()
         setAnswer('')
         // clear any previous revert timeout, then schedule revert to white
         if (timeoutRef.current) {

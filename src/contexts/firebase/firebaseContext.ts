@@ -20,6 +20,7 @@ export type UserCard = {
   table: number
   top: number
   value: number
+  wasLastReviewCorrect: boolean
 }
 
 export type FirebaseContextValue = {

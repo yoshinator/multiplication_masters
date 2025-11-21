@@ -54,6 +54,7 @@ export async function seedCardsData(
         difficulty: i * j > 144 ? 'advanced' : 'basic',
         mirrorOf: mirrorId,
         isPrimary: !isMirror,
+        wasLastReviewCorrect: false,
       })
     }
   }
