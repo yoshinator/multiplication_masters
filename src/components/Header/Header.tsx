@@ -1,22 +1,33 @@
-import { AppBar, Box, Toolbar, useMediaQuery, useTheme } from '@mui/material'
-import { Login } from '../Login/Login'
+import { AppBar, Toolbar, Typography, Box } from '@mui/material'
+import { useUser } from '../../contexts/user/useUserContext'
+import Login from '../Login/Login'
+import UserMenu from '../UserMenu/UserMenu'
 
-export const Header = () => {
-  const theme = useTheme()
-  const compact = useMediaQuery(theme.breakpoints.down('sm'))
+const Header = () => {
+  const { user } = useUser()
 
   return (
-    <AppBar position="fixed" color="transparent" elevation={0}>
-      <Toolbar>
-        <Box
-          sx={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'space-around',
-          }}
-        >
-          <Login compact={compact} />
-        </Box>
+    <AppBar
+      position="fixed"
+      color="inherit"
+      elevation={1}
+      sx={{
+        backdropFilter: 'blur(6px)',
+        backgroundColor: 'rgba(255,255,255,0.8)',
+      }}
+    >
+      <Toolbar
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+          Multiplication Masters
+        </Typography>
+
+        <Box sx={{ flexShrink: 0 }}>{!user ? <Login /> : <UserMenu />}</Box>
       </Toolbar>
     </AppBar>
   )

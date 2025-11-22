@@ -1,30 +1,35 @@
-import { useEffect, useRef, useState, type FC, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type FC, type FormEvent } from 'react'
+import {
+  Box,
+  Button,
+  Card,
+  CircularProgress,
+  Grid,
+  TextField,
+  Typography,
+  LinearProgress,
+} from '@mui/material'
 
-import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
 import useFirebase from '../../contexts/firebase/useFirebase'
 import useCardScheduler from '../../hooks/useCardScheduler'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import { useUser } from '../../contexts/user/useUserContext'
 
-export const MultiplicationCard: FC = () => {
+const MultiplicationCard: FC = () => {
   const { userCards } = useFirebase()
   const [answer, setAnswer] = useState('')
-  const timeoutRef = useRef<number | null>(null)
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
+
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
   const prevTimeRef = useRef(time)
   const { user } = useUser()
   const { currentCard, submitAnswer } = useCardScheduler(userCards, user)
 
-  const [cardBackgroundColor, setCardBackgroundColor] = useState<
-    'red' | 'green' | 'white' | 'yellow' | 'orange'
-  >('white')
+  const [cardColor, setCardColor] = useState('background.paper')
 
   useEffect(() => {
-    if (!currentCard || showCorrectAnswer) {
-      return
-    }
-    if (currentCard) {
+    if (currentCard && !showCorrectAnswer) {
       resetTimer()
       startTimer()
     }
@@ -34,136 +39,174 @@ export const MultiplicationCard: FC = () => {
 
   const handleResume = () => {
     setShowCorrectAnswer(false)
-    setCardBackgroundColor('white')
+    setCardColor('background.paper')
     setAnswer('')
   }
 
   useEffect(() => {
-    // Don't move forward while showing the answer
-    if (showCorrectAnswer) {
-      return
-    }
+    if (showCorrectAnswer) return
+
     if (prevTimeRef.current > 0 && time <= 0 && currentCard) {
       submitAnswer(currentCard, false, 7000)
       setShowCorrectAnswer(true)
-      setCardBackgroundColor('red')
+      setCardColor('error.main')
       setAnswer('')
     }
+
     prevTimeRef.current = time
-  }, [time, currentCard, submitAnswer])
+  }, [time])
 
-  const handleSubmit = () => {
-    if (answer.length && currentCard) {
-      // time is from 7 → 0 (means elapsed = 7 - time)
-      const correct = Number(answer) === value
-      const elapsedSeconds = 7 - time
-      const elapsedMs = elapsedSeconds * 1000
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
 
-      /**
-       *  Determine highlight color immediately
-       *  SM2 + speed-based Leitner rules:
-       * - < 2s → up 1 box
-       * - 2–4s → stay
-       * - 4–7s → down 2 boxes
-       * - incorrect → box = 1
-       * - > 7s → box = 1
-       * (Note: box min = 1, max = 15)
-       */
-      let color: typeof cardBackgroundColor = 'white'
-      if (correct) {
-        if (elapsedSeconds <= 2) {
-          color = 'green'
-        } else if (elapsedSeconds <= 4) {
-          color = 'yellow'
-        } else {
-          color = 'orange'
-        }
-      } else {
-        // WRONG ANSWER BEHAVIOR
-        submitAnswer(currentCard, false, elapsedMs)
-        setCardBackgroundColor('red')
-        setShowCorrectAnswer(true)
-        stopTimer()
-        return
-      }
+    if (!answer || !currentCard) return
 
-      setCardBackgroundColor(color)
-      if (correct) {
-        submitAnswer(currentCard, correct, elapsedMs)
-        setAnswer('')
-        // clear any previous revert timeout, then schedule revert to white
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current)
-        }
-        timeoutRef.current = window.setTimeout(() => {
-          setCardBackgroundColor('white')
-          timeoutRef.current = null
-        }, 1200) // show color briefly, then revert
-      }
+    const correct = Number(answer) === value
+    const elapsedSeconds = 7 - time
+    const elapsedMs = elapsedSeconds * 1000
+
+    let color: string = 'background.paper'
+
+    if (correct) {
+      if (elapsedSeconds <= 2) color = 'success.main'
+      else if (elapsedSeconds <= 4) color = 'warning.light'
+      else color = 'warning.main'
+    } else {
+      submitAnswer(currentCard, false, elapsedMs)
+      setCardColor('error.main')
+      setShowCorrectAnswer(true)
+      stopTimer()
       return
     }
+
+    setCardColor(color)
+    submitAnswer(currentCard, true, elapsedMs)
+    setAnswer('')
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+
+    timeoutRef.current = window.setTimeout(() => {
+      setCardColor('background.paper')
+      timeoutRef.current = null
+    }, 700)
   }
 
-  const handleKeyDown = (
-    e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLDivElement>
-  ) => {
-    if (e.key === 'Enter') {
-      handleSubmit()
-    }
+  if (!currentCard) {
+    return (
+      <Box mt={10} textAlign="center">
+        <CircularProgress />
+      </Box>
+    )
   }
 
-  // logger(queue)
-  return currentCard ? (
-    <Box display="flex" justifyContent="center" mt={6}>
+  return (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      mt={6}
+      px={2}
+    >
       <Card
         sx={{
           padding: 4,
-          minWidth: 300,
-          backgroundColor: cardBackgroundColor,
-          transition: 'background-color 0.5s ease-in',
+          minWidth: 340,
+          maxWidth: 450,
+          backgroundColor: cardColor,
+          transition: 'all 0.35s ease',
+          transform:
+            cardColor !== 'background.paper' ? 'scale(1.03)' : 'scale(1)',
         }}
       >
-        <Grid container spacing={2}>
-          {/* Problem Display */}
+        {/* Timer bar */}
+        <Box sx={{ position: 'relative', width: '100%', mb: 0 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              height: 10,
+              width: '100%',
+            }}
+          >
+            {/* “timeout zone” – tiny sliver */}
+            <Box sx={{ width: 2, backgroundColor: 'error.main' }} />
+            {/* 4–7s (slow) */}
+            <Box sx={{ flex: '3 0 auto', backgroundColor: 'warning.main' }} />
+            {/* 2–4s (medium) */}
+            <Box sx={{ flex: '2 0 auto', backgroundColor: 'warning.light' }} />
+            {/* 0–2s (fast) */}
+            <Box sx={{ flex: '2 0 auto', backgroundColor: 'success.main' }} />
+          </Box>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={(time / 7) * 100}
+          sx={{ height: 10, borderRadius: 0 }}
+        />
+        <Grid container spacing={3}>
           <Grid size={12}>
-            <Typography variant="h2" align="center">
+            <Typography
+              variant="h2"
+              align="center"
+              sx={{ fontSize: '3.4rem', fontWeight: 800 }}
+            >
               {top} × {bottom}
             </Typography>
           </Grid>
-          {/* Timer */}
-          <Grid size={12}>
-            <Typography variant="h5" textAlign="center" sx={{ opacity: 0.7 }}>
-              Time: {time.toFixed(1)}s
-            </Typography>
-          </Grid>
-          {/* Input */}
+
+          {/* Input or correct answer */}
           <Grid size={12}>
             {showCorrectAnswer ? (
-              <>
-                <Typography variant="h6" color="error" mt={2}>
-                  Correct answer: {value}
+              <Box textAlign="center">
+                <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
+                  Correct: <strong>{value}</strong>
                 </Typography>
-                <Button variant="contained" onClick={handleResume}>
-                  Resume
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleResume}
+                  sx={{ mt: 2, py: 1.5, fontSize: '1.2rem' }}
+                >
+                  Continue
                 </Button>
-              </>
+              </Box>
             ) : (
-              <TextField
-                type="number"
-                value={answer}
-                autoFocus
-                fullWidth
-                onKeyDown={handleKeyDown}
-                onChange={(e) => setAnswer(e.target.value)}
-              />
+              <form onSubmit={handleSubmit}>
+                <TextField
+                  type="number"
+                  value={answer}
+                  autoFocus
+                  fullWidth
+                  onChange={(e) => setAnswer(e.target.value)}
+                  sx={{
+                    // Remove number spinner
+                    '& input[type=number]': {
+                      MozAppearance: 'textfield',
+                    },
+                    '& input[type=number]::-webkit-outer-spin-button': {
+                      WebkitAppearance: 'none',
+                      margin: 0,
+                    },
+                    '& input[type=number]::-webkit-inner-spin-button': {
+                      WebkitAppearance: 'none',
+                      margin: 0,
+                    },
+
+                    // Answer input styling
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '3.8rem',
+                      textAlign: 'center',
+                      paddingY: 8,
+                      caretColor: '#2962ff',
+                    },
+                  }}
+                />
+              </form>
             )}
           </Grid>
         </Grid>
       </Card>
     </Box>
-  ) : (
-    <Typography variant="h4" textAlign="center">
-      Loading cards...
-    </Typography>
   )
 }
+
+export default MultiplicationCard

@@ -1,43 +1,42 @@
-import type { FC } from 'react'
+import type { FC, FormEvent } from 'react'
 import { useState } from 'react'
-import { Box, Button, Input } from '@mui/material'
+import { Box, Button, TextField } from '@mui/material'
 import { useLogin } from './useLogin'
 
-type LoginProps = {
-  compact?: boolean
-}
+const Login: FC = () => {
+  const [username, setUsername] = useState('')
+  const { login, loading, error } = useLogin()
 
-export const Login: FC<LoginProps> = ({ compact = false }) => {
-  const [username, setUsername] = useState<string>('')
-  const { login, cards, loading, error } = useLogin()
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     const name = username.trim()
-    if (!name) {
-      // TODO: replace this later
-      alert('Need  a username')
-    }
-
+    if (!name) return
     await login(name)
   }
 
   return (
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      {!compact && (
-        <Input
-          placeholder="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-      )}
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
+    >
+      <TextField
+        size="small"
+        placeholder="username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        sx={{ minWidth: 120 }}
+      />
+
       <Button
         variant="contained"
-        onClick={handleSubmit}
         disabled={loading}
-        data-cards-count={cards.length}
+        type="submit"
+        sx={{ px: 3 }}
       >
         {loading ? '...' : 'Login'}
       </Button>
+
       {error && (
         <Box component="span" sx={{ color: 'error.main', ml: 1 }}>
           {error}
@@ -46,3 +45,5 @@ export const Login: FC<LoginProps> = ({ compact = false }) => {
     </Box>
   )
 }
+
+export default Login
