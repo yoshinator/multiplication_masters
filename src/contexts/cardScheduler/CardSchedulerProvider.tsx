@@ -1,15 +1,16 @@
 import { type FC, type ReactNode } from 'react'
 import { useCardScheduler } from '../../hooks/useCardScheduler'
-import { useFirebase } from '../useFirebase'
+
 import { useUser } from '../user/useUserContext'
 import { CardSchedulerContext } from './cardSchedulerContext'
+import { useFirebaseContext } from '../firebase/firebaseContext'
 
 interface Props {
   children: ReactNode
 }
 
 const CardSchedulerProvider: FC<Props> = ({ children }) => {
-  const { userCards } = useFirebase()
+  const { userCards } = useFirebaseContext()
   const { user } = useUser()
   const cardScheduler = useCardScheduler(userCards, user)
 

@@ -11,7 +11,7 @@ interface Props {
 
 const defaultPendingUserCard = { correct: 0, incorrect: 0 }
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
-  const { app } = useFirebaseContext()
+  const { app, setUserCards } = useFirebaseContext()
   const { user } = useUser()
   const [updatedCards, setUpdatedCards] = useState<UserCard[]>([])
   const [correctCount, setCorrectCount] = useState(0)
@@ -33,6 +33,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       pendingUserFieldsRef.current.incorrect += 1
       setIncorrectCount(pendingUserFieldsRef.current.incorrect)
     }
+    setUserCards?.((prev) => prev.map((c) => (c.id === card.id ? card : c)))
   }, [])
 
   const clearUpdates = useCallback(() => {

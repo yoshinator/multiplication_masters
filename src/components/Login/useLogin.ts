@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import {
   getFirestore,
@@ -42,6 +42,13 @@ export const useLogin = () => {
   const { user, setUser } = useUser()
   const [error, setError] = useState<string | null>(null)
   const logger = useLogger('useLogin')
+
+  useEffect(() => {
+    if (!user?.username) return
+    logger(`Loading user cards for ${user.username}`)
+    const unsubscribe = loadUserCards(user.username)
+    return () => unsubscribe && unsubscribe()
+  }, [user?.username])
 
   const handleLogin = useCallback(
     async (username: string) => {
@@ -112,13 +119,7 @@ export const useLogin = () => {
           }
           logger(`Initialized user UserCards for ${username}`)
         }
-        // load user cards into context
-        try {
-          logger('Loading user cards for', username)
-          await loadUserCards(username)
-        } catch {
-          logger('Failed to load user cards after login.')
-        }
+        loadUserCards(username)
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e)
         setError(msg)

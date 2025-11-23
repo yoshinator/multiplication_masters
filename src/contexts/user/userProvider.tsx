@@ -2,8 +2,8 @@ import { useCallback, useRef, useState, type FC, type ReactNode } from 'react'
 import type { User } from '../../components/Login/useLogin'
 import { UserContext } from './useUserContext'
 import { getFirestore, doc, updateDoc } from 'firebase/firestore'
-import { useFirebase } from '../useFirebase'
 import { useLogger } from '../../hooks/useLogger'
+import { useFirebaseContext } from '../firebase/firebaseContext'
 
 type Props = {
   children: ReactNode
@@ -12,7 +12,7 @@ type Props = {
 const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const logger = useLogger('UserProvider')
-  const { app } = useFirebase()
+  const { app } = useFirebaseContext()
 
   /**
    * This guy is just accumulating field values during renders before
