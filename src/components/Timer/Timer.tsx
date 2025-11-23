@@ -2,6 +2,7 @@ import { type FC } from 'react'
 import { Box, Button, Typography, CircularProgress } from '@mui/material'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
+import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 
 interface Props {
   sessionLength: number
@@ -11,6 +12,7 @@ const Timer: FC<Props> = ({ sessionLength }) => {
   const { startSession, currentCard } = useCardSchedulerContext()
   const { time, isRunning, startTimer, stopTimer, resetTimer } =
     useTimerContext()
+  const { isSessionActive } = useReviewSession()
 
   const percent = (time / 7) * 100
 
@@ -75,7 +77,7 @@ const Timer: FC<Props> = ({ sessionLength }) => {
 
       {/* Controls */}
       <Box display="flex" gap={1}>
-        {!isRunning && time > 0 && (
+        {!isRunning && !isSessionActive && (
           <Button
             variant="contained"
             color="primary"

@@ -66,7 +66,7 @@ export async function seedCardsData(
         isPrimary: !isMirror,
         wasLastReviewCorrect: false,
         wasLastDivisionReviewCorrect: false,
-        lastElapsedTime: null,
+        lastElapsedTime: 0,
       })
     }
   }

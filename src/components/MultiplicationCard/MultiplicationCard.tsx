@@ -87,13 +87,8 @@ const MultiplicationCard: FC = () => {
   }
 
   if (!currentCard) {
-    return (
-      <Box mt={10} textAlign="center">
-        <CircularProgress />
-      </Box>
-    )
+    return
   }
-
   return (
     <Box
       display="flex"

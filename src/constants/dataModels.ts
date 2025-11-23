@@ -31,7 +31,7 @@ export type UserCard = {
   value: number
   wasLastReviewCorrect: boolean
   wasLastDivisionReviewCorrect: boolean
-  lastElapsedTime: number | null
+  lastElapsedTime: number
 }
 
 export interface User {

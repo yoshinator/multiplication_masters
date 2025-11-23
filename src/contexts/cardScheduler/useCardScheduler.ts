@@ -131,14 +131,6 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     return next
   }, [logger])
 
-  const endSession = useCallback(() => {
-    logger(`🛑 Ending session. Queue flushed.`)
-    queueRef.current = null
-    setCurrentCard(null)
-    setIsQueueEmpty(true)
-    finishSession('multiplication', sessionLengthRef.current)
-  }, [finishSession, logger])
-
   // Handle answer submission
   const submitAnswer = useCallback(
     (card: UserCard, correct: boolean, elapsed: number): UserCard => {
@@ -174,12 +166,12 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
       // 4. Only end session if truly empty
       const q = queueRef.current
       if (!next && (!q || q.size() === 0)) {
-        endSession()
+        finishSession('multiplication', sessionLengthRef.current)
       }
 
       return updated
     },
-    [getNextCard, logger, addUpdatedCardToSession, endSession]
+    [getNextCard, logger, addUpdatedCardToSession, finishSession]
   )
 
   return {
@@ -187,7 +179,6 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     getNextCard,
     submitAnswer,
     startSession,
-    endSession,
     isQueueEmpty,
   }
 }
