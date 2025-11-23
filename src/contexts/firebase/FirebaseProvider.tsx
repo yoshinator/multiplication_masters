@@ -10,6 +10,7 @@ import {
 } from './firebaseContext'
 import {
   getFirestore,
+  connectFirestoreEmulator,
   collection,
   onSnapshot,
   Firestore,
@@ -81,6 +82,12 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     return analytics
   }, [firebaseApp])
 
+  // ONLY connect to the emulator if running locally
+  if (location.hostname === 'localhost' && firestoreDb) {
+    connectFirestoreEmulator(firestoreDb, 'localhost', 8080)
+    logger('Connected to Firestore emulator!')
+  }
+
   const subscribeToUserCards = useCallback(
     (username: string) => {
       if (!firestoreDb) return () => {}
@@ -103,7 +110,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
         setUserCards(data)
       })
     },
-    [firestoreDb]
+    [firestoreDb, logger]
   )
 
   const loadUserCards = useCallback(
@@ -113,7 +120,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
 
       return subscribeToUserCards(username)
     },
-    [firestoreDb, subscribeToUserCards]
+    [firestoreDb, subscribeToUserCards, logger]
   )
 
   /**
@@ -132,7 +139,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
         '[DEV-ONLY] Firebase Firestore (window.firestoreDb) and seedCards (window.seedCards()) are available globally.'
       )
     }
-  }, [firestoreDb])
+  }, [firestoreDb, logger])
 
   const value: FirebaseContextValue = {
     app: firebaseApp,
