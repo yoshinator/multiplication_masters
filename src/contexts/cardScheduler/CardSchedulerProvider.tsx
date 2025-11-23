@@ -1,5 +1,5 @@
 import { type FC, type ReactNode } from 'react'
-import { useCardScheduler } from '../../hooks/useCardScheduler'
+import { useCardScheduler } from './useCardScheduler'
 
 import { useUser } from '../user/useUserContext'
 import { CardSchedulerContext } from './cardSchedulerContext'

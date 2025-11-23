@@ -1,15 +1,12 @@
 import { useRef, useState, useCallback } from 'react'
 import { MinPriorityQueue } from 'datastructures-js'
-import type { UserCard } from '../contexts/firebase/firebaseContext'
-import type { User } from '../components/Login/useLogin'
-import { BOX_TIMES } from '../constants/appConstants'
-import { useLogger } from './useLogger'
-import { debugQueue } from '../utilities/debugQueue'
-import { useReviewSession } from '../contexts/reviewSession/reviewSessionContext'
+import type { User, UserCard } from '../../constants/dataModels'
+import { BOX_TIMES } from '../../constants/appConstants'
+import { useLogger } from '../../hooks/useLogger'
+import { debugQueue } from '../../utilities/debugQueue'
+import { useReviewSession } from '../reviewSession/reviewSessionContext'
 
-/* ------------------------------------------------------------------ */
-/*  SCHEDULING LOGIC                                                  */
-/* ------------------------------------------------------------------ */
+// ALL SCHEDULING LOGIC
 
 /**
  * Compute new Leitner box
@@ -88,10 +85,8 @@ function buildQueue(
 
   return queue
 }
-/* ------------------------------------------------------------------ */
-/*  MAIN HOOK: useCardScheduler                                       */
-/* ------------------------------------------------------------------ */
 
+// MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const logger = useLogger('Scheduler')
   const { addUpdatedCardToSession } = useReviewSession()
@@ -99,9 +94,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
 
-  /* -------------------------------------------------------------- */
-  /*  Build a new session queue                                     */
-  /* -------------------------------------------------------------- */
+  // Build a new session queue
   const startSession = useCallback(
     (sessionLength: number) => {
       if (!userCards?.length || !user) return
@@ -118,7 +111,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
       logger('➡️ First card:', first)
     },
-    [userCards, user]
+    [userCards, user, logger]
   )
 
   //Return next card
@@ -132,12 +125,13 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
     logger('➡️ Dequeued next card:', next)
     return next
-  }, [])
+  }, [logger])
 
   // Handle answer submission
   const submitAnswer = useCallback(
     (card: UserCard, correct: boolean, elapsed: number): UserCard => {
       const now = Date.now()
+      const oldBox = card.box
       const newBox = computeNewBox(card, elapsed, correct)
 
       const updated: UserCard = {
@@ -148,6 +142,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
         incorrect: card.incorrect + (correct ? 0 : 1),
         nextDueTime: now + BOX_TIMES[newBox - 1],
         wasLastReviewCorrect: correct,
+        lastElapsedTime: elapsed,
       }
 
       // Requeue only if still “learning”
@@ -157,19 +152,17 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
       } else {
         logger(`🎉 Card reached box ${newBox}. Removing from session.`)
       }
-      addUpdatedCardToSession(updated)
+      addUpdatedCardToSession(updated, oldBox)
       // Fetch next card automatically
       const next = getNextCard()
       setCurrentCard(next)
 
       return updated
     },
-    [getNextCard]
+    [getNextCard, logger, addUpdatedCardToSession]
   )
 
-  /* -------------------------------------------------------------- */
-  /*  Session control API                                           */
-  /* -------------------------------------------------------------- */
+  // Session control API
   const endSession = useCallback(() => {
     logger(`🛑 Ending session. Queue flushed.`)
     queueRef.current = null

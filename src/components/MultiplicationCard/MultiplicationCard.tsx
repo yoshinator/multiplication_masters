@@ -28,7 +28,7 @@ const MultiplicationCard: FC = () => {
       resetTimer()
       startTimer()
     }
-  }, [currentCard, showCorrectAnswer])
+  }, [currentCard, showCorrectAnswer, startTimer, resetTimer])
 
   const { top, bottom, value } = currentCard ?? {}
 
