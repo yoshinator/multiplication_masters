@@ -15,16 +15,6 @@ import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useLogger } from '../../hooks/useLogger'
 import { useUser } from '../../contexts/user/useUserContext'
 
-export interface User {
-  username: string
-  createdAt: FieldValue | null
-  activeGroup: number
-  table: number
-  totalAccuracy: number
-  highestGroupAccuracy: number
-  totalReps: number
-}
-
 const initialUser: User = {
   username: '',
   createdAt: null,
@@ -33,6 +23,7 @@ const initialUser: User = {
   totalAccuracy: 100,
   highestGroupAccuracy: 100,
   totalReps: 0,
+  subscriptionStatus: 'free',
 }
 
 export const useLogin = () => {

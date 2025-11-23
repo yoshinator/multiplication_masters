@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { UserCard } from '../firebase/firebaseContext'
+import type { UserCard } from '../../constants/dataModels'
 
 interface ReviewSessionContextValue {
   correctCount: number

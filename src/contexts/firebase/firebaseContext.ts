@@ -8,27 +8,7 @@ import {
 } from 'react'
 import type { Unsubscribe } from 'firebase/firestore'
 import { noop } from '../../utilities/typeutils'
-
-export type UserCard = {
-  avgResponseTime: number | null
-  bottom: number
-  box: number
-  correct: number
-  difficulty: 'basic' | 'advanced'
-  expression: string
-  group: number
-  id: string
-  incorrect: number
-  isPrimary: boolean
-  lastReviewed: number | null
-  mirrorOf: string
-  nextDueTime: number
-  seen: number
-  table: number
-  top: number
-  value: number
-  wasLastReviewCorrect: boolean
-}
+import type { UserCard } from '../../constants/dataModels'
 
 export type FirebaseContextValue = {
   app: FirebaseApp | null
