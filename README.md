@@ -38,6 +38,8 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Initial flash card interface implemented.
 - Input handling, reaction timer, and feedback logic operational.
 - Core logic for answer evaluation and SRS routing functional.
+- Add better error states, loading screens, and improved input feedback using MUI theme colors.
+- Improve UI presentation, animations, and responsiveness.
 
 ### Spaced Repetition Engine (SRS)
 - Speed-Adaptive Leitner + SM-2 hybrid logic defined.
@@ -69,14 +71,13 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ## Work Remaining
 
 ### Frontend and User Experience
-- Improve UI presentation, animations, and responsiveness.
 - Add level progression interface (show locked/unlocked tables).
 - Build performance dashboard (accuracy, response times, weakest facts).
   - Show total accuracy across all cards.
   - Show group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
   - Reset all stats if user wants to start fresh.
 - Add practice modes (timed drill, review-only, mixed tables).
-- Add better error states, loading screens, and improved input feedback using MUI theme colors.
+
 - Implement offline-first caching with IndexedDB or localStorage.
 
 ### Backend and Data Logic

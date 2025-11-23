@@ -13,5 +13,3 @@ export const useFirebase = (): FirebaseContextValue => {
     }
   return ctx
 }
-
-export default useFirebase

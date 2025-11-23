@@ -6,7 +6,7 @@ interface Props {
   children: ReactNode
 }
 
-export const TimerContextProvider: FC<Props> = ({ children }) => {
+const TimerContextProvider: FC<Props> = ({ children }) => {
   const ref = useRef<ReturnType<typeof setInterval> | null>(null)
   const [time, setTime] = useState(TIMER_LENGTH_SECS)
   const [isRunning, setIsRunning] = useState(false)
@@ -54,3 +54,5 @@ export const TimerContextProvider: FC<Props> = ({ children }) => {
     </TimerContext.Provider>
   )
 }
+
+export default TimerContextProvider

@@ -1,22 +1,17 @@
-import type { FC } from 'react'
+import { type FC } from 'react'
 import { Box, Toolbar } from '@mui/material'
-
-import MultiplicationCard from './components/MultiplicationCard/MultiplicationCard'
-import StatsPanel from './components/StatsPanel/StatsPanel'
 import Header from './components/Header/Header'
-import { TimerContextProvider } from './contexts/timer/TimerProvider'
-import { Timer } from './components/Timer/Timer'
+import AppContent from './components/AppContent/AppContent'
+import { useUser } from './contexts/user/useUserContext'
 
 const App: FC = () => {
+  const { user } = useUser()
   return (
-    <Box sx={{ minHeight: '100vh' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
       <Toolbar />
-      <StatsPanel />
-      <TimerContextProvider>
-        <Timer />
-        <MultiplicationCard />
-      </TimerContextProvider>
+
+      {user ? <AppContent /> : undefined}
     </Box>
   )
 }

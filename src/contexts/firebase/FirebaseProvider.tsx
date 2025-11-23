@@ -52,7 +52,7 @@ const configFromEnv = () => {
   }
 }
 
-export const FirebaseProvider: FC<Props> = ({ children }) => {
+const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
   const logger = useLogger('Firebase Povider')
 

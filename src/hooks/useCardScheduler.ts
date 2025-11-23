@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { MinPriorityQueue } from 'datastructures-js'
 import type { UserCard } from '../contexts/firebase/firebaseContext'
 import type { User } from '../components/Login/useLogin'
@@ -6,8 +6,6 @@ import { BOX_TIMES } from '../constants/appConstants'
 import { useLogger } from './useLogger'
 import { debugQueue } from '../utilities/debugQueue'
 import { useReviewSession } from '../contexts/reviewSession/reviewSessionContext'
-
-const MAX_SESSION_CARDS = 35
 
 /* ------------------------------------------------------------------ */
 /*  SCHEDULING LOGIC                                                  */
@@ -34,6 +32,7 @@ function computeNewBox(card: UserCard, elapsed: number, correct: boolean) {
 function buildQueue(
   cards: UserCard[],
   user: User,
+  sessionLength: number,
   logger: ReturnType<typeof useLogger>
 ) {
   if (!user) return null
@@ -44,7 +43,7 @@ function buildQueue(
   let group = 1
 
   // Loop through ALL groups from 1 → activeGroup
-  while (group <= user.activeGroup && sessionCards.length < MAX_SESSION_CARDS) {
+  while (group <= user.activeGroup && sessionCards.length < sessionLength) {
     const groupCards = cards.filter(
       (c) => c.group === group && c.table === user.table
     )
@@ -52,30 +51,30 @@ function buildQueue(
     // 1. Add all DUE cards (ANY box)
     const due = groupCards.filter((c) => c.nextDueTime <= now)
     for (const d of due) {
-      if (sessionCards.length < MAX_SESSION_CARDS) {
+      if (sessionCards.length < sessionLength) {
         sessionCards.push(d)
       }
     }
 
-    if (sessionCards.length >= MAX_SESSION_CARDS) break
+    if (sessionCards.length >= sessionLength) break
 
     // 2. Add learning cards (box <= 3, not due)
     const learning = groupCards
       .filter((c) => c.box <= 3 && c.nextDueTime > now)
-      .slice(0, MAX_SESSION_CARDS - sessionCards.length)
+      .slice(0, sessionLength - sessionCards.length)
 
     sessionCards.push(...learning)
 
-    if (sessionCards.length >= MAX_SESSION_CARDS) break
+    if (sessionCards.length >= sessionLength) break
 
     // 3. Add NEW cards (seen = 0)
     const newCards = groupCards
       .filter((c) => c.seen === 0)
-      .slice(0, MAX_SESSION_CARDS - sessionCards.length)
+      .slice(0, sessionLength - sessionCards.length)
 
     sessionCards.push(...newCards)
 
-    if (sessionCards.length >= MAX_SESSION_CARDS) break
+    if (sessionCards.length >= sessionLength) break
 
     // move to next group
     group++
@@ -103,28 +102,24 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   /* -------------------------------------------------------------- */
   /*  Build a new session queue                                     */
   /* -------------------------------------------------------------- */
-  const startSession = useCallback(() => {
-    if (!userCards?.length || !user) return
+  const startSession = useCallback(
+    (sessionLength: number) => {
+      if (!userCards?.length || !user) return
 
-    logger(`🚀 Starting session. Building queue…`)
-    queueRef.current = buildQueue(userCards, user, logger)
+      logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
+      queueRef.current = buildQueue(userCards, user, sessionLength, logger)
 
-    logger('📥 Queue built:', debugQueue(queueRef.current))
-    logger('📏 Queue size:', queueRef.current?.size())
+      logger('📥 Queue built:', debugQueue(queueRef.current))
+      logger('📏 Queue size:', queueRef.current?.size())
 
-    const first = queueRef.current?.dequeue() ?? null
-    setCurrentCard(first)
-    setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
+      const first = queueRef.current?.dequeue() ?? null
+      setCurrentCard(first)
+      setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
 
-    logger('➡️ First card:', first)
-  }, [userCards, user])
-
-  // Automatically build queue on first load
-  useEffect(() => {
-    if (!queueRef.current && user && userCards.length) {
-      startSession()
-    }
-  }, [userCards, user, startSession])
+      logger('➡️ First card:', first)
+    },
+    [userCards, user]
+  )
 
   //Return next card
   const getNextCard = useCallback(() => {
@@ -189,8 +184,5 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     startSession,
     endSession,
     isQueueEmpty,
-    queue: queueRef.current,
   }
 }
-
-export default useCardScheduler

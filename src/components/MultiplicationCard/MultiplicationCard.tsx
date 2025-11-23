@@ -9,23 +9,18 @@ import {
   Typography,
   LinearProgress,
 } from '@mui/material'
-
-import useFirebase from '../../contexts/firebase/useFirebase'
-import useCardScheduler from '../../hooks/useCardScheduler'
 import { useTimerContext } from '../../contexts/timer/timerContext'
-import { useUser } from '../../contexts/user/useUserContext'
+
+import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 
 const MultiplicationCard: FC = () => {
-  const { userCards } = useFirebase()
   const [answer, setAnswer] = useState('')
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
   const timeoutRef = useRef<number | null>(null)
 
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
   const prevTimeRef = useRef(time)
-  const { user } = useUser()
-  const { currentCard, submitAnswer } = useCardScheduler(userCards, user)
-
+  const { currentCard, submitAnswer } = useCardSchedulerContext()
   const [cardColor, setCardColor] = useState('background.paper')
 
   useEffect(() => {

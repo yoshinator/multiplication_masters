@@ -1,8 +1,14 @@
-import { FC } from 'react'
+import { type FC } from 'react'
 import { Box, Button, Typography, CircularProgress } from '@mui/material'
 import { useTimerContext } from '../../contexts/timer/timerContext'
+import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 
-export const Timer: FC = () => {
+interface Props {
+  sessionLength: number
+}
+
+const Timer: FC<Props> = ({ sessionLength }) => {
+  const { startSession, currentCard } = useCardSchedulerContext()
   const { time, isRunning, startTimer, stopTimer, resetTimer } =
     useTimerContext()
 
@@ -73,10 +79,12 @@ export const Timer: FC = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={startTimer}
+            onClick={
+              currentCard ? startTimer : () => startSession(sessionLength)
+            }
             sx={{ px: 3 }}
           >
-            Resume
+            {currentCard ? 'Resume' : 'Start'}
           </Button>
         )}
 
@@ -103,3 +111,5 @@ export const Timer: FC = () => {
     </Box>
   )
 }
+
+export default Timer
