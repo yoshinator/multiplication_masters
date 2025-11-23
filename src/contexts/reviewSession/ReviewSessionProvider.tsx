@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, type FC, type ReactNode } from 'react'
 import { getFirestore, doc, writeBatch } from 'firebase/firestore'
-import { useFirebase } from '../firebase/useFirebase'
+import { useFirebaseContext } from '../firebase/firebaseContext'
 import type { UserCard } from '../firebase/firebaseContext'
 import { useUser } from '../user/useUserContext'
 import { ReviewSessionContext } from './reviewSessionContext'
@@ -10,8 +10,8 @@ interface Props {
 }
 
 const defaultPendingUserCard = { correct: 0, incorrect: 0 }
-export const ReviewSessionProvider: FC<Props> = ({ children }) => {
-  const { app } = useFirebase()
+const ReviewSessionProvider: FC<Props> = ({ children }) => {
+  const { app } = useFirebaseContext()
   const { user } = useUser()
   const [updatedCards, setUpdatedCards] = useState<UserCard[]>([])
   const [correctCount, setCorrectCount] = useState(0)
@@ -64,7 +64,7 @@ export const ReviewSessionProvider: FC<Props> = ({ children }) => {
     await batch.commit()
     clearUpdates()
   }, [app, clearUpdates, user])
-  console.log({ updatedCards })
+
   return (
     <ReviewSessionContext.Provider
       value={{
@@ -80,3 +80,5 @@ export const ReviewSessionProvider: FC<Props> = ({ children }) => {
     </ReviewSessionContext.Provider>
   )
 }
+
+export default ReviewSessionProvider

@@ -11,7 +11,7 @@ import {
   writeBatch,
   type FieldValue,
 } from 'firebase/firestore'
-import useFirebase from '../../contexts/firebase/useFirebase'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useLogger } from '../../hooks/useLogger'
 import { useUser } from '../../contexts/user/useUserContext'
 
@@ -36,7 +36,7 @@ const initialUser: User = {
 }
 
 export const useLogin = () => {
-  const { app, loadUserCards } = useFirebase()
+  const { app, loadUserCards } = useFirebaseContext()
   const [cards, setCards] = useState<Array<Record<string, unknown>>>([])
   const [loading, setLoading] = useState(false)
   const { user, setUser } = useUser()

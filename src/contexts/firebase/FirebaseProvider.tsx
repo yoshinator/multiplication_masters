@@ -115,7 +115,8 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
       ;(window as unknown as T).firestoreDb = firestoreDb
       // Make seedCardsData function available on window, pre-bound with the db instance
       ;(window as unknown as T).seedCards = () => seedCardsData(firestoreDb)
-      console.log(
+
+      logger(
         '[DEV-ONLY] Firebase Firestore (window.firestoreDb) and seedCards (window.seedCards()) are available globally.'
       )
     }

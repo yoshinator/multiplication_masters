@@ -1,6 +1,6 @@
 import type { FirebaseApp } from 'firebase/app'
 import type { Analytics } from 'firebase/analytics'
-import { createContext } from 'react'
+import { createContext, useContext } from 'react'
 
 export type UserCard = {
   avgResponseTime: number | null
@@ -34,4 +34,14 @@ export const FirebaseContext = createContext<FirebaseContextValue | undefined>(
   undefined
 )
 
-export default FirebaseContext
+export const useFirebaseContext = (): FirebaseContextValue => {
+  const ctx = useContext(FirebaseContext)
+  if (!ctx)
+    return {
+      app: null,
+      analytics: null,
+      userCards: [],
+      loadUserCards: async () => {},
+    }
+  return ctx
+}
