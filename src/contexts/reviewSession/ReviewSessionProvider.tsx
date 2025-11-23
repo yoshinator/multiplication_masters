@@ -30,6 +30,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const timeoutRef = useRef(0)
   const boxesAdvancedRef = useRef(0)
   const boxesRegressedRef = useRef(0)
+  const totalElapsedRef = useRef(0)
+  const totalAnswersRef = useRef(0)
 
   const statsByTableRef = useRef<
     Record<number, { correct: number; incorrect: number }>
@@ -76,6 +78,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         // maybe increment timeoutRef if forced timeout logic
       }
 
+      // Total response time stats
+      totalElapsedRef.current += card.lastElapsedTime
+      totalAnswersRef.current += 1
+
       // SRS movement stats
       if (oldBox < card.box) boxesAdvancedRef.current++
       if (oldBox > card.box) boxesRegressedRef.current++
@@ -95,6 +101,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     timeoutRef.current = 0
     boxesAdvancedRef.current = 0
     boxesRegressedRef.current = 0
+    totalElapsedRef.current = 0
+    totalAnswersRef.current = 0
     statsByTableRef.current = {}
     setCorrectCount(0)
     setIncorrectCount(0)
@@ -144,6 +152,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       const boxesAdvanced = boxesAdvancedRef.current
       const boxesRegressed = boxesRegressedRef.current
 
+      const totalElapsed = totalElapsedRef.current
+      const totalAnswers = totalAnswersRef.current
+      const avgResponseTime =
+        totalAnswers > 0 ? totalElapsed / totalAnswers : null
+
       await flushUpdates() // this clears pendingUserFieldsRef
 
       const db = getFirestore(app)
@@ -159,7 +172,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         correct,
         incorrect,
         accuracy: correct / (correct + incorrect),
-        avgResponseTime: null,
+        avgResponseTime,
         fastCorrect,
         slowCorrect,
         timeouts,
