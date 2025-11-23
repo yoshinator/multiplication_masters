@@ -155,6 +155,9 @@ const MultiplicationCard: FC = () => {
                 <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
                   Correct: <strong>{value}</strong>
                 </Typography>
+                <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
+                  Your answer: <strong>{answer}</strong>
+                </Typography>
                 <Button
                   variant="contained"
                   fullWidth

@@ -89,18 +89,22 @@ function buildQueue(
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const logger = useLogger('Scheduler')
-  const { addUpdatedCardToSession } = useReviewSession()
+  const { addUpdatedCardToSession, finishSession } = useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
+  const sessionLengthRef = useRef(30)
 
   // Build a new session queue
   const startSession = useCallback(
-    (sessionLength: number) => {
+    (userSessionLength: number) => {
+      sessionLengthRef.current = userSessionLength
       if (!userCards?.length || !user) return
 
-      logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
-      queueRef.current = buildQueue(userCards, user, sessionLength, logger)
+      logger(
+        `🚀 Starting session. Building queue with size ${userSessionLength}`
+      )
+      queueRef.current = buildQueue(userCards, user, userSessionLength, logger)
 
       logger('📥 Queue built:', debugQueue(queueRef.current))
       logger('📏 Queue size:', queueRef.current?.size())
@@ -127,6 +131,14 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     return next
   }, [logger])
 
+  const endSession = useCallback(() => {
+    logger(`🛑 Ending session. Queue flushed.`)
+    queueRef.current = null
+    setCurrentCard(null)
+    setIsQueueEmpty(true)
+    finishSession('multiplication', sessionLengthRef.current)
+  }, [finishSession, logger])
+
   // Handle answer submission
   const submitAnswer = useCallback(
     (card: UserCard, correct: boolean, elapsed: number): UserCard => {
@@ -143,6 +155,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
         nextDueTime: now + BOX_TIMES[newBox - 1],
         wasLastReviewCorrect: correct,
         lastElapsedTime: elapsed,
+        lastReviewed: now,
       }
 
       // Requeue only if still “learning”
@@ -152,23 +165,22 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
       } else {
         logger(`🎉 Card reached box ${newBox}. Removing from session.`)
       }
+
       addUpdatedCardToSession(updated, oldBox)
-      // Fetch next card automatically
+
       const next = getNextCard()
       setCurrentCard(next)
 
+      // 4. Only end session if truly empty
+      const q = queueRef.current
+      if (!next && (!q || q.size() === 0)) {
+        endSession()
+      }
+
       return updated
     },
-    [getNextCard, logger, addUpdatedCardToSession]
+    [getNextCard, logger, addUpdatedCardToSession, endSession]
   )
-
-  // Session control API
-  const endSession = useCallback(() => {
-    logger(`🛑 Ending session. Queue flushed.`)
-    queueRef.current = null
-    setCurrentCard(null)
-    setIsQueueEmpty(true)
-  }, [])
 
   return {
     currentCard,
