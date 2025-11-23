@@ -133,11 +133,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     ) => {
       if (!app || !user || !sessionStartRef.current) return
 
-      const db = getFirestore(app)
       const endedAt = Date.now()
 
-      await flushUpdates()
+      const correct = pendingUserFieldsRef.current.correct
+      const incorrect = pendingUserFieldsRef.current.incorrect
+      const statsByTableSnapshot = { ...statsByTableRef.current }
+      const fastCorrect = fastCorrectRef.current
+      const slowCorrect = slowCorrectRef.current
+      const timeouts = timeoutRef.current
+      const boxesAdvanced = boxesAdvancedRef.current
+      const boxesRegressed = boxesRegressedRef.current
 
+      await flushUpdates() // this clears pendingUserFieldsRef
+
+      const db = getFirestore(app)
       const ref = doc(collection(db, 'users', user.username, 'Sessions'))
 
       const sessionRecord: SessionRecord = {
@@ -147,23 +156,16 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         startedAt: sessionStartRef.current,
         endedAt,
         durationMs: endedAt - sessionStartRef.current,
-
-        correct: pendingUserFieldsRef.current.correct,
-        incorrect: pendingUserFieldsRef.current.incorrect,
-        accuracy:
-          pendingUserFieldsRef.current.correct /
-          (pendingUserFieldsRef.current.correct +
-            pendingUserFieldsRef.current.incorrect),
-
+        correct,
+        incorrect,
+        accuracy: correct / (correct + incorrect),
         avgResponseTime: null,
-        fastCorrect: fastCorrectRef.current,
-        slowCorrect: slowCorrectRef.current,
-        timeouts: timeoutRef.current,
-
-        boxesAdvanced: boxesAdvancedRef.current,
-        boxesRegressed: boxesRegressedRef.current,
-
-        statsByTable: statsByTableRef.current,
+        fastCorrect,
+        slowCorrect,
+        timeouts,
+        boxesAdvanced,
+        boxesRegressed,
+        statsByTable: statsByTableSnapshot,
       }
 
       await setDoc(ref, sessionRecord)
