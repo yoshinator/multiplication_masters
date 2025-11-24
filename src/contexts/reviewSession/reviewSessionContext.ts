@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { UserCard } from '../../constants/dataModels'
+import type { SessionRecord, UserCard } from '../../constants/dataModels'
 
 interface ReviewSessionContextValue {
   correctCount: number
@@ -10,6 +10,7 @@ interface ReviewSessionContextValue {
     sessionLength: number
   ) => Promise<void>
   isSessionActive: boolean
+  latestSession: SessionRecord | null
 }
 
 export const ReviewSessionContext = createContext<

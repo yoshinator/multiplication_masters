@@ -1,10 +1,22 @@
-import { useRef, useCallback, useState, type FC, type ReactNode } from 'react'
+import {
+  useRef,
+  useCallback,
+  useState,
+  type FC,
+  type ReactNode,
+  useEffect,
+} from 'react'
 import {
   getFirestore,
   doc,
   writeBatch,
   setDoc,
   collection,
+  query,
+  orderBy,
+  getDocs,
+  limit,
+  onSnapshot,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import type { UserCard } from '../../constants/dataModels'
@@ -20,6 +32,7 @@ const defaultPendingUserCard = { correct: 0, incorrect: 0 }
 
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const { app, setUserCards } = useFirebaseContext()
+  const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
   const { user } = useUser()
   const [correctCount, setCorrectCount] = useState(0)
   const [incorrectCount, setIncorrectCount] = useState(0)
@@ -41,6 +54,28 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const pendingUserFieldsRef = useRef<Record<'correct' | 'incorrect', number>>({
     ...defaultPendingUserCard,
   })
+
+  useEffect(() => {
+    if (!app || !user) return
+
+    const db = getFirestore(app)
+    const sessionsCol = collection(db, 'users', user.username, 'Sessions')
+
+    // newest session = orderBy endedAt desc, limit 1
+    const q = query(sessionsCol, orderBy('endedAt', 'desc'), limit(1))
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      if (snap.empty) {
+        setLatestSession(null)
+        return
+      }
+
+      const doc = snap.docs[0]
+      setLatestSession(doc.data() as SessionRecord)
+    })
+
+    return () => unsubscribe()
+  }, [app, user])
 
   const addUpdatedCardToSession = useCallback(
     (card: UserCard, oldBox: number) => {
@@ -196,6 +231,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         incorrectCount,
         finishSession,
         isSessionActive,
+        latestSession,
       }}
     >
       {children}
