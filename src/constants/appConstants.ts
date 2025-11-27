@@ -1,49 +1,26 @@
-// Time constants in seconds
-// 1 minute
-export const BOX1TIME = 60
-// 3 minutes
-export const BOX2TIME = 180
-// 15 minutes
-export const BOX3TIME = 900
-// 1 hour
-export const BOX4TIME = 3600
-// 1 day
-export const BOX5TIME = 86400
-// 3 days
-export const BOX6TIME = 259200
-// 1 week
-export const BOX7TIME = 604800
-// 20 days
-export const BOX8TIME = 1728000
-// 50 days
-export const BOX9TIME = 4320000
-// 4 months
-export const BOX10TIME = 10368000
-// 1 year
-export const BOX11TIME = 31536000
-// 3 years
-export const BOX12TIME = 94608000
-// 10 years
-export const BOX13TIME = 315360000
-// 20 years
-export const BOX14TIME = 630720000
-// 30 years
-export const BOX15TIME = 946080000
+const SEC = 1000
+const MIN = 60 * SEC
+const HOUR = 60 * MIN
+const DAY = 24 * HOUR
 
 export const BOX_TIMES = [
-  BOX1TIME,
-  BOX2TIME,
-  BOX3TIME,
-  BOX4TIME,
-  BOX5TIME,
-  BOX6TIME,
-  BOX7TIME,
-  BOX8TIME,
-  BOX9TIME,
-  BOX10TIME,
-  BOX11TIME,
-  BOX12TIME,
-  BOX13TIME,
-  BOX14TIME,
-  BOX15TIME,
+  1 * MIN, // Box 1
+  3 * MIN, // Box 2
+  15 * MIN, // Box 3
+  1 * HOUR, // Box 4
+  1 * DAY, // Box 5
+  3 * DAY, // Box 6
+  7 * DAY, // Box 7
+  20 * DAY, // Box 8
+  50 * DAY, // Box 9
+  120 * DAY, // Box 10 (~4 months)
+  365 * DAY, // Box 11 (1 year)
+  3 * 365 * DAY, // Box 12 (3 years)
+  10 * 365 * DAY, // Box 13 (10 years)
+  20 * 365 * DAY, // Box 14 (20 years)
+  30 * 365 * DAY, // Box 15 (30 years)
 ]
+
+export const BOX_ADVANCE = 3000
+export const BOX_STAY = 5000
+export const BOX_REGRESS = 9000

@@ -14,7 +14,6 @@ import {
   collection,
   query,
   orderBy,
-  getDocs,
   limit,
   onSnapshot,
 } from 'firebase/firestore'
@@ -23,6 +22,7 @@ import type { UserCard } from '../../constants/dataModels'
 import { useUser } from '../user/useUserContext'
 import { ReviewSessionContext } from './reviewSessionContext'
 import type { SessionRecord } from '../../constants/dataModels'
+import { BOX_ADVANCE } from '../../constants/appConstants'
 
 interface Props {
   children: ReactNode
@@ -33,7 +33,8 @@ const defaultPendingUserCard = { correct: 0, incorrect: 0 }
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const { app, setUserCards } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
-  const { user } = useUser()
+  const [isMastered, setIsMastered] = useState(false)
+  const { user, updateUser } = useUser()
   const [correctCount, setCorrectCount] = useState(0)
   const [incorrectCount, setIncorrectCount] = useState(0)
   const [isSessionActive, setIsSessionActive] = useState(false)
@@ -106,7 +107,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       if (card.wasLastReviewCorrect) {
         statsByTableRef.current[table].correct++
         // timing logic
-        if (card.lastElapsedTime < 2000) fastCorrectRef.current++
+        if (card.lastElapsedTime <= BOX_ADVANCE) fastCorrectRef.current++
         else slowCorrectRef.current++
       } else {
         statsByTableRef.current[table].incorrect++
@@ -172,7 +173,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const finishSession = useCallback(
     async (
       sessionType: SessionRecord['sessionType'],
-      sessionLength: number
+      sessionLength: number,
+      mastered: boolean
     ) => {
       if (!app || !user || !sessionStartRef.current) return
 
@@ -196,6 +198,16 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       const db = getFirestore(app)
       const ref = doc(collection(db, 'users', user.username, 'Sessions'))
+
+      if (mastered) {
+        const userRef = doc(db, 'users', user.username)
+        // db update
+        setDoc(userRef, { activeGroup: user.activeGroup + 1 }, { merge: true })
+        // local UI update
+        updateUser({ activeGroup: user.activeGroup + 1 })
+      }
+
+      setIsMastered(mastered)
 
       const sessionRecord: SessionRecord = {
         userId: user.username,
@@ -222,7 +234,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     },
     [app, user, flushUpdates]
   )
-
   return (
     <ReviewSessionContext.Provider
       value={{
@@ -232,6 +243,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         finishSession,
         isSessionActive,
         latestSession,
+        pendingUserCards: pendingUserCardsRef.current,
+        isMastered,
       }}
     >
       {children}

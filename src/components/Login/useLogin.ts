@@ -9,11 +9,11 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
-  type FieldValue,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useLogger } from '../../hooks/useLogger'
 import { useUser } from '../../contexts/user/useUserContext'
+import type { User } from '../../constants/dataModels'
 
 const initialUser: User = {
   username: '',

@@ -11,6 +11,11 @@ import {
 import { useTimerContext } from '../../contexts/timer/timerContext'
 
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
+import {
+  BOX_ADVANCE,
+  BOX_REGRESS,
+  BOX_STAY,
+} from '../../constants/appConstants'
 
 const MultiplicationCard: FC = () => {
   const [answer, setAnswer] = useState('')
@@ -18,8 +23,9 @@ const MultiplicationCard: FC = () => {
   const timeoutRef = useRef<number | null>(null)
 
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
-  const prevTimeRef = useRef(time)
-  const { currentCard, submitAnswer } = useCardSchedulerContext()
+  const { currentCard, submitAnswer, estimatedReviews } =
+    useCardSchedulerContext()
+
   const [cardColor, setCardColor] = useState('background.paper')
 
   useEffect(() => {
@@ -35,6 +41,9 @@ const MultiplicationCard: FC = () => {
     setShowCorrectAnswer(false)
     setCardColor('background.paper')
     setAnswer('')
+    if (!currentCard) return
+
+    submitAnswer(currentCard, false, elapsedMs)
   }
 
   useEffect(() => {
@@ -61,8 +70,8 @@ const MultiplicationCard: FC = () => {
 
     let color: string = 'background.paper'
 
-    if (correct) {
-      if (elapsedSeconds <= 2) color = 'success.main'
+    if (!correct) {
+      setShowCorrectAnswer(true)
       else if (elapsedSeconds <= 4) color = 'warning.light'
       else color = 'warning.main'
     } else {
@@ -72,6 +81,11 @@ const MultiplicationCard: FC = () => {
       stopTimer()
       return
     }
+
+    // Correct — determine speed tier
+    if (elapsedMs <= BOX_ADVANCE) color = 'success.main'
+    else if (elapsedMs <= BOX_STAY) color = 'warning.light'
+    else color = 'warning.main'
 
     setCardColor(color)
     submitAnswer(currentCard, true, elapsedMs)
@@ -85,9 +99,10 @@ const MultiplicationCard: FC = () => {
     }, 700)
   }
 
-  if (!currentCard) {
-    return
-  }
+  if (!currentCard) return null
+
+  const remaining = Math.max(0, BOX_REGRESS - elapsedMs)
+
   return (
     <Box
       display="flex"
@@ -107,16 +122,46 @@ const MultiplicationCard: FC = () => {
             cardColor !== 'background.paper' ? 'scale(1.03)' : 'scale(1)',
         }}
       >
-        {/* Timer bar */}
-        <Box sx={{ position: 'relative', width: '100%', mb: 0 }}>
+        {/* Cards Left & Box */}
+        <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Box
             sx={{
               display: 'flex',
               height: 10,
               width: '100%',
+              justifyContent: 'space-between',
             }}
           >
-            {/* “timeout zone” – tiny sliver */}
+            <Box
+              sx={{
+                borderRadius: '50%',
+                width: 24,
+                height: 24,
+                backgroundColor: 'black',
+              }}
+            >
+              <Typography textAlign="center" color="background.paper">
+                {currentCard.box}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                borderRadius: '50%',
+                width: 24,
+                height: 24,
+                backgroundColor: 'black',
+              }}
+            >
+              <Typography textAlign="center" color="background.paper">
+                {estimatedReviews}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Timer Bar (progress) */}
+        <Box sx={{ position: 'relative', width: '100%', mb: 0 }}>
+          <Box sx={{ display: 'flex', height: 10, width: '100%' }}>
             <Box sx={{ width: 2, backgroundColor: 'error.main' }} />
             {/* 4–7s (slow) */}
             <Box sx={{ flex: '3 0 auto', backgroundColor: 'warning.main' }} />
@@ -126,11 +171,13 @@ const MultiplicationCard: FC = () => {
             <Box sx={{ flex: '2 0 auto', backgroundColor: 'success.main' }} />
           </Box>
         </Box>
+
         <LinearProgress
           variant="determinate"
-          value={(time / 7) * 100}
+          value={((BOX_REGRESS - remaining) / BOX_REGRESS) * 100}
           sx={{ height: 10, borderRadius: 0 }}
         />
+
         <Grid container spacing={3}>
           <Grid size={12}>
             <Typography
@@ -152,6 +199,7 @@ const MultiplicationCard: FC = () => {
                 <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
                   Your answer: <strong>{answer}</strong>
                 </Typography>
+
                 <Button
                   variant="contained"
                   fullWidth

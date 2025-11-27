@@ -11,9 +11,12 @@ import TimerContextProvider from '../../contexts/timer/TimerProvider'
 import Timer from '../../components/Timer/Timer'
 import MultiplicationCard from '../../components/MultiplicationCard/MultiplicationCard'
 import StatsPanel from '../../components/StatsPanel/StatsPanel'
+import LevelPanel from '../LevelPanel/LevelPanel'
+import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 
 const AppContent: FC = () => {
   const [sessionLength, setSessionLength] = useState<number>(30)
+  const { isMastered } = useReviewSession()
   return (
     <>
       {/* Session Length Controls */}
@@ -36,6 +39,7 @@ const AppContent: FC = () => {
 
       {/* Top Area — Stats */}
       <Box sx={{ flexShrink: 0, m: 2 }}>
+        <LevelPanel isMastered={isMastered} />
         <StatsPanel />
       </Box>
 

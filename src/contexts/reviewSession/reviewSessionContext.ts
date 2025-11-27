@@ -7,10 +7,13 @@ interface ReviewSessionContextValue {
   addUpdatedCardToSession: (card: UserCard, oldBox: number) => void
   finishSession: (
     sessionType: 'multiplication' | 'division' | 'mixed',
-    sessionLength: number
+    sessionLength: number,
+    mastered: boolean
   ) => Promise<void>
   isSessionActive: boolean
   latestSession: SessionRecord | null
+  pendingUserCards: Record<string, UserCard>
+  isMastered: boolean
 }
 
 export const ReviewSessionContext = createContext<

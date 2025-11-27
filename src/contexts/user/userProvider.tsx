@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type FC, type ReactNode } from 'react'
-import type { User } from '../../components/Login/useLogin'
+import type { User } from '../../constants/dataModels'
 import { UserContext } from './useUserContext'
 import { getFirestore, doc, updateDoc } from 'firebase/firestore'
 import { useLogger } from '../../hooks/useLogger'
@@ -46,7 +46,9 @@ const UserProvider: FC<Props> = ({ children }) => {
     (fields: Partial<User>) => {
       // Updating the UI, null check seems redundant.
       // It's not. prevUser can be null so keep it null until its not
-      setUser((prevUser) => (prevUser ? { ...prevUser, ...fields } : prevUser))
+      setUser((prevUser: User | null) =>
+        prevUser ? { ...prevUser, ...fields } : prevUser
+      )
 
       pendingUpdateRef.current = {
         ...pendingUpdateRef.current,

@@ -7,6 +7,8 @@ interface CardSchedulerContextValue {
   submitAnswer: (card: UserCard, correct: boolean, elapsed: number) => void
   currentCard: UserCard | null
   isQueueEmpty: boolean
+  estimatedReviews: number
+  estimatedUniqueCards: number
 }
 
 export const CardSchedulerContext =
