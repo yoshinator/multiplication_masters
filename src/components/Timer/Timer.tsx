@@ -1,8 +1,13 @@
-import { type FC } from 'react'
+import { useEffect, type FC } from 'react'
 import { Box, Button, Typography, CircularProgress } from '@mui/material'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
+import {
+  BOX_ADVANCE,
+  BOX_REGRESS,
+  BOX_STAY,
+} from '../../constants/appConstants'
 
 interface Props {
   sessionLength: number
@@ -14,8 +19,15 @@ const Timer: FC<Props> = ({ sessionLength }) => {
     useTimerContext()
   const { isSessionActive } = useReviewSession()
 
-  const percent = (time / 7) * 100
+  const percent = (time / (BOX_REGRESS / 100)) * 100
 
+  useEffect(() => {
+    console.log({ time })
+  }, [time])
+
+  if (isRunning) {
+    return
+  }
   return (
     <Box
       sx={{
@@ -37,9 +49,9 @@ const Timer: FC<Props> = ({ sessionLength }) => {
           thickness={4}
           sx={{
             color:
-              percent > (4 / 7) * 100
+              percent > (BOX_STAY / 1000 / (BOX_REGRESS / 1000)) * 100
                 ? 'success.main'
-                : percent > (2 / 7) * 100
+                : percent > (BOX_ADVANCE / 1000 / (BOX_REGRESS / 1000)) * 100
                   ? 'warning.light'
                   : percent > 0
                     ? 'warning.main'

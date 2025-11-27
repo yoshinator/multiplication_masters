@@ -21,8 +21,9 @@ const MultiplicationCard: FC = () => {
   const [answer, setAnswer] = useState('')
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
   const timeoutRef = useRef<number | null>(null)
-
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
+  const prevTimeRef = useRef(time)
+
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
 
@@ -43,7 +44,7 @@ const MultiplicationCard: FC = () => {
     setAnswer('')
     if (!currentCard) return
 
-    submitAnswer(currentCard, false, elapsedMs)
+    submitAnswer(currentCard, false, BOX_REGRESS - time)
   }
 
   useEffect(() => {
@@ -65,14 +66,13 @@ const MultiplicationCard: FC = () => {
     if (!answer || !currentCard) return
 
     const correct = Number(answer) === value
-    const elapsedSeconds = 7 - time
-    const elapsedMs = elapsedSeconds * 1000
+    const elapsedMs = BOX_REGRESS - time
 
     let color: string = 'background.paper'
 
-    if (!correct) {
-      setShowCorrectAnswer(true)
-      else if (elapsedSeconds <= 4) color = 'warning.light'
+    if (correct) {
+      if (elapsedMs <= BOX_ADVANCE) color = 'success.main'
+      else if (elapsedMs <= BOX_STAY) color = 'warning.light'
       else color = 'warning.main'
     } else {
       submitAnswer(currentCard, false, elapsedMs)
@@ -81,11 +81,6 @@ const MultiplicationCard: FC = () => {
       stopTimer()
       return
     }
-
-    // Correct — determine speed tier
-    if (elapsedMs <= BOX_ADVANCE) color = 'success.main'
-    else if (elapsedMs <= BOX_STAY) color = 'warning.light'
-    else color = 'warning.main'
 
     setCardColor(color)
     submitAnswer(currentCard, true, elapsedMs)
@@ -101,7 +96,7 @@ const MultiplicationCard: FC = () => {
 
   if (!currentCard) return null
 
-  const remaining = Math.max(0, BOX_REGRESS - elapsedMs)
+  const remaining = Math.max(0, BOX_REGRESS - time)
 
   return (
     <Box
