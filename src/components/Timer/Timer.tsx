@@ -1,13 +1,8 @@
-import { useEffect, type FC } from 'react'
-import { Box, Button, Typography, CircularProgress } from '@mui/material'
+import { Box, Button, Typography } from '@mui/material'
+import type { FC } from 'react'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
-import {
-  BOX_ADVANCE,
-  BOX_REGRESS,
-  BOX_STAY,
-} from '../../constants/appConstants'
 
 interface Props {
   sessionLength: number
@@ -19,15 +14,9 @@ const Timer: FC<Props> = ({ sessionLength }) => {
     useTimerContext()
   const { isSessionActive } = useReviewSession()
 
-  const percent = (time / (BOX_REGRESS / 100)) * 100
+  // convert ms → whole seconds
+  const seconds = Math.ceil(time / 1000)
 
-  useEffect(() => {
-    console.log({ time })
-  }, [time])
-
-  if (isRunning) {
-    return
-  }
   return (
     <Box
       sx={{
@@ -40,61 +29,40 @@ const Timer: FC<Props> = ({ sessionLength }) => {
         mt: 1,
       }}
     >
-      {/* Timer Ring + Number */}
-      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-        <CircularProgress
-          variant="determinate"
-          value={percent}
-          size={120}
-          thickness={4}
+      {/* BIG CIRCLE + NUMBER */}
+      <Box
+        sx={{
+          width: 150,
+          height: 150,
+          borderRadius: '50%',
+          border: '6px solid',
+          borderColor: isRunning ? 'primary.main' : 'grey.500',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isRunning ? 'primary.main' : 'grey.500',
+        }}
+      >
+        <Typography
+          variant="h3"
           sx={{
-            color:
-              percent > (BOX_STAY / 1000 / (BOX_REGRESS / 1000)) * 100
-                ? 'success.main'
-                : percent > (BOX_ADVANCE / 1000 / (BOX_REGRESS / 1000)) * 100
-                  ? 'warning.light'
-                  : percent > 0
-                    ? 'warning.main'
-                    : 'error.main',
-            transition: 'color 0.3s ease',
-          }}
-        />
-
-        <Box
-          sx={{
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            position: 'absolute',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
+            color: isRunning ? 'primary.contrastText' : 'inherit',
+            fontWeight: 800,
+            letterSpacing: '-1px',
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: '-0.5px',
-              opacity: 0.9,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {time.toFixed(1)}
-          </Typography>
-        </Box>
+          {seconds}
+        </Typography>
       </Box>
 
-      {/* Controls */}
+      {/* CONTROLS */}
       <Box display="flex" gap={1}>
-        {!isRunning && !isSessionActive && (
+        {!isRunning && (
           <Button
             variant="contained"
             color="primary"
             onClick={
-              currentCard ? startTimer : () => startSession(sessionLength)
+              isSessionActive ? startTimer : () => startSession(sessionLength)
             }
             sx={{ px: 3 }}
           >
