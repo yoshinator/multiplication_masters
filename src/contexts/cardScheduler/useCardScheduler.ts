@@ -156,6 +156,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const startSession = useCallback(
     (userSessionLength: number) => {
       sessionLengthRef.current = userSessionLength
+      shuffleCountsRef.current = new Set<number>()
       if (!userCards?.length || !user) return
 
       logger(

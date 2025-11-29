@@ -70,6 +70,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     const db = getFirestore(app)
     const sessionsCol = collection(db, 'users', user.username, 'Sessions')
+    // Get the last session
     const q = query(sessionsCol, orderBy('endedAt', 'desc'), limit(1))
 
     const unsubscribe = onSnapshot(q, (snap) => {
