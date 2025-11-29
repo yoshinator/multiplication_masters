@@ -40,30 +40,33 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Core logic for answer evaluation and SRS routing functional.
 - Add better error states, loading screens, and improved input feedback using MUI theme colors.
 - Improve UI presentation, animations, and responsiveness.
+- Add level progression interface 
 
 ### Spaced Repetition Engine (SRS)
 - Speed-Adaptive Leitner + SM-2 hybrid logic defined.
 - Reaction-time based card movement:
-  - Under 2 seconds: promote one box.
-  - 3–4 seconds: remain in current box.
-  - Over 4–7 seconds: demote two boxes.
+  - 3 seconds or less: promote one box.
+  - between 3–5 seconds: remain in current box.
+  - Over 5 seconds: demote two boxes.
   - Incorrect answer: reset to box 1.
 - Timestamp-based scheduling via nextDueTime.
 - Priority queue implemented to surface the correct next card.
 - Full session scheduler implemented:
-  - Sessions capped at 35 cards.
+  - Sessions can have 15, 30 or 45 cards.
   - Session built from all due cards first, then active learning cards (box ≤ 3), then unseen cards (seen = 0).
   - Only cards with box ≤ 3 are requeued during the session.
   - Cards moved to box ≥ 4 are removed from the active queue for the rest of the session.
+  - Add mastery thresholds and unlocking workflow for advancing activeGroup.
 
 ### Review Session Context
 - ReviewSessionContext created to accumulate all updated cards during a session.
-- Tracks correct and incorrect counts per session.
+- Tracks correct and incorrect counts per session and totals.
 - Updated cards stored in memory until flush.
+- Auto flush when session reaches 5 cards
 - Batched write implemented using Firestore writeBatch.
 - flushUpdates persists:
   - All updated UserCards
-  - User’s session-level correct and incorrect totals
+  - User’s session-level and lifetime correct and incorrect totals
 - clearUpdates resets session state after persistence.
 - Add session-level statistics (session length, cards reviewed, accuracy).
 ---
@@ -71,7 +74,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ## Work Remaining
 
 ### Frontend and User Experience
-- Add level progression interface (show locked/unlocked tables).
+-(show locked/unlocked tables).
 - Build performance dashboard (accuracy, response times, weakest facts).
   - Show total accuracy across all cards.
   - Show group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
@@ -90,7 +93,6 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Implement weighting for mirrored cards if needed.
 - Add decay logic for overdue cards (automatic demotion after long inactivity).
 - Tune long-range intervals after user testing.
-- Add mastery thresholds and unlocking workflow for advancing activeGroup.
 
 ### Deployment and Production Readiness
 - Add build pipeline for production deployment.
@@ -101,6 +103,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ### User Sign Up and Auth
 - Add email/password signup.
 - Add Google sign-in.
+- Add Parent / Teacher - Dashboard
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
