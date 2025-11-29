@@ -1,13 +1,14 @@
 import { createContext, useContext } from 'react'
-import type { UserCard } from '../firebase/firebaseContext'
+import type { UserCard } from '../../constants/dataModels'
 
 interface CardSchedulerContextValue {
   startSession: (sessionLength: number) => void
   getNextCard: () => UserCard | null
   submitAnswer: (card: UserCard, correct: boolean, elapsed: number) => void
-  endSession: () => void
   currentCard: UserCard | null
   isQueueEmpty: boolean
+  estimatedReviews: number
+  estimatedUniqueCards: number
 }
 
 export const CardSchedulerContext =

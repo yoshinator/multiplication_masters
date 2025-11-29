@@ -10,9 +10,12 @@ import {
 } from './firebaseContext'
 import {
   getFirestore,
+  connectFirestoreEmulator,
   collection,
-  getDocs,
+  onSnapshot,
   Firestore,
+  query,
+  orderBy,
 } from 'firebase/firestore'
 import { seedCardsData } from '../../utilities/seedFirestore'
 import { useLogger } from '../../hooks/useLogger'
@@ -54,6 +57,7 @@ const configFromEnv = () => {
 
 const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
+
   const logger = useLogger('Firebase Povider')
 
   const firebaseApp = useMemo<FirebaseApp | null>(() => {
@@ -78,30 +82,45 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     return analytics
   }, [firebaseApp])
 
-  const loadUserCards = useCallback(
-    async (username: string) => {
-      if (!firestoreDb) {
-        console.error('Firestore not initialized for loadUserCards.')
-        return
-      }
-      try {
-        const userCardsCol = collection(
-          firestoreDb,
-          'users',
-          username,
-          'UserCards'
-        )
-        const snap = await getDocs(userCardsCol)
-        const data = snap.docs.map(
+  // ONLY connect to the emulator if running locally
+  if (location.hostname === 'localhost' && firestoreDb) {
+    connectFirestoreEmulator(firestoreDb, 'localhost', 8080)
+    logger('Connected to Firestore emulator!')
+  }
+
+  const subscribeToUserCards = useCallback(
+    (username: string) => {
+      if (!firestoreDb) return () => {}
+
+      const userCardsCol = collection(
+        firestoreDb,
+        'users',
+        username,
+        'UserCards'
+      )
+
+      // orderBy to stabilize order
+      const q = query(userCardsCol, orderBy('id'))
+
+      return onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(
           (d) => ({ id: d.id, ...d.data() }) as UserCard
         )
-        logger('setting user cards. ', data)
+        logger('🔄 Firestore pushed new userCards:', data)
         setUserCards(data)
-      } catch (e) {
-        console.error('Error loading user cards:', e)
-      }
+      })
     },
-    [firestoreDb]
+    [firestoreDb, logger]
+  )
+
+  const loadUserCards = useCallback(
+    (username: string) => {
+      logger('Loading user cards')
+      if (!firestoreDb || !username) return () => {}
+
+      return subscribeToUserCards(username)
+    },
+    [firestoreDb, subscribeToUserCards, logger]
   )
 
   /**
@@ -120,31 +139,18 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
         '[DEV-ONLY] Firebase Firestore (window.firestoreDb) and seedCards (window.seedCards()) are available globally.'
       )
     }
-  }, [firestoreDb])
+  }, [firestoreDb, logger])
 
-  const value = useMemo<FirebaseContextValue>(() => {
-    if (!firebaseApp || !firestoreDb) {
-      return {
-        app: null,
-        analytics: null,
-        userCards: [],
-        loadUserCards: async () => {},
-      }
-    }
-
-    return {
-      app: firebaseApp,
-      analytics: firebaseAnalytics,
-      userCards: [], // userCards state will override this directly below
-      loadUserCards,
-    }
-  }, [firebaseApp, firebaseAnalytics, firestoreDb, loadUserCards])
-
-  // Merge context value with userCards state
-  const mergedValue = { ...value, userCards, loadUserCards }
+  const value: FirebaseContextValue = {
+    app: firebaseApp,
+    analytics: firebaseAnalytics,
+    userCards,
+    loadUserCards,
+    setUserCards,
+  }
 
   return (
-    <FirebaseContext.Provider value={mergedValue}>
+    <FirebaseContext.Provider value={value}>
       {children}
     </FirebaseContext.Provider>
   )

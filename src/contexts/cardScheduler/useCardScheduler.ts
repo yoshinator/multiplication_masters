@@ -1,25 +1,55 @@
 import { useRef, useState, useCallback } from 'react'
 import { MinPriorityQueue } from 'datastructures-js'
-import type { UserCard } from '../contexts/firebase/firebaseContext'
-import type { User } from '../components/Login/useLogin'
-import { BOX_TIMES } from '../constants/appConstants'
-import { useLogger } from './useLogger'
-import { debugQueue } from '../utilities/debugQueue'
-import { useReviewSession } from '../contexts/reviewSession/reviewSessionContext'
-
-/* ------------------------------------------------------------------ */
-/*  SCHEDULING LOGIC                                                  */
-/* ------------------------------------------------------------------ */
+import type { User, UserCard } from '../../constants/dataModels'
+import {
+  BOX_ADVANCE,
+  BOX_STAY,
+  BOX_REGRESS,
+  BOX_TIMES,
+} from '../../constants/appConstants'
+import { useLogger } from '../../hooks/useLogger'
+import { debugQueue } from '../../utilities/debugQueue'
+import { useReviewSession } from '../reviewSession/reviewSessionContext'
+// ALL SCHEDULING LOGIC
 
 /**
  * Compute new Leitner box
  */
 function computeNewBox(card: UserCard, elapsed: number, correct: boolean) {
   if (!correct) return 1
-  if (elapsed < 2000) return card.box + 1
-  if (elapsed < 4000) return card.box
-  if (elapsed < 7000) return Math.max(1, card.box - 2)
+  if (elapsed <= BOX_ADVANCE) return card.box + 1
+  if (elapsed <= BOX_STAY) return card.box
+  if (elapsed <= BOX_REGRESS) return Math.max(1, card.box - 2)
   return 1
+}
+
+function isGroupMastered(cards: UserCard[], group: number, table: number) {
+  const groupCards = cards.filter((c) => c.group === group && c.table === table)
+  if (groupCards.length === 0) return false
+
+  // 36 cards per group for 12 table. Level up when 29+ are in box > 3 ~ 80% mastered
+  return groupCards.filter((c) => c.box > 3).length > 29
+}
+
+function estimateReviewsForCard(card: UserCard): number {
+  const box = card.box ?? 1
+
+  if (box <= 1) return 3 // 1 → 2 → 3 → out
+  if (box === 2) return 2 // 2 → 3 → out
+  if (box === 3) return 1 // 3 → 4 → out (or stay at 3 once)
+  return 1 // 4+ → at most once more this session
+}
+
+function estimateReviewLoad(cards: UserCard[]) {
+  let total = 0
+  for (const c of cards) {
+    total += estimateReviewsForCard(c)
+  }
+  return {
+    uniqueCards: cards.length,
+    estimatedReviews: total,
+    averageRepetitions: cards.length ? total / cards.length : 0,
+  }
 }
 
 /**
@@ -86,31 +116,42 @@ function buildQueue(
 
   logger(`📦 Session queue built (${queue.size()} cards):`, sessionCards)
 
-  return queue
+  return { queue, sessionCards }
 }
-/* ------------------------------------------------------------------ */
-/*  MAIN HOOK: useCardScheduler                                       */
-/* ------------------------------------------------------------------ */
 
+// MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
-  const logger = useLogger('Scheduler')
-  const { addUpdatedCardToSession } = useReviewSession()
+  const logger = useLogger('Scheduler', true)
+  const { addUpdatedCardToSession, finishSession, pendingUserCards } =
+    useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
+  const [estimatedReviews, setEstimatedReviews] = useState(0)
+  const [estimatedUniqueCards, setEstimatedUniqueCards] = useState(0)
+  const sessionLengthRef = useRef(30)
 
-  /* -------------------------------------------------------------- */
-  /*  Build a new session queue                                     */
-  /* -------------------------------------------------------------- */
   const startSession = useCallback(
-    (sessionLength: number) => {
+    (userSessionLength: number) => {
+      sessionLengthRef.current = userSessionLength
       if (!userCards?.length || !user) return
 
-      logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
-      queueRef.current = buildQueue(userCards, user, sessionLength, logger)
+      logger(
+        `🚀 Starting session. Building queue with size ${userSessionLength}`
+      )
+      const built = buildQueue(userCards, user, userSessionLength, logger)
+
+      if (!built) return
+
+      queueRef.current = built.queue
+
+      const estimates = estimateReviewLoad(built.sessionCards)
+      setEstimatedReviews(estimates.estimatedReviews)
+      setEstimatedUniqueCards(estimates.uniqueCards)
 
       logger('📥 Queue built:', debugQueue(queueRef.current))
       logger('📏 Queue size:', queueRef.current?.size())
+      logger('📊 Estimated reviews:', estimates)
 
       const first = queueRef.current?.dequeue() ?? null
       setCurrentCard(first)
@@ -118,7 +159,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
       logger('➡️ First card:', first)
     },
-    [userCards, user]
+    [userCards, user, logger]
   )
 
   //Return next card
@@ -132,13 +173,21 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
     logger('➡️ Dequeued next card:', next)
     return next
-  }, [])
+  }, [logger])
 
   // Handle answer submission
   const submitAnswer = useCallback(
     (card: UserCard, correct: boolean, elapsed: number): UserCard => {
       const now = Date.now()
+      const oldBox = card.box
       const newBox = computeNewBox(card, elapsed, correct)
+
+      // Update estimated reviews based on answer outcome
+      if (correct && elapsed <= BOX_ADVANCE) {
+        setEstimatedReviews((prev) => Math.max(0, prev - 1))
+      } else if (correct && elapsed > BOX_STAY) {
+        setEstimatedReviews((prev) => prev + 2)
+      }
 
       const updated: UserCard = {
         ...card,
@@ -148,41 +197,59 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
         incorrect: card.incorrect + (correct ? 0 : 1),
         nextDueTime: now + BOX_TIMES[newBox - 1],
         wasLastReviewCorrect: correct,
+        lastElapsedTime: elapsed,
+        lastReviewed: now,
       }
 
-      // Requeue only if still “learning”
+      // Requeue only if the card is still "learning"
       if (newBox <= 3) {
-        logger(`🔁 Requeueing card (box=${newBox})`, updated)
+        logger(`🔁 Requeueing learning card`, updated)
         queueRef.current?.enqueue(updated)
       } else {
-        logger(`🎉 Card reached box ${newBox}. Removing from session.`)
+        logger(`🎉 Card mastered (box>${3}), removing from session`, updated)
       }
-      addUpdatedCardToSession(updated)
-      // Fetch next card automatically
+
+      // Track session stats + update local card state
+      addUpdatedCardToSession(updated, oldBox)
+
+      // Pull next card
       const next = getNextCard()
       setCurrentCard(next)
 
+      // Build updated card set for mastery check
+      const allUpdatedCards = userCards.map((c) => pendingUserCards[c.id] || c)
+
+      const q = queueRef.current
+
+      // End session only when there truly are no more cards to show
+      if (!next && (!q || q.size() === 0)) {
+        const mastered = user
+          ? isGroupMastered(allUpdatedCards, user.activeGroup, user.table)
+          : false
+
+        finishSession('multiplication', sessionLengthRef.current, mastered)
+      }
+
       return updated
     },
-    [getNextCard]
+    [
+      getNextCard,
+      logger,
+      addUpdatedCardToSession,
+      finishSession,
+      pendingUserCards,
+      user,
+      userCards,
+    ]
   )
-
-  /* -------------------------------------------------------------- */
-  /*  Session control API                                           */
-  /* -------------------------------------------------------------- */
-  const endSession = useCallback(() => {
-    logger(`🛑 Ending session. Queue flushed.`)
-    queueRef.current = null
-    setCurrentCard(null)
-    setIsQueueEmpty(true)
-  }, [])
 
   return {
     currentCard,
     getNextCard,
     submitAnswer,
     startSession,
-    endSession,
     isQueueEmpty,
+    estimatedReviews,
+    estimatedUniqueCards,
   }
 }

@@ -7,11 +7,16 @@ import { useUser } from './contexts/user/useUserContext'
 const App: FC = () => {
   const { user } = useUser()
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Header />
       <Toolbar />
 
-      {user ? <AppContent /> : undefined}
+      {user && <AppContent />}
     </Box>
   )
 }

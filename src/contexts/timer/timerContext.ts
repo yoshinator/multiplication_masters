@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import { noop } from '../../utilities/typeutils'
+import { BOX_REGRESS } from '../../constants/appConstants'
 
 export type TimerContextValue = {
   time: number
@@ -10,7 +11,7 @@ export type TimerContextValue = {
 }
 
 export const TimerContext = createContext<TimerContextValue>({
-  time: 7000,
+  time: BOX_REGRESS,
   isRunning: false,
   startTimer: noop,
   stopTimer: noop,

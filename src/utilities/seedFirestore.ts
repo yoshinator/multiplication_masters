@@ -35,6 +35,14 @@ export async function seedCardsData(
       const isMirror = j < i
       const mirrorId = isMirror ? `${j}-${i}` : null
       const is24Table = i > 12 || j > 12
+      let difficulty: 'basic' | 'advanced' | 'elite' = 'basic'
+      // Define difficulty based on product
+      if (i * j > 64) {
+        difficulty = 'advanced'
+      }
+      if (i * j > 144) {
+        difficulty = 'elite'
+      }
 
       docs.push({
         id: `${i}-${j}`,
@@ -50,11 +58,15 @@ export async function seedCardsData(
         avgResponseTime: null,
         seen: 0,
         correct: 0,
+        correctDivision: 0,
         incorrect: 0,
-        difficulty: i * j > 144 ? 'advanced' : 'basic',
+        incorrectDivision: 0,
+        difficulty,
         mirrorOf: mirrorId,
         isPrimary: !isMirror,
         wasLastReviewCorrect: false,
+        wasLastDivisionReviewCorrect: false,
+        lastElapsedTime: 0,
       })
     }
   }

@@ -1,33 +1,21 @@
 import type { FirebaseApp } from 'firebase/app'
 import type { Analytics } from 'firebase/analytics'
-import { createContext, useContext } from 'react'
-
-export type UserCard = {
-  avgResponseTime: number | null
-  bottom: number
-  box: number
-  correct: number
-  difficulty: 'basic' | 'advanced'
-  expression: string
-  group: number
-  id: string
-  incorrect: number
-  isPrimary: boolean
-  lastReviewed: number | null
-  mirrorOf: string
-  nextDueTime: number
-  seen: number
-  table: number
-  top: number
-  value: number
-  wasLastReviewCorrect: boolean
-}
+import {
+  createContext,
+  useContext,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
+import type { Unsubscribe } from 'firebase/firestore'
+import { noop } from '../../utilities/typeutils'
+import type { UserCard } from '../../constants/dataModels'
 
 export type FirebaseContextValue = {
   app: FirebaseApp | null
   analytics: Analytics | null
   userCards: UserCard[]
-  loadUserCards: (username: string) => Promise<void>
+  loadUserCards: (username: string) => Unsubscribe | void
+  setUserCards: Dispatch<SetStateAction<UserCard[]>> | null
 }
 
 export const FirebaseContext = createContext<FirebaseContextValue | undefined>(
@@ -41,7 +29,8 @@ export const useFirebaseContext = (): FirebaseContextValue => {
       app: null,
       analytics: null,
       userCards: [],
-      loadUserCards: async () => {},
+      loadUserCards: noop,
+      setUserCards: noop,
     }
   return ctx
 }

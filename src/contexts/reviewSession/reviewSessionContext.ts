@@ -1,13 +1,19 @@
 import { createContext, useContext } from 'react'
-import type { UserCard } from '../firebase/firebaseContext'
+import type { SessionRecord, UserCard } from '../../constants/dataModels'
 
 interface ReviewSessionContextValue {
   correctCount: number
   incorrectCount: number
-  updatedCards: UserCard[]
-  addUpdatedCardToSession: (card: UserCard) => void
-  flushUpdates: () => Promise<void>
-  clearUpdates: () => void
+  addUpdatedCardToSession: (card: UserCard, oldBox: number) => void
+  finishSession: (
+    sessionType: 'multiplication' | 'division' | 'mixed',
+    sessionLength: number,
+    mastered: boolean
+  ) => Promise<void>
+  isSessionActive: boolean
+  latestSession: SessionRecord | null
+  pendingUserCards: Record<string, UserCard>
+  isMastered: boolean
 }
 
 export const ReviewSessionContext = createContext<

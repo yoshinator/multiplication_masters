@@ -65,7 +65,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
   - All updated UserCards
   - User’s session-level correct and incorrect totals
 - clearUpdates resets session state after persistence.
-
+- Add session-level statistics (session length, cards reviewed, accuracy).
 ---
 
 ## Work Remaining
@@ -83,7 +83,6 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ### Backend and Data Logic
 - Finalize and document Firebase data schema.
 - Add secure Firebase rules to isolate user data.
-- Add session-level statistics (session length, cards reviewed, accuracy).
 - Add data export/import feature for portability.
 
 ### SRS Improvements

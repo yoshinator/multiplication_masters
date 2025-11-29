@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Card,
-  CircularProgress,
   Grid,
   TextField,
   Typography,
@@ -12,44 +11,76 @@ import {
 import { useTimerContext } from '../../contexts/timer/timerContext'
 
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
+import {
+  BOX_ADVANCE,
+  BOX_REGRESS,
+  BOX_STAY,
+} from '../../constants/appConstants'
 
 const MultiplicationCard: FC = () => {
+  // COMPONENT STATE
   const [answer, setAnswer] = useState('')
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
+  const [cardColor, setCardColor] = useState('background.paper')
+  // REFS
   const timeoutRef = useRef<number | null>(null)
-
+  const inputRef = useRef<HTMLInputElement>(null)
+  // HOOKS
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
   const prevTimeRef = useRef(time)
-  const { currentCard, submitAnswer } = useCardSchedulerContext()
-  const [cardColor, setCardColor] = useState('background.paper')
+  const { currentCard, submitAnswer, estimatedReviews } =
+    useCardSchedulerContext()
+  const { top, bottom, value } = currentCard ?? {}
+
+  const getElapsed = () => BOX_REGRESS - time
 
   useEffect(() => {
     if (currentCard && !showCorrectAnswer) {
       resetTimer()
       startTimer()
     }
+  }, [currentCard, showCorrectAnswer, startTimer, resetTimer])
+
+  // Cleanup any left over timeouts after unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
+  // Force focus when a new card appears or we resume
+  useEffect(() => {
+    if (!showCorrectAnswer && inputRef.current) {
+      inputRef.current.focus()
+    }
   }, [currentCard, showCorrectAnswer])
 
-  const { top, bottom, value } = currentCard ?? {}
+  // Handles time expiration
+  useEffect(() => {
+    if (showCorrectAnswer) return
+
+    // Did we JUST cross from >0 to <=0?
+    const expired = prevTimeRef.current > 0 && time <= 0
+
+    // Update the previous time after comparing
+    prevTimeRef.current = time
+
+    if (!expired || !currentCard) return
+
+    // Handle expiration
+    stopTimer()
+    setShowCorrectAnswer(true)
+    setCardColor('error.main')
+    setAnswer('')
+  }, [time, showCorrectAnswer, currentCard, stopTimer])
 
   const handleResume = () => {
     setShowCorrectAnswer(false)
     setCardColor('background.paper')
     setAnswer('')
+    if (!currentCard) return
+    submitAnswer(currentCard, false, getElapsed())
   }
-
-  useEffect(() => {
-    if (showCorrectAnswer) return
-
-    if (prevTimeRef.current > 0 && time <= 0 && currentCard) {
-      submitAnswer(currentCard, false, 7000)
-      setShowCorrectAnswer(true)
-      setCardColor('error.main')
-      setAnswer('')
-    }
-
-    prevTimeRef.current = time
-  }, [time])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -57,25 +88,22 @@ const MultiplicationCard: FC = () => {
     if (!answer || !currentCard) return
 
     const correct = Number(answer) === value
-    const elapsedSeconds = 7 - time
-    const elapsedMs = elapsedSeconds * 1000
 
     let color: string = 'background.paper'
 
     if (correct) {
-      if (elapsedSeconds <= 2) color = 'success.main'
-      else if (elapsedSeconds <= 4) color = 'warning.light'
+      if (getElapsed() <= BOX_ADVANCE) color = 'success.main'
+      else if (getElapsed() <= BOX_STAY) color = 'warning.light'
       else color = 'warning.main'
     } else {
-      submitAnswer(currentCard, false, elapsedMs)
-      setCardColor('error.main')
       setShowCorrectAnswer(true)
+      setCardColor('error.main')
       stopTimer()
       return
     }
 
     setCardColor(color)
-    submitAnswer(currentCard, true, elapsedMs)
+    submitAnswer(currentCard, true, getElapsed())
     setAnswer('')
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -86,13 +114,7 @@ const MultiplicationCard: FC = () => {
     }, 700)
   }
 
-  if (!currentCard) {
-    return (
-      <Box mt={10} textAlign="center">
-        <CircularProgress />
-      </Box>
-    )
-  }
+  if (!currentCard) return null
 
   return (
     <Box
@@ -113,16 +135,46 @@ const MultiplicationCard: FC = () => {
             cardColor !== 'background.paper' ? 'scale(1.03)' : 'scale(1)',
         }}
       >
-        {/* Timer bar */}
-        <Box sx={{ position: 'relative', width: '100%', mb: 0 }}>
+        {/* Cards Left & Box */}
+        <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Box
             sx={{
               display: 'flex',
               height: 10,
               width: '100%',
+              justifyContent: 'space-between',
             }}
           >
-            {/* “timeout zone” – tiny sliver */}
+            <Box
+              sx={{
+                borderRadius: '50%',
+                width: 24,
+                height: 24,
+                backgroundColor: 'black',
+              }}
+            >
+              <Typography textAlign="center" color="background.paper">
+                {currentCard.box}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                borderRadius: '50%',
+                width: 24,
+                height: 24,
+                backgroundColor: 'black',
+              }}
+            >
+              <Typography textAlign="center" color="background.paper">
+                {estimatedReviews}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Timer Bar (progress) */}
+        <Box sx={{ position: 'relative', width: '100%', mb: 0 }}>
+          <Box sx={{ display: 'flex', height: 10, width: '100%' }}>
             <Box sx={{ width: 2, backgroundColor: 'error.main' }} />
             {/* 4–7s (slow) */}
             <Box sx={{ flex: '3 0 auto', backgroundColor: 'warning.main' }} />
@@ -132,11 +184,13 @@ const MultiplicationCard: FC = () => {
             <Box sx={{ flex: '2 0 auto', backgroundColor: 'success.main' }} />
           </Box>
         </Box>
+
         <LinearProgress
           variant="determinate"
-          value={(time / 7) * 100}
+          value={(time / BOX_REGRESS) * 100}
           sx={{ height: 10, borderRadius: 0 }}
         />
+
         <Grid container spacing={3}>
           <Grid size={12}>
             <Typography
@@ -149,12 +203,16 @@ const MultiplicationCard: FC = () => {
           </Grid>
 
           {/* Input or correct answer */}
-          <Grid size={12}>
+          <Grid size={12} sx={{ minHeight: 150 }}>
             {showCorrectAnswer ? (
               <Box textAlign="center">
                 <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
                   Correct: <strong>{value}</strong>
                 </Typography>
+                <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
+                  Your answer: <strong>{answer}</strong>
+                </Typography>
+
                 <Button
                   variant="contained"
                   fullWidth
@@ -171,7 +229,11 @@ const MultiplicationCard: FC = () => {
                   value={answer}
                   autoFocus
                   fullWidth
-                  onChange={(e) => setAnswer(e.target.value)}
+                  inputRef={inputRef}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '')
+                    setAnswer(val)
+                  }}
                   sx={{
                     // Remove number spinner
                     '& input[type=number]': {

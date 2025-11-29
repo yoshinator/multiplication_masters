@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import {
   getFirestore,
@@ -9,21 +9,11 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
-  type FieldValue,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useLogger } from '../../hooks/useLogger'
 import { useUser } from '../../contexts/user/useUserContext'
-
-export interface User {
-  username: string
-  createdAt: FieldValue | null
-  activeGroup: number
-  table: number
-  totalAccuracy: number
-  highestGroupAccuracy: number
-  totalReps: number
-}
+import type { User } from '../../constants/dataModels'
 
 const initialUser: User = {
   username: '',
@@ -33,6 +23,7 @@ const initialUser: User = {
   totalAccuracy: 100,
   highestGroupAccuracy: 100,
   totalReps: 0,
+  subscriptionStatus: 'free',
 }
 
 export const useLogin = () => {
@@ -42,6 +33,13 @@ export const useLogin = () => {
   const { user, setUser } = useUser()
   const [error, setError] = useState<string | null>(null)
   const logger = useLogger('useLogin')
+
+  useEffect(() => {
+    if (!user?.username) return
+    logger(`Loading user cards for ${user.username}`)
+    const unsubscribe = loadUserCards(user.username)
+    return () => unsubscribe && unsubscribe()
+  }, [user?.username])
 
   const handleLogin = useCallback(
     async (username: string) => {
@@ -112,13 +110,7 @@ export const useLogin = () => {
           }
           logger(`Initialized user UserCards for ${username}`)
         }
-        // load user cards into context
-        try {
-          logger('Loading user cards for', username)
-          await loadUserCards(username)
-        } catch {
-          logger('Failed to load user cards after login.')
-        }
+        loadUserCards(username)
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e)
         setError(msg)
