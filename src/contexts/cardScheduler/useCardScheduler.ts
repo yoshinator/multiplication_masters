@@ -10,6 +10,10 @@ import {
 import { useLogger } from '../../hooks/useLogger'
 import { debugQueue } from '../../utilities/debugQueue'
 import { useReviewSession } from '../reviewSession/reviewSessionContext'
+
+// We do a single shuffle when the queue size hits one of these thresholds
+const SHUFFLE_THRESHOLDS = new Set([20, 10, 7, 5, 4, 3])
+
 // ALL SCHEDULING LOGIC
 
 /**
@@ -49,6 +53,23 @@ function estimateReviewLoad(cards: UserCard[]) {
     uniqueCards: cards.length,
     estimatedReviews: total,
     averageRepetitions: cards.length ? total / cards.length : 0,
+  }
+}
+
+/**
+ * Fisher-Yates shuffle to randomize array in place to create
+ * a bit of randomness toward the end of the session
+ */
+function shuffleOnce<T>(arr: T[]) {
+  // Start from the last element and move backwards
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i
+    const randomIndex = Math.floor(Math.random() * (i + 1))
+
+    // Swap arr[i] and arr[randomIndex]
+    const temp = arr[i]
+    arr[i] = arr[randomIndex]
+    arr[randomIndex] = temp
   }
 }
 
@@ -130,10 +151,12 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const [estimatedReviews, setEstimatedReviews] = useState(0)
   const [estimatedUniqueCards, setEstimatedUniqueCards] = useState(0)
   const sessionLengthRef = useRef(30)
+  const shuffleCountsRef = useRef(new Set<number>())
 
   const startSession = useCallback(
     (userSessionLength: number) => {
       sessionLengthRef.current = userSessionLength
+      shuffleCountsRef.current = new Set<number>()
       if (!userCards?.length || !user) return
 
       logger(
@@ -212,14 +235,39 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
       // Track session stats + update local card state
       addUpdatedCardToSession(updated, oldBox)
 
+      const q = queueRef.current
+      if (q) {
+        const size = q.size()
+
+        // Check if this size is a shuffle trigger AND we haven't shuffled at this size yet
+        if (
+          SHUFFLE_THRESHOLDS.has(size) &&
+          !shuffleCountsRef.current.has(size)
+        ) {
+          // record that we shuffled here, this prevents double shuffles at same size
+          shuffleCountsRef.current.add(size)
+
+          const temp: UserCard[] = []
+
+          while (q.size() > 0) {
+            const c = q.dequeue()
+            if (c) temp.push(c)
+          }
+
+          shuffleOnce(temp)
+
+          temp.forEach((c) => q.enqueue(c))
+
+          logger(`🔀 Queue shuffled at size ${size}`)
+        }
+      }
+
       // Pull next card
       const next = getNextCard()
       setCurrentCard(next)
 
       // Build updated card set for mastery check
       const allUpdatedCards = userCards.map((c) => pendingUserCards[c.id] || c)
-
-      const q = queueRef.current
 
       // End session only when there truly are no more cards to show
       if (!next && (!q || q.size() === 0)) {

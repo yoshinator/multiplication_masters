@@ -57,6 +57,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
   - Only cards with box ≤ 3 are requeued during the session.
   - Cards moved to box ≥ 4 are removed from the active queue for the rest of the session.
   - Add mastery thresholds and unlocking workflow for advancing activeGroup.
+  - Add queue shuffling to avoid pattern recognition in session.
 
 ### Review Session Context
 - ReviewSessionContext created to accumulate all updated cards during a session.
@@ -93,6 +94,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Implement weighting for mirrored cards if needed.
 - Add decay logic for overdue cards (automatic demotion after long inactivity).
 - Tune long-range intervals after user testing.
+- Add user defined intervals.
 
 ### Deployment and Production Readiness
 - Add build pipeline for production deployment.
@@ -104,11 +106,14 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Add email/password signup.
 - Add Google sign-in.
 - Add Parent / Teacher - Dashboard
+- Create student profiles with simplified login's 
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
 - Add privacy policy and terms of use.
 - Ensure compliance with Firebase rules.
+
+
 
 ---
 
