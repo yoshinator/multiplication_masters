@@ -94,7 +94,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Implement weighting for mirrored cards if needed.
 - Add decay logic for overdue cards (automatic demotion after long inactivity).
 - Tune long-range intervals after user testing.
-- Add user defined intervals
+- Add user defined intervals.
 
 ### Deployment and Production Readiness
 - Add build pipeline for production deployment.
@@ -106,7 +106,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Add email/password signup.
 - Add Google sign-in.
 - Add Parent / Teacher - Dashboard
-- create student profiles with simplified login's 
+- Create student profiles with simplified login's 
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
