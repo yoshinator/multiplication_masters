@@ -48,7 +48,10 @@ const App: FC = () => {
               <Route path={ROUTES.PRACTICE} element={<PracticePage />} />
 
               {/* Catch-all → redirect to /app */}
-              <Route path="*" element={<Navigate to="/train" replace />} />
+              <Route
+                path="*"
+                element={<Navigate to={ROUTES.TRAIN} replace />}
+              />
             </>
           ) : (
             // If user is not logged in → redirect to home

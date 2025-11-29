@@ -70,17 +70,26 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
   - User’s session-level and lifetime correct and incorrect totals
 - clearUpdates resets session state after persistence.
 - Add session-level statistics (session length, cards reviewed, accuracy).
+
+### Gamefication
+- Add a scene builder so users can customize a scene with unlocked items.
+
+### Routing
+- Add routes for Profile, Homepage, Training, Scene Builder.
+
 ---
 
 ## Work Remaining
 
 ### Frontend and User Experience
 -(show locked/unlocked tables).
+- Add unlocking mechanisms for Scene items. (Currently hard coded for garden theme)
 - Build performance dashboard (accuracy, response times, weakest facts).
   - Show total accuracy across all cards.
   - Show group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
   - Reset all stats if user wants to start fresh.
 - Add practice modes (timed drill, review-only, mixed tables).
+- Make Scene Builder item picker display item images instead of labels.
 
 - Implement offline-first caching with IndexedDB or localStorage.
 
@@ -88,6 +97,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Finalize and document Firebase data schema.
 - Add secure Firebase rules to isolate user data.
 - Add data export/import feature for portability.
+- Add Scene Builder saves and unlocked items to data store.
 
 ### SRS Improvements
 - Add mirror card activation logic (unlock mirrored versions after mastery).
