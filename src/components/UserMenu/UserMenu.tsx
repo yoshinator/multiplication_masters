@@ -8,10 +8,12 @@ import {
   Typography,
 } from '@mui/material'
 import { useUser } from '../../contexts/user/useUserContext'
+import { useNavigate } from 'react-router-dom'
 
 const UserMenu = () => {
   const { user } = useUser()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const navigate = useNavigate()
 
   const open = Boolean(anchorEl)
   const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) =>
@@ -40,8 +42,30 @@ const UserMenu = () => {
       </Box>
 
       <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-        <MenuItem onClick={handleClose}>Profile</MenuItem>
-        <MenuItem onClick={handleClose}>Settings</MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose()
+            navigate('/profile')
+          }}
+        >
+          Profile
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose()
+            navigate('/builder')
+          }}
+        >
+          My World
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose()
+            navigate('/app')
+          }}
+        >
+          Train
+        </MenuItem>
         <MenuItem sx={{ color: 'error.main' }} onClick={handleClose}>
           Logout
         </MenuItem>

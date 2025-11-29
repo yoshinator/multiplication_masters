@@ -2,16 +2,19 @@ import type { FC, FormEvent } from 'react'
 import { useState } from 'react'
 import { Box, Button, TextField } from '@mui/material'
 import { useLogin } from './useLogin'
+import { useNavigate } from 'react-router-dom'
 
 const Login: FC = () => {
   const [username, setUsername] = useState('')
   const { login, loading, error } = useLogin()
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const name = username.trim()
     if (!name) return
     await login(name)
+    navigate('/app')
   }
 
   return (
