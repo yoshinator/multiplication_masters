@@ -9,6 +9,7 @@ import {
 } from '@mui/material'
 import { useUser } from '../../contexts/user/useUserContext'
 import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routeConstants'
 
 const UserMenu = () => {
   const { user } = useUser()
@@ -45,7 +46,7 @@ const UserMenu = () => {
         <MenuItem
           onClick={() => {
             handleClose()
-            navigate('/profile')
+            navigate(ROUTES.PROFILE)
           }}
         >
           Profile
@@ -53,7 +54,7 @@ const UserMenu = () => {
         <MenuItem
           onClick={() => {
             handleClose()
-            navigate('/builder')
+            navigate(ROUTES.BUILDER)
           }}
         >
           My World
@@ -61,7 +62,7 @@ const UserMenu = () => {
         <MenuItem
           onClick={() => {
             handleClose()
-            navigate('/app')
+            navigate(ROUTES.TRAIN)
           }}
         >
           Train

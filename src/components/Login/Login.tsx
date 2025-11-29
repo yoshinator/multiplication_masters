@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Box, Button, TextField } from '@mui/material'
 import { useLogin } from './useLogin'
 import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routeConstants'
 
 const Login: FC = () => {
   const [username, setUsername] = useState('')
@@ -14,7 +15,7 @@ const Login: FC = () => {
     const name = username.trim()
     if (!name) return
     await login(name)
-    navigate('/app')
+    navigate(ROUTES.TRAIN)
   }
 
   return (

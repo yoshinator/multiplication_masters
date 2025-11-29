@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo, useRef, useState } from 'react'
+import { type FC, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Image as KonvaImage } from 'react-konva'
 import useImage from 'use-image'
 import { v4 as uuidv4 } from 'uuid'
@@ -22,6 +22,7 @@ import type {
   SceneItemCategory,
 } from '../../constants/sceneDefinitions'
 import { SCENES } from '../../constants/sceneDefinitions'
+import type Konva from 'konva'
 
 // ---------------------------
 // Scene Object Instance Type
@@ -94,7 +95,7 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
 }) => {
   const sceneDef = SCENES[theme]
 
-  const stageRef = useRef<any>(null)
+  const stageRef = useRef<Konva.Stage>(null)
   const [objects, setObjects] = useState<SceneObjectInstance[]>(initialObjects)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -159,7 +160,7 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
 
   // Export image (later: upload to Firebase Storage → save user profile backgroundUrl)
   const exportImage = () => {
-    const uri = stageRef.current.toDataURL({ pixelRatio: 2 })
+    const uri = stageRef.current?.toDataURL()
     const win = window.open()
     if (win) {
       win.document.write(

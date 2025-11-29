@@ -11,6 +11,7 @@ import SceneBuilderPage from './pages/SceneBuilderPage/SceneBuilderPage'
 import ProfilePage from './pages/ProfilePage/ProfilePage'
 import PracticePage from './pages/PracticePage/PracticePage'
 import HomePage from './pages/HomePage/HomePage'
+import { ROUTES } from './constants/routeConstants'
 
 const App: FC = () => {
   const { user } = useUser()
@@ -29,29 +30,29 @@ const App: FC = () => {
 
         <Routes>
           {/* Public route — before login */}
-          <Route path="/" element={<HomePage />} />
+          <Route path={ROUTES.HOME} element={<HomePage />} />
 
           {/* Only show app content if user is logged in */}
           {user ? (
             <>
               {/* Your main practice / session logic */}
-              <Route path="/app" element={<AppContent />} />
+              <Route path={ROUTES.TRAIN} element={<AppContent />} />
 
               {/* Scene Builder */}
-              <Route path="/builder" element={<SceneBuilderPage />} />
+              <Route path={ROUTES.BUILDER} element={<SceneBuilderPage />} />
 
               {/* Profile */}
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
 
               {/* Practice modes */}
-              <Route path="/practice" element={<PracticePage />} />
+              <Route path={ROUTES.PRACTICE} element={<PracticePage />} />
 
               {/* Catch-all → redirect to /app */}
-              <Route path="*" element={<Navigate to="/app" replace />} />
+              <Route path="*" element={<Navigate to="/train" replace />} />
             </>
           ) : (
             // If user is not logged in → redirect to home
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
           )}
         </Routes>
       </Box>
