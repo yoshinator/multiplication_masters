@@ -71,7 +71,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - clearUpdates resets session state after persistence.
 - Add session-level statistics (session length, cards reviewed, accuracy).
 
-### Gamefication
+### Gamification
 - Add a scene builder so users can customize a scene with unlocked items.
 
 ### Routing
