@@ -34,6 +34,7 @@ export type SceneObjectInstance = {
   y: number
   scale: number
   rotation: number
+  z: number
 }
 
 // ---------------------------
@@ -122,9 +123,12 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
     }))
   }, [sceneDef.categories, unlockedItemIds])
 
-  const updateLayout = (next: SceneObjectInstance[]) => {
-    setObjects(next)
-    onLayoutChange?.(next)
+  const setSortedObjects = (next: SceneObjectInstance[]) => {
+    const sorted = [...next]
+      .sort((a, b) => a.z - b.z)
+      .map((obj, index) => ({ ...obj, z: index }))
+    setObjects(sorted)
+    onLayoutChange?.(sorted)
   }
 
   const addObject = (item: SceneItemDefinition) => {
@@ -135,27 +139,84 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
       y: 200,
       scale: item.defaultScale ?? 1,
       rotation: 0,
+      z: objects.length,
     }
     const next = [...objects, instance]
-    updateLayout(next)
+    setSortedObjects(next)
     setSelectedId(instance.id)
   }
 
   const updateObject = (updated: SceneObjectInstance) => {
     const next = objects.map((o) => (o.id === updated.id ? updated : o))
-    updateLayout(next)
+    setSortedObjects(next)
   }
 
   const deleteSelected = () => {
     if (!selectedId) return
     const next = objects.filter((o) => o.id !== selectedId)
-    updateLayout(next)
+    setSortedObjects(next)
     setSelectedId(null)
   }
 
   const clearAll = () => {
-    updateLayout([])
+    setSortedObjects([])
     setSelectedId(null)
+  }
+
+  const handleBringToFront = () => {
+    if (!selectedId) return
+    const maxZ = Math.max(...objects.map((o) => o.z))
+    const next = objects.map((o) => {
+      if (o.id === selectedId) return { ...o, z: maxZ + 1 }
+      return o
+    })
+
+    setSortedObjects(next)
+  }
+  const handleSendToBack = () => {
+    if (!selectedId) return
+    const minZ = Math.min(...objects.map((o) => o.z))
+    const next = objects.map((o) => {
+      if (o.id === selectedId) return { ...o, z: minZ - 1 }
+      return o
+    })
+
+    setSortedObjects(next)
+  }
+
+  const handleBringForward = () => {
+    if (!selectedId) return
+
+    const sorted = [...objects].sort((a, b) => a.z - b.z)
+    const index = sorted.findIndex((o) => o.id === selectedId)
+
+    if (index < sorted.length - 1) {
+      const temp = sorted[index]
+      sorted[index] = sorted[index + 1]
+      sorted[index + 1] = temp
+    }
+
+    // normalize
+    const next = sorted.map((o, i) => ({ ...o, z: i }))
+    setObjects(next)
+    onLayoutChange?.(next)
+  }
+
+  const handleSendBackward = () => {
+    if (!selectedId) return
+
+    const sorted = [...objects].sort((a, b) => a.z - b.z)
+    const index = sorted.findIndex((o) => o.id === selectedId)
+
+    if (index > 0) {
+      const temp = sorted[index]
+      sorted[index] = sorted[index - 1]
+      sorted[index - 1] = temp
+    }
+
+    const next = sorted.map((o, i) => ({ ...o, z: i }))
+    setObjects(next)
+    onLayoutChange?.(next)
   }
 
   // Export image (later: upload to Firebase Storage → save user profile backgroundUrl)
@@ -233,7 +294,106 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
         <Stack spacing={1}>
           <Typography variant="subtitle2">Selected Item</Typography>
 
+          {selectedId && (
+            <>
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="subtitle2">Transform</Typography>
+
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    const obj = objects.find((o) => o.id === selectedId)
+                    if (!obj) return
+                    updateObject({ ...obj, scale: obj.scale + 0.1 })
+                  }}
+                >
+                  Zoom +
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    const obj = objects.find((o) => o.id === selectedId)
+                    if (!obj) return
+                    updateObject({
+                      ...obj,
+                      scale: Math.max(0.1, obj.scale - 0.1),
+                    })
+                  }}
+                >
+                  Zoom –
+                </Button>
+              </Stack>
+
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    const obj = objects.find((o) => o.id === selectedId)
+                    if (!obj) return
+                    updateObject({ ...obj, rotation: obj.rotation - 15 })
+                  }}
+                >
+                  ⟲ Rotate
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    const obj = objects.find((o) => o.id === selectedId)
+                    if (!obj) return
+                    updateObject({ ...obj, rotation: obj.rotation + 15 })
+                  }}
+                >
+                  ⟳ Rotate
+                </Button>
+              </Stack>
+            </>
+          )}
+
           <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!selectedId}
+              onClick={handleBringForward}
+            >
+              Bring Forward
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!selectedId}
+              onClick={handleSendBackward}
+            >
+              Send Backward
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!selectedId}
+              onClick={handleBringToFront}
+            >
+              Bring to Front
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!selectedId}
+              onClick={handleSendToBack}
+            >
+              Send to Back
+            </Button>
+
             <Button
               variant="contained"
               size="small"
