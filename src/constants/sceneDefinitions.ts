@@ -43,7 +43,7 @@ export const SCENES: Record<SceneTheme, SceneDefinition> = {
   garden: {
     id: 'garden',
     label: 'Garden',
-    backgroundColor: '#c6f1c1',
+    backgroundColor: '#97d7f3ff',
 
     categories: [
       // BIRDS
@@ -51,9 +51,9 @@ export const SCENES: Record<SceneTheme, SceneDefinition> = {
         id: 'birds',
         label: 'Birds',
         items: [
-          item('BlueBird.png', 0.9),
-          item('RedBird.png', 0.9),
-          item('GoldenBird.png', 0.9),
+          item('BlueBird.png'),
+          item('RedBird.png'),
+          item('GoldenBird.png'),
         ],
       },
 
@@ -126,6 +126,52 @@ export const SCENES: Record<SceneTheme, SceneDefinition> = {
           item('WalkWay10.png'),
           item('WalkWay11.png'),
         ],
+      },
+      // COLORED CLOUDS
+      {
+        id: 'colored_clouds',
+        label: 'Colored Clouds',
+        items: [
+          item('ColoredCloud.png'),
+          item('ColoredCloud1.png'),
+          item('ColoredCloud2.png'),
+          item('ColoredCloud3.png'),
+          item('ColoredCloud4.png'),
+          item('ColoredCloud5.png'),
+          item('ColoredCloud6.png'),
+        ],
+      },
+
+      // SKY VIEWS
+      {
+        id: 'sky_views',
+        label: 'Sky Views',
+        items: [
+          item('SkyView1.png'),
+          item('SkyView2.png'),
+          item('SkyView3.png'),
+        ],
+      },
+      // SUN BEAMS
+      {
+        id: 'sun_beams',
+        label: 'Sun Beams',
+        items: [
+          item('Sunbeam.png'),
+          item('Sunbeam1.png'),
+          item('Sunbeam2.png'),
+          item('Sunbeam3.png'),
+          item('Sunbeam4.png'),
+          item('Sunbeam5.png'),
+          item('Sunbeam6.png'),
+        ],
+      },
+
+      // RAINBOWS
+      {
+        id: 'rainbows',
+        label: 'Rainbows',
+        items: [item('Rainbow1.png'), item('Rainbow2.png')],
       },
     ],
   },
