@@ -77,6 +77,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ### Routing
 - Add routes for Profile, Homepage, Training, Scene Builder.
 
+
 ---
 
 ## Work Remaining
@@ -90,6 +91,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
   - Reset all stats if user wants to start fresh.
 - Add practice modes (timed drill, review-only, mixed tables).
 - Make Scene Builder item picker display item images instead of labels.
+- Replace temporary Home Page with proper copy and CTAs.
 
 - Implement offline-first caching with IndexedDB or localStorage.
 
