@@ -173,28 +173,6 @@ export const SCENES: Record<SceneTheme, SceneDefinition> = {
         label: 'Rainbows',
         items: [item('Rainbow1.png'), item('Rainbow2.png')],
       },
-
-      // PATHS & WALKWAYS
-      {
-        id: 'paths',
-        label: 'Paths & Walkways',
-        items: [
-          item('RockPath.png'),
-          item('WalkPath.png'),
-          item('WalkWay.png'),
-          item('WalkWay1.png'),
-          item('WalkWay2.png'),
-          item('WalkWay3.png'),
-          item('WalkWay4.png'),
-          item('WalkWay5.png'),
-          item('WalkWay6.png'),
-          item('WalkWay7.png'),
-          item('WalkWay8.png'),
-          item('WalkWay9.png'),
-          item('WalkWay10.png'),
-          item('WalkWay11.png'),
-        ],
-      },
     ],
   },
 
