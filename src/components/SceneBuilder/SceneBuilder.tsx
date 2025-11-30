@@ -164,7 +164,7 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
   }
 
   const handleBringToFront = () => {
-    if (!selectedId) return
+    if (!selectedId || objects.length === 0) return
     const maxZ = Math.max(...objects.map((o) => o.z))
     const next = objects.map((o) => {
       if (o.id === selectedId) return { ...o, z: maxZ + 1 }
@@ -174,7 +174,7 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
     setSortedObjects(next)
   }
   const handleSendToBack = () => {
-    if (!selectedId) return
+    if (!selectedId || objects.length === 0) return
     const minZ = Math.min(...objects.map((o) => o.z))
     const next = objects.map((o) => {
       if (o.id === selectedId) return { ...o, z: minZ - 1 }
@@ -198,8 +198,7 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
 
     // normalize
     const next = sorted.map((o, i) => ({ ...o, z: i }))
-    setObjects(next)
-    onLayoutChange?.(next)
+    setSortedObjects(next)
   }
 
   const handleSendBackward = () => {
@@ -215,8 +214,7 @@ export const SceneBuilder: FC<SceneBuilderProps> = ({
     }
 
     const next = sorted.map((o, i) => ({ ...o, z: i }))
-    setObjects(next)
-    onLayoutChange?.(next)
+    setSortedObjects(next)
   }
 
   // Export image (later: upload to Firebase Storage → save user profile backgroundUrl)
