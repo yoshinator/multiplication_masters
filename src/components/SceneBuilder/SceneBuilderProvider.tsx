@@ -1,0 +1,124 @@
+import { type FC, useRef, useState } from 'react'
+import { v4 as uuidv4 } from 'uuid'
+import { SceneBuilderContext } from './sceneBuilderContext'
+
+import type {
+  SceneItemDefinition,
+  SceneTheme,
+} from '../../constants/sceneDefinitions'
+
+import { normalizeZ, swapZ, bringToFront, sendToBack } from './sceneUtils'
+import type Konva from 'konva'
+import type { SceneObjectInstance } from './sceneBuilderTypes'
+
+type Props = {
+  theme: SceneTheme
+  unlockedItemIds: string[]
+  initialObjects?: SceneObjectInstance[]
+  onLayoutChange?: (objects: SceneObjectInstance[]) => void
+  children: React.ReactNode
+}
+
+export const SceneBuilderProvider: FC<Props> = ({
+  theme,
+  unlockedItemIds,
+  initialObjects = [],
+  onLayoutChange,
+  children,
+}) => {
+  const stageRef = useRef<Konva.Stage>(null)
+  const [objects, setObjects] = useState<SceneObjectInstance[]>(
+    normalizeZ(initialObjects)
+  )
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const updateObjects = (next: SceneObjectInstance[]) => {
+    const normalized = normalizeZ(next)
+    setObjects(normalized)
+    onLayoutChange?.(normalized)
+  }
+
+  // Add object
+  const addObject = (def: SceneItemDefinition) => {
+    const instance: SceneObjectInstance = {
+      id: uuidv4(),
+      itemId: def.id,
+      x: 200,
+      y: 200,
+      scale: def.defaultScale ?? 1,
+      rotation: 0,
+      z: objects.length,
+    }
+    updateObjects([...objects, instance])
+    setSelectedId(instance.id)
+  }
+
+  const updateObject = (updated: SceneObjectInstance) => {
+    updateObjects(objects.map((o) => (o.id === updated.id ? updated : o)))
+  }
+
+  const deleteSelected = () => {
+    if (!selectedId) return
+    updateObjects(objects.filter((o) => o.id !== selectedId))
+    setSelectedId(null)
+  }
+
+  const clearAll = () => {
+    updateObjects([])
+    setSelectedId(null)
+  }
+
+  const bringForward = () => {
+    if (!selectedId) return
+    updateObjects(swapZ(objects, selectedId, +1))
+  }
+
+  const sendBackward = () => {
+    if (!selectedId) return
+    updateObjects(swapZ(objects, selectedId, -1))
+  }
+
+  const bringToFrontFn = () => {
+    if (!selectedId) return
+    updateObjects(bringToFront(objects, selectedId))
+  }
+
+  const sendToBackFn = () => {
+    if (!selectedId) return
+    updateObjects(sendToBack(objects, selectedId))
+  }
+
+  const exportImage = () => {
+    const uri = stageRef.current?.toDataURL()
+    const win = window.open()
+    if (win) {
+      win.document.write(
+        `<iframe src="${uri}" frameborder="0" style="width:100%;height:100%;"></iframe>`
+      )
+    }
+  }
+
+  const value = {
+    theme,
+    stageRef,
+    objects,
+    selectedId,
+    unlockedItemIds,
+    addObject,
+    updateObject,
+    deleteSelected,
+    clearAll,
+    setSelectedId,
+    bringForward,
+    sendBackward,
+    bringToFront: bringToFrontFn,
+    sendToBack: sendToBackFn,
+    exportImage,
+  }
+
+  return (
+    <SceneBuilderContext.Provider value={value}>
+      {children}
+    </SceneBuilderContext.Provider>
+  )
+}
