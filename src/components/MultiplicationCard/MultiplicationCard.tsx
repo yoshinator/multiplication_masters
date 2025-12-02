@@ -34,7 +34,7 @@ const MultiplicationCard: FC = () => {
     if (currentCard && !isShowingAnswer) {
       startTimer()
     }
-  }, [currentCard?.id, isShowingAnswer, startTimer])
+  }, [currentCard, isShowingAnswer, startTimer])
 
   useEffect(() => {
     return () => {
@@ -66,9 +66,9 @@ const MultiplicationCard: FC = () => {
     setAnswer('')
     if (!currentCard) return
 
+    submitAnswer(currentCard, false, getElapsed())
     resetTimer()
     startTimer()
-    submitAnswer(currentCard, false, getElapsed())
   }
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {

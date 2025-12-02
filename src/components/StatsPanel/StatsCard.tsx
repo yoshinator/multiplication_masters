@@ -11,6 +11,7 @@ interface Props {
 const StatsCard: FC<Props> = ({ icon, label, value, color }) => (
   <Card
     sx={{
+      display: 'flex',
       flex: 1,
       p: 1,
       flexDirection: 'column',

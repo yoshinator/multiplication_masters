@@ -14,7 +14,7 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
   const [showAnimation, setShowAnimation] = useState(false)
   const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
 
-  // Calculate progress percent (0 to 100) at some point
+  // TODO: Calculate progress percent (0 to 100) to add to level progress
 
   // Trigger “Level Up!” animation
   useEffect(() => {
@@ -29,7 +29,6 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
 
   return (
     <Box sx={{ position: 'relative', width: '100%', maxWidth: 220 }}>
-      {' '}
       {/* Added a width constraint */}
       {/* Level Info Stack (replacing the bulky Card) */}
       <Box
@@ -60,7 +59,7 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
         {/* PROGRESS BAR (Now using actual session progress) */}
         <LinearProgress
           variant="determinate"
-          value={0} // 💡 USING CALCULATED PROGRESS
+          value={0} // SEE TODO: above.
           sx={{
             width: '100%',
             height: 8, // Slightly thicker bar
@@ -72,7 +71,7 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
           }}
         />
         <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
-          {/* figure this out */}0
+          {/* TODO: update  with calculated value*/}0
         </Typography>
       </Box>
       {/* 🎉 LEVEL UP ANIMATION (Framer Motion) - remains the same, adjusted styling slightly */}

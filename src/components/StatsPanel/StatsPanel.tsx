@@ -15,9 +15,9 @@ const StatsPanel: FC<Props> = ({ compact = false }) => {
     useReviewSession()
 
   const s = latestSession
-  const total = correctCount + incorrectCount
   const correct = isSessionActive ? correctCount : (s?.correct ?? 0)
   const incorrect = isSessionActive ? incorrectCount : (s?.incorrect ?? 0)
+  const total = correctCount + incorrect
 
   const accuracy = useMemo(() => {
     if (total === 0) return 100
@@ -44,21 +44,21 @@ const StatsPanel: FC<Props> = ({ compact = false }) => {
           icon={<CheckCircleOutlineIcon color="success" />}
           label="Correct"
           value={correct}
-          color="#00c853" // Success.main color
+          color="success.main"
         />
 
         <StatsCard
           icon={<CancelOutlinedIcon color="error" />}
           label="Incorrect"
           value={incorrect}
-          color="#d50000" // Error.main color
+          color="error.main"
         />
 
         <StatsCard
           icon={<TrendingUpIcon color="primary" />}
           label="Accuracy"
           value={`${accuracy}%`}
-          color="#3f51b5" // Primary.main color
+          color="primary.main"
         />
       </Box>
     )

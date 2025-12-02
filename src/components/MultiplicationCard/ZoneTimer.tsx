@@ -8,8 +8,8 @@ interface Props {
 const ZoneTimer: FC<Props> = ({ time, maxTime }) => {
   const progressPercent = Math.min(Math.max((time / maxTime) * 100, 0), 100)
 
-  // Snap to start if resetting
-  const isResetting = time >= maxTime - 0.1
+  //   The transition is disabled only when the bar is visually full
+  const isResetting = progressPercent >= 99.99
 
   return (
     <Box
