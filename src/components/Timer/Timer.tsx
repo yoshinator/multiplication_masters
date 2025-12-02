@@ -4,15 +4,11 @@ import { useTimerContext } from '../../contexts/timer/timerContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 
-interface Props {
-  sessionLength: number
-}
-
-const Timer: FC<Props> = ({ sessionLength }) => {
-  const { startSession, currentCard } = useCardSchedulerContext()
+const Timer: FC = () => {
+  const { currentCard } = useCardSchedulerContext()
   const { time, isRunning, startTimer, stopTimer, resetTimer } =
     useTimerContext()
-  const { isSessionActive } = useReviewSession()
+  const { isShowingAnswer } = useReviewSession()
 
   // convert ms → whole seconds
   const seconds = Math.ceil(time / 1000)
@@ -57,13 +53,11 @@ const Timer: FC<Props> = ({ sessionLength }) => {
 
       {/* CONTROLS */}
       <Box display="flex" gap={1}>
-        {!isRunning && (
+        {!isRunning && !isShowingAnswer && (
           <Button
             variant="contained"
             color="primary"
-            onClick={
-              isSessionActive ? startTimer : () => startSession(sessionLength)
-            }
+            onClick={startTimer}
             sx={{ px: 3 }}
           >
             {currentCard ? 'Resume' : 'Start'}

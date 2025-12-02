@@ -1,23 +1,28 @@
 import { type FC, useMemo } from 'react'
-import { Box, Card, Typography, Stack } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
-import {
-  CheckCircle,
-  Cancel,
-  EmojiEvents,
-  TrendingUp,
-  TrendingDown,
-  FlashOn,
-} from '@mui/icons-material'
-import StatsCard from './StatsCard'
 
-const StatsPanel: FC = () => {
+type Props = {
+  compact?: boolean
+}
+
+const circleStyle = (color: string) => ({
+  width: 70,
+  height: 70,
+  borderRadius: '50%',
+  border: `3px solid ${color}`,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontWeight: 700,
+})
+
+const StatsPanel: FC<Props> = ({ compact = false }) => {
   const { correctCount, incorrectCount, latestSession, isSessionActive } =
     useReviewSession()
 
-  const source = isSessionActive ? 'Live Session' : 'Last Session'
   const s = latestSession
-
   const correct = isSessionActive ? correctCount : (s?.correct ?? 0)
   const incorrect = isSessionActive ? incorrectCount : (s?.incorrect ?? 0)
 
@@ -26,84 +31,41 @@ const StatsPanel: FC = () => {
     return Math.round((correct / (correct + incorrect)) * 100)
   }, [correct, incorrect])
 
-  const avgTime = isSessionActive ? null : s?.avgResponseTime
-  const boxesUp = isSessionActive ? null : s?.boxesAdvanced
-  const boxesDown = isSessionActive ? null : s?.boxesRegressed
-
-  return (
-    <Box sx={{ mb: 3 }}>
-      {/* Session context */}
-      <Typography
-        variant="subtitle2"
-        sx={{ mb: 1, opacity: 0.7, fontWeight: 600, letterSpacing: 0.5 }}
+  if (compact) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+        }}
       >
-        {source}
-      </Typography>
+        <Box sx={circleStyle('#00c853')}>
+          <Typography variant="body2" sx={{ opacity: 0.7 }}>
+            OK
+          </Typography>
+          <Typography>{correct}</Typography>
+        </Box>
 
-      {/* Main Row */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <StatsCard
-          label="Correct"
-          value={correct}
-          icon={<CheckCircle color="success" />}
-          color="var(--mui-palette-success-main)"
-        />
-        <StatsCard
-          label="Incorrect"
-          value={incorrect}
-          icon={<Cancel color="error" />}
-          color="var(--mui-palette-error-main)"
-        />
-        <StatsCard
-          label="Accuracy"
-          value={`${accuracy}%`}
-          icon={<EmojiEvents color="warning" />}
-          color="var(--mui-palette-warning-main)"
-        />
+        <Box sx={circleStyle('#d50000')}>
+          <Typography variant="body2" sx={{ opacity: 0.7 }}>
+            Miss
+          </Typography>
+          <Typography>{incorrect}</Typography>
+        </Box>
+
+        <Box sx={circleStyle('#ffab00')}>
+          <Typography variant="body2" sx={{ opacity: 0.7 }}>
+            Acc
+          </Typography>
+          <Typography>{accuracy}%</Typography>
+        </Box>
       </Box>
+    )
+  }
 
-      {/* Extra Metrics (hide during session) */}
-      {!isSessionActive && latestSession && (
-        <Stack spacing={2}>
-          {/* Avg Response Time */}
-          <Card sx={{ p: 2, borderRadius: 3 }}>
-            <Typography fontWeight={600} sx={{ mb: 1 }}>
-              Response Time
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <FlashOn color="primary" />
-              <Typography>
-                Avg: <b>{avgTime?.toFixed(0)} ms</b>
-              </Typography>
-            </Box>
-          </Card>
-
-          {/* Box Advancements */}
-          <Card sx={{ p: 2, borderRadius: 3 }}>
-            <Typography fontWeight={600} sx={{ mb: 1 }}>
-              SRS Movement
-            </Typography>
-
-            <Box sx={{ display: 'flex', gap: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TrendingUp color="success" />
-                <Typography>
-                  Up: <b>{boxesUp}</b>
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TrendingDown color="error" />
-                <Typography>
-                  Down: <b>{boxesDown}</b>
-                </Typography>
-              </Box>
-            </Box>
-          </Card>
-        </Stack>
-      )}
-    </Box>
-  )
+  // Full version (if needed elsewhere)
+  return <div>Full Stats Here</div>
 }
 
 export default StatsPanel

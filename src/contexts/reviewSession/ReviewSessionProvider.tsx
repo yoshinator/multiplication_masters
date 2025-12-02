@@ -44,6 +44,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
   const [isSessionActive, setIsSessionActive] = useState(false)
 
+  const [isShowingAnswer, setIsShowingAnswer] = useState(false)
+  const showAnswer = () => setIsShowingAnswer(true)
+
+  const hideAnswer = () => setIsShowingAnswer(false)
+
   // Refs for logic
   const sessionStartRef = useRef<number | null>(null)
   const fastCorrectRef = useRef(0)
@@ -282,6 +287,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         latestSession,
         pendingUserCards: pendingUserCardsRef.current,
         isMastered,
+        isShowingAnswer,
+        showAnswer,
+        hideAnswer,
       }}
     >
       {children}
