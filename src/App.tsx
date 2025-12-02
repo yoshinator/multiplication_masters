@@ -6,7 +6,7 @@ import Header from './components/Header/Header'
 import { useUser } from './contexts/user/useUserContext'
 
 // Pages (you will create these shortly)
-import AppContent from './components/AppContent/AppContent'
+import PracticeArea from './components/PracticeArea/PracticeArea'
 import SceneBuilderPage from './pages/SceneBuilderPage/SceneBuilderPage'
 import ProfilePage from './pages/ProfilePage/ProfilePage'
 import PracticePage from './pages/PracticePage/PracticePage'
@@ -36,7 +36,7 @@ const App: FC = () => {
           {user ? (
             <>
               {/* Your main practice / session logic */}
-              <Route path={ROUTES.TRAIN} element={<AppContent />} />
+              <Route path={ROUTES.TRAIN} element={<PracticeArea />} />
 
               {/* Scene Builder */}
               <Route path={ROUTES.BUILDER} element={<SceneBuilderPage />} />

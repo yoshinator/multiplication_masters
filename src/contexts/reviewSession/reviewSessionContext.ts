@@ -14,6 +14,9 @@ interface ReviewSessionContextValue {
   latestSession: SessionRecord | null
   pendingUserCards: Record<string, UserCard>
   isMastered: boolean
+  isShowingAnswer: boolean
+  showAnswer: () => void
+  hideAnswer: () => void
 }
 
 export const ReviewSessionContext = createContext<
