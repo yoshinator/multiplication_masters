@@ -1,65 +1,65 @@
 import { type FC, useMemo } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box } from '@mui/material'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline' // Import icons
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
+import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
+import StatsCard from './StatsCard'
 
 type Props = {
   compact?: boolean
 }
-
-const circleStyle = (color: string) => ({
-  width: 70,
-  height: 70,
-  borderRadius: '50%',
-  border: `3px solid ${color}`,
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontWeight: 700,
-})
 
 const StatsPanel: FC<Props> = ({ compact = false }) => {
   const { correctCount, incorrectCount, latestSession, isSessionActive } =
     useReviewSession()
 
   const s = latestSession
+  const total = correctCount + incorrectCount
   const correct = isSessionActive ? correctCount : (s?.correct ?? 0)
   const incorrect = isSessionActive ? incorrectCount : (s?.incorrect ?? 0)
 
   const accuracy = useMemo(() => {
-    if (correct + incorrect === 0) return 100
-    return Math.round((correct / (correct + incorrect)) * 100)
-  }, [correct, incorrect])
+    if (total === 0) return 100
+    return Math.round((correct / total) * 100)
+  }, [correct, incorrect, total])
 
+  // The compact prop will now render the three StatsCards
   if (compact) {
     return (
       <Box
         sx={{
           display: 'flex',
-          gap: 2,
-          alignItems: 'center',
+          gap: 1.5, // Reduced gap slightly for compact layout
+          alignItems: 'stretch', // Make all cards stretch to the same height
+          // Added Box wrapper for visual cohesion with LevelPanel's style
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          p: 1.5,
         }}
       >
-        <Box sx={circleStyle('#00c853')}>
-          <Typography variant="body2" sx={{ opacity: 0.7 }}>
-            OK
-          </Typography>
-          <Typography>{correct}</Typography>
-        </Box>
+        <StatsCard
+          icon={<CheckCircleOutlineIcon color="success" />}
+          label="Correct"
+          value={correct}
+          color="#00c853" // Success.main color
+        />
 
-        <Box sx={circleStyle('#d50000')}>
-          <Typography variant="body2" sx={{ opacity: 0.7 }}>
-            Miss
-          </Typography>
-          <Typography>{incorrect}</Typography>
-        </Box>
+        <StatsCard
+          icon={<CancelOutlinedIcon color="error" />}
+          label="Incorrect"
+          value={incorrect}
+          color="#d50000" // Error.main color
+        />
 
-        <Box sx={circleStyle('#ffab00')}>
-          <Typography variant="body2" sx={{ opacity: 0.7 }}>
-            Acc
-          </Typography>
-          <Typography>{accuracy}%</Typography>
-        </Box>
+        <StatsCard
+          icon={<TrendingUpIcon color="primary" />}
+          label="Accuracy"
+          value={`${accuracy}%`}
+          color="#3f51b5" // Primary.main color
+        />
       </Box>
     )
   }

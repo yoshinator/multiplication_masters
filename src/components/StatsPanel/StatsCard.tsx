@@ -12,23 +12,25 @@ const StatsCard: FC<Props> = ({ icon, label, value, color }) => (
   <Card
     sx={{
       flex: 1,
-      p: 2,
-      display: 'flex',
+      p: 1,
       flexDirection: 'column',
       alignItems: 'center',
       textAlign: 'center',
-      borderRadius: 3,
-      borderBottom: `4px solid ${color}`,
-      boxShadow: '0px 6px 20px rgba(0,0,0,0.08), 0px 2px 8px rgba(0,0,0,0.04)',
+      borderRadius: 2,
+      borderBottom: `3px solid ${color}`,
+      boxShadow: 'none',
       transition: 'transform 0.25s ease',
       ':hover': { transform: 'translateY(-3px)' },
+      minWidth: 75,
     }}
   >
-    <Box sx={{ fontSize: 36 }}>{icon}</Box>
-    <Typography variant="h5" sx={{ fontWeight: 700 }}>
+    <Box sx={{ fontSize: 24 }}>{icon}</Box>
+
+    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
       {value}
     </Typography>
-    <Typography variant="subtitle2" sx={{ opacity: 0.7 }}>
+
+    <Typography variant="caption" sx={{ opacity: 0.7, lineHeight: 1.2 }}>
       {label}
     </Typography>
   </Card>

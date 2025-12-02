@@ -30,24 +30,33 @@ const PracticeArea: FC = () => {
       <Stack
         direction="row"
         spacing={2}
-        alignItems="center"
+        alignItems="flex-start" // 💡 Changed from 'center' to 'flex-start' for cleaner vertical alignment
         sx={{ mb: 2, justifyContent: 'space-between' }}
       >
-        <LevelPanel size="small" isMastered={isMastered} />
+        <LevelPanel isMastered={isMastered} />
 
-        <StatsPanel compact />
-
-        {/* Settings button */}
-        <Tooltip title="Session Settings">
-          <IconButton
-            onClick={() => setSettingsOpen(!settingsOpen)}
-            color="primary"
-          >
-            {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
-          </IconButton>
-        </Tooltip>
+        {/* StatsPanel sits next to LevelPanel */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 2,
+            alignItems: 'center',
+          }}
+        >
+          <StatsPanel compact />
+          {/* Settings button */}
+          <Tooltip title="Session Settings">
+            <IconButton
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              color="primary"
+            >
+              {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Stack>
-
       {/* Collapsible session settings */}
       <Collapse in={settingsOpen}>
         <Box
