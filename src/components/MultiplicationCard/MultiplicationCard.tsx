@@ -9,89 +9,7 @@ import {
   BOX_STAY,
 } from '../../constants/appConstants'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
-
-// --- ZONE TIMER SUB-COMPONENT ---
-const ZoneTimer: FC<{ time: number; maxTime: number }> = ({
-  time,
-  maxTime,
-}) => {
-  const progressPercent = Math.min(Math.max((time / maxTime) * 100, 0), 100)
-
-  // Snap to start if resetting
-  const isResetting = time >= maxTime - 0.1
-
-  return (
-    <Box
-      sx={{
-        position: 'relative',
-        height: 12,
-        width: '100%',
-        mt: 0,
-        bgcolor: 'grey.300', // The color of the "empty" track
-      }}
-    >
-      {/* Layer 1: The Colored Zones (Background) 
-         UPDATED: Switched to Vivid colors (Main/Dark/Light) instead of Pastels
-      */}
-      <Box
-        sx={{
-          display: 'flex',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-      >
-        {/* 0-15%: Deep Red */}
-        <Box sx={{ width: '15%', bgcolor: 'error.main' }} />
-
-        {/* 15-XX%: Orange-Red (Vivid) instead of Warning.Main */}
-        <Box sx={{ flex: 1, bgcolor: 'error.light' }} />
-
-        {/* XX-XX%: Amber (Vivid) instead of Warning.Light */}
-        <Box sx={{ flex: 1, bgcolor: 'warning.main' }} />
-
-        {/* End: Green */}
-        <Box sx={{ flex: 2, bgcolor: 'success.main' }} />
-      </Box>
-
-      {/* Layer 2: The "Curtain" (The Active Bar Indicator) */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          height: '100%',
-          width: `${progressPercent}%`,
-          // Changed to fully transparent so it doesn't lighten the colors below
-          bgcolor: 'transparent',
-          borderRight: '2px solid white',
-          transition: isResetting ? 'none' : 'width 0.1s linear',
-          zIndex: 2,
-        }}
-      />
-
-      {/* Layer 3: The "Future/Empty" area 
-         UPDATED: Increased opacity so the "future" colors don't bleed through
-         and wash out the look.
-      */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          height: '100%',
-          width: `${100 - progressPercent}%`,
-          bgcolor: 'grey.300', // Solid grey looks cleaner than semi-transparent white
-          opacity: 1, // Solid opacity prevents "ghosting"
-          zIndex: 3,
-          transition: isResetting ? 'none' : 'width 0.1s linear',
-        }}
-      />
-    </Box>
-  )
-}
+import ZoneTimer from './ZoneTimer'
 
 const MultiplicationCard: FC = () => {
   // COMPONENT STATE
@@ -243,7 +161,6 @@ const MultiplicationCard: FC = () => {
         </Box>
 
         <Timer />
-
         <ZoneTimer time={time} maxTime={BOX_REGRESS} />
 
         <Grid container spacing={3} sx={{ mt: 1 }}>
@@ -280,7 +197,6 @@ const MultiplicationCard: FC = () => {
             ) : (
               <form onSubmit={handleSubmit}>
                 <TextField
-                  type="number"
                   value={answer}
                   fullWidth
                   inputRef={inputRef}
