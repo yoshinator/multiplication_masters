@@ -16,7 +16,8 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  increment, // <--- IMPORTANT: Needed for atomic updates
+  increment,
+  updateDoc, // <--- IMPORTANT: Needed for atomic updates
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import type { User, UserCard } from '../../constants/dataModels'
@@ -26,6 +27,7 @@ import type { SessionRecord } from '../../constants/dataModels'
 import { BOX_ADVANCE } from '../../constants/appConstants'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import type { FieldValueAllowed } from '../../utilities/typeutils'
+import { useLogger } from '../../hooks/useLogger'
 
 interface Props {
   children: ReactNode
@@ -35,6 +37,7 @@ const defaultPendingUserCard = { correct: 0, incorrect: 0 }
 const SAVE_THRESHOLD = 5 // <--- Auto-save every 5 cards
 
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
+  const logger = useLogger()
   const { app, setUserCards } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
   const [isMastered, setIsMastered] = useState(false)
@@ -91,7 +94,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     return () => unsubscribe()
   }, [app, user])
 
-  // 1. Helper to push pending cards to DB
+  // 1. Helper to push pending cards and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
     if (!app || !user) return
     const cards = Object.values(pendingUserCardsRef.current)
@@ -120,7 +123,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     batch.update(userRef, {
       lifetimeCorrect: increment(pendingUserFieldsRef.current.correct),
       lifetimeIncorrect: increment(pendingUserFieldsRef.current.incorrect),
-      totalAnswers: increment(cards.length),
     })
 
     // C. Commit and Clear Pending
@@ -128,7 +130,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       await batch.commit()
     } catch (e) {
       // Log the failure, but don't re-throw.
-      console.error('Auto-save failed, clearing local pending state:', e)
+      logger('Auto-save failed, clearing local pending state:', e)
     } finally {
       // This block executes regardless of success or failure.
       // We must clear the local refs to prevent resending failed data.
@@ -253,7 +255,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         totalSessions: increment(1),
       }
       const localUserUpdates: Partial<User> = {
-        totalSessions: user.totalSessions + 1,
+        totalSessions: (user.totalSessions || 0) + 1,
       }
 
       if (mastered) {
@@ -263,7 +265,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       setIsMastered(mastered)
 
       // Perform the combined database updates
-      await setDoc(userRef, userDBUpdates, { merge: true })
+      await updateDoc(userRef, userDBUpdates)
 
       // Update local state instantly for UX
       updateUser(localUserUpdates)

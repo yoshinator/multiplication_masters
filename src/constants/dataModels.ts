@@ -38,15 +38,15 @@ export type UserCard = {
 
 export interface User {
   username: string
-  subscriptionStatus: 'free' | 'premium'
   createdAt: FieldValue | null
+  subscriptionStatus: 'free' | 'premium'
+
   activeGroup: number
   table: number
   totalAccuracy: number
 
   lifetimeCorrect: number
   lifetimeIncorrect: number
-
   totalSessions: number
 
   unlockedScenes?: SceneTheme[]
