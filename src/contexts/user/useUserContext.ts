@@ -1,6 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { User } from '../../components/Login/useLogin'
-
+import type { User } from '../../constants/dataModels'
 interface UserContextValue {
   user: User | null
   setUser: (u: User | null) => void

@@ -21,8 +21,10 @@ const initialUser: User = {
   activeGroup: 1,
   table: 12,
   totalAccuracy: 100,
-  highestGroupAccuracy: 100,
-  totalReps: 0,
+
+  lifetimeCorrect: 0,
+  lifetimeIncorrect: 0,
+  totalSessions: 0,
   subscriptionStatus: 'free',
 }
 
@@ -118,7 +120,7 @@ export const useLogin = () => {
         setLoading(false)
       }
     },
-    [app, loadUserCards, cards.length, logger]
+    [app, loadUserCards, cards.length, logger, setUser]
   )
 
   return { login: handleLogin, cards, loading, error, user }

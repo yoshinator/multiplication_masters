@@ -19,11 +19,13 @@ import {
   increment, // <--- IMPORTANT: Needed for atomic updates
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
-import type { UserCard } from '../../constants/dataModels'
+import type { User, UserCard } from '../../constants/dataModels'
 import { useUser } from '../user/useUserContext'
 import { ReviewSessionContext } from './reviewSessionContext'
 import type { SessionRecord } from '../../constants/dataModels'
 import { BOX_ADVANCE } from '../../constants/appConstants'
+import { omitUndefined } from '../../utilities/firebaseHelpers'
+import type { FieldValueAllowed } from '../../utilities/typeutils'
 
 interface Props {
   children: ReactNode
@@ -89,8 +91,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     return () => unsubscribe()
   }, [app, user])
 
-  // 1. Helper to flush pending cards to DB
-  const flushUpdates = useCallback(async () => {
+  // 1. Helper to push pending cards to DB
+  const commitSessionUpdates = useCallback(async () => {
     if (!app || !user) return
     const cards = Object.values(pendingUserCardsRef.current)
 
@@ -103,7 +105,12 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     // A. Update Cards
     for (const card of cards) {
       const cardRef = doc(db, 'users', user.username, 'UserCards', card.id)
-      batch.update(cardRef, card)
+      const cleanCardPayload = omitUndefined(card)
+
+      // Only update if there are fields left after cleaning
+      if (Object.keys(cleanCardPayload).length > 0) {
+        batch.update(cardRef, cleanCardPayload)
+      }
     }
 
     // B. Update User Lifetime Stats Atomically
@@ -113,16 +120,21 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     batch.update(userRef, {
       lifetimeCorrect: increment(pendingUserFieldsRef.current.correct),
       lifetimeIncorrect: increment(pendingUserFieldsRef.current.incorrect),
-      // If you still want total answers tracked:
       totalAnswers: increment(cards.length),
     })
 
     // C. Commit and Clear Pending
-    await batch.commit().catch((e) => console.error('Auto-save failed', e))
-
-    // Only clear the PENDING refs (the ones we just saved)
-    pendingUserCardsRef.current = {}
-    pendingUserFieldsRef.current = { ...defaultPendingUserCard }
+    try {
+      await batch.commit()
+    } catch (e) {
+      // Log the failure, but don't re-throw.
+      console.error('Auto-save failed, clearing local pending state:', e)
+    } finally {
+      // This block executes regardless of success or failure.
+      // We must clear the local refs to prevent resending failed data.
+      pendingUserCardsRef.current = {}
+      pendingUserFieldsRef.current = { ...defaultPendingUserCard }
+    }
 
     // Note: We do NOT reset sessionCorrectCount state here,
     // because the session is still active visually.
@@ -174,10 +186,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       // If we have 5 or more pending cards, save them now.
       // This ensures that if the tab closes, at most 4 cards are lost.
       if (Object.keys(pendingUserCardsRef.current).length >= SAVE_THRESHOLD) {
-        flushUpdates()
+        commitSessionUpdates()
       }
     },
-    [setUserCards, flushUpdates]
+    [setUserCards, commitSessionUpdates]
   )
 
   const resetSessionState = () => {
@@ -210,7 +222,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       const endedAt = Date.now()
 
       // Calculate totals based on State (which tracks the whole session)
-      // We can't use pendingUserFieldsRef here because it might have been cleared by flushUpdates
+      // We can't use pendingUserFieldsRef here because it might have been cleared by commitSessionUpdates
       const correct = sessionCorrectCount
       const incorrect = sessionIncorrectCount
 
@@ -230,18 +242,31 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       const accuracy = totalQuestions > 0 ? correct / totalQuestions : 0
 
       // Final Flush (Save any remaining cards pending in the buffer)
-      await flushUpdates()
+      await commitSessionUpdates()
 
       const db = getFirestore(app)
       const ref = doc(collection(db, 'users', user.username, 'Sessions'))
 
-      if (mastered) {
-        const userRef = doc(db, 'users', user.username)
-        setDoc(userRef, { activeGroup: user.activeGroup + 1 }, { merge: true })
-        updateUser({ activeGroup: user.activeGroup + 1 })
+      const userRef = doc(db, 'users', user.username)
+
+      const userDBUpdates: FieldValueAllowed<User> = {
+        totalSessions: increment(1),
+      }
+      const localUserUpdates: Partial<User> = {
+        totalSessions: user.totalSessions + 1,
       }
 
+      if (mastered) {
+        userDBUpdates.activeGroup = user.activeGroup + 1
+        localUserUpdates.activeGroup = user.activeGroup + 1
+      }
       setIsMastered(mastered)
+
+      // Perform the combined database updates
+      await setDoc(userRef, userDBUpdates, { merge: true })
+
+      // Update local state instantly for UX
+      updateUser(localUserUpdates)
 
       const sessionRecord: SessionRecord = {
         userId: user.username,
@@ -262,14 +287,14 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         statsByTable: statsByTableSnapshot,
       }
 
-      await setDoc(ref, sessionRecord)
+      await setDoc(ref, omitUndefined(sessionRecord))
 
       resetSessionState()
     },
     [
       app,
       user,
-      flushUpdates,
+      commitSessionUpdates,
       sessionCorrectCount,
       sessionIncorrectCount,
       updateUser,

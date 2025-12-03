@@ -8,6 +8,8 @@
  */
 
 import type { FieldValue } from 'firebase/firestore'
+import type { SceneTheme } from './sceneDefinitions'
+import type { SceneObjectInstance } from '../components/SceneBuilder/sceneBuilderTypes'
 
 export type UserCard = {
   avgResponseTime: number | null
@@ -36,13 +38,22 @@ export type UserCard = {
 
 export interface User {
   username: string
+  subscriptionStatus: 'free' | 'premium'
   createdAt: FieldValue | null
   activeGroup: number
   table: number
   totalAccuracy: number
-  highestGroupAccuracy: number
-  totalReps: number
-  subscriptionStatus: 'free' | 'premium'
+
+  lifetimeCorrect: number
+  lifetimeIncorrect: number
+
+  totalSessions: number
+
+  unlockedScenes?: SceneTheme[]
+  activeScene?: SceneTheme
+  placedScenes?: {
+    [sceneId in SceneTheme]?: SceneObjectInstance[]
+  }
 }
 
 export type SessionRecord = {

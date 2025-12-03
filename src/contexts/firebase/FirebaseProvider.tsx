@@ -3,11 +3,7 @@ import { useMemo, useState, useCallback, useEffect } from 'react' // Import useE
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import type { Analytics } from 'firebase/analytics'
-import {
-  FirebaseContext,
-  type FirebaseContextValue,
-  type UserCard,
-} from './firebaseContext'
+import { FirebaseContext, type FirebaseContextValue } from './firebaseContext'
 import {
   getFirestore,
   connectFirestoreEmulator,
@@ -19,6 +15,7 @@ import {
 } from 'firebase/firestore'
 import { seedCardsData } from '../../utilities/seedFirestore'
 import { useLogger } from '../../hooks/useLogger'
+import { type UserCard } from '../../constants/dataModels'
 
 type Props = {
   children: ReactNode
