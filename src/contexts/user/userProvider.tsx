@@ -4,6 +4,7 @@ import { UserContext } from './useUserContext'
 import { getFirestore, doc, updateDoc } from 'firebase/firestore'
 import { useLogger } from '../../hooks/useLogger'
 import { useFirebaseContext } from '../firebase/firebaseContext'
+import { omitUndefined } from '../../utilities/firebaseHelpers'
 
 type Props = {
   children: ReactNode
@@ -27,7 +28,7 @@ const UserProvider: FC<Props> = ({ children }) => {
     if (!app || !user) return
 
     // save and clear the buffer
-    const pending = pendingUpdateRef.current
+    const pending = omitUndefined(pendingUpdateRef.current)
     pendingUpdateRef.current = {}
 
     const db = getFirestore(app)

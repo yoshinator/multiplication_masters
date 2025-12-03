@@ -1,5 +1,3 @@
-// src/constants/sceneDefinitions.ts
-
 export type SceneTheme = 'garden' | 'spaceport' | 'farm' | 'garage'
 
 export type SceneItemDefinition = {

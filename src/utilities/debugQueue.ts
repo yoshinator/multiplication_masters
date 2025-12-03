@@ -1,5 +1,5 @@
 import type { MinPriorityQueue } from 'datastructures-js'
-import type { UserCard } from '../contexts/firebase/firebaseContext'
+import type { UserCard } from '../constants/dataModels'
 
 export function debugQueue(queue?: MinPriorityQueue<UserCard> | null) {
   try {
