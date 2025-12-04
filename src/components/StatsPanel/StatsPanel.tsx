@@ -5,14 +5,15 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import StatsCard from './StatsCard'
+import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 
 type Props = {
   compact?: boolean
 }
 
 const StatsPanel: FC<Props> = ({ compact = false }) => {
-  const { correctCount, incorrectCount, latestSession, isSessionActive } =
-    useReviewSession()
+  const { correctCount, incorrectCount, latestSession } = useReviewSession()
+  const { isSessionActive } = useSessionStatusContext()
 
   const s = latestSession
   const correct = isSessionActive ? correctCount : (s?.correct ?? 0)
