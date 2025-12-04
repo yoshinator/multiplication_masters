@@ -20,7 +20,7 @@ import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedu
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 
 const PracticeArea: FC = () => {
-  const [sessionLength, setSessionLength] = useState<number>(5)
+  const [sessionLength, setSessionLength] = useState<number>(30)
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false)
   const { isMastered } = useReviewSession()
   const { startSession } = useCardSchedulerContext()
