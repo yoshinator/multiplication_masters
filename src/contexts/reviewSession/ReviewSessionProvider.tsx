@@ -116,15 +116,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       }
     }
 
-    // B. Update User Lifetime Stats Atomically
-    // We use 'increment' so multiple flushes add up correctly
-    // without overwriting the total with just the session number.
-    const userRef = doc(db, 'users', user.username)
-    batch.update(userRef, {
-      lifetimeCorrect: increment(pendingUserFieldsRef.current.correct),
-      lifetimeIncorrect: increment(pendingUserFieldsRef.current.incorrect),
-    })
-
     // C. Commit and Clear Pending
     try {
       await batch.commit()
@@ -253,6 +244,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       const userDBUpdates: FieldValueAllowed<User> = {
         totalSessions: increment(1),
+        lifetimeCorrect: increment(correct),
+        lifetimeIncorrect: increment(incorrect),
       }
       const localUserUpdates: Partial<User> = {
         totalSessions: (user.totalSessions || 0) + 1,
