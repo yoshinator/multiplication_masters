@@ -28,6 +28,7 @@ import { BOX_ADVANCE } from '../../constants/appConstants'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import type { FieldValueAllowed } from '../../utilities/typeutils'
 import { useLogger } from '../../hooks/useLogger'
+import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 
 interface Props {
   children: ReactNode
@@ -42,8 +43,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
   const [isMastered, setIsMastered] = useState(false)
   const { user, updateUser } = useUser()
-
-  const [isSessionActive, setIsSessionActive] = useState(false)
+  const { setIsSessionActive } = useSessionStatusContext()
 
   const [isShowingAnswer, setIsShowingAnswer] = useState(false)
   const showAnswer = () => setIsShowingAnswer(true)
@@ -289,7 +289,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         incorrectCount:
           totalAnswersRef.current -
           (fastCorrectRef.current + slowCorrectRef.current),
-        isSessionActive,
         latestSession,
         pendingUserCards: pendingUserCardsRef.current,
         isMastered,

@@ -10,7 +10,6 @@ interface ReviewSessionContextValue {
     sessionLength: number,
     mastered: boolean
   ) => Promise<void>
-  isSessionActive: boolean
   latestSession: SessionRecord | null
   pendingUserCards: Record<string, UserCard>
   isMastered: boolean

@@ -17,12 +17,14 @@ import StatsPanel from '../StatsPanel/StatsPanel'
 import LevelPanel from '../LevelPanel/LevelPanel'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
+import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 
 const PracticeArea: FC = () => {
   const [sessionLength, setSessionLength] = useState<number>(5)
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false)
-  const { isMastered, isSessionActive } = useReviewSession()
+  const { isMastered } = useReviewSession()
   const { startSession } = useCardSchedulerContext()
+  const { isSessionActive } = useSessionStatusContext()
 
   return (
     <Box sx={{ width: '100%', p: 2 }}>
