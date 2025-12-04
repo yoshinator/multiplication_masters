@@ -1,10 +1,33 @@
 import { type FC } from 'react'
 import { Box } from '@mui/material'
+import {
+  BOX_ADVANCE,
+  BOX_REGRESS,
+  BOX_STAY,
+} from '../../constants/appConstants'
 
 interface Props {
   time: number
   maxTime: number
 }
+
+// Total time represented by the zones (9000ms)
+const TOTAL_THRESHOLD_MS = BOX_REGRESS
+
+// Calculate the duration of each section
+const DURATION_ADVANCE_MS = BOX_ADVANCE
+const DURATION_STAY_MS = BOX_STAY - BOX_ADVANCE
+const DURATION_REGRESS_MS = TOTAL_THRESHOLD_MS - BOX_STAY
+
+const TIMEOUT_ZONE_PERCENT = 1 // 1% for the final error.main zone
+const AVAILABLE_PERCENT = 100 - TIMEOUT_ZONE_PERCENT // 99% for the three main zones
+
+// Calculate proportional widths for the 99%
+const ADVANCE_WIDTH =
+  (DURATION_ADVANCE_MS / TOTAL_THRESHOLD_MS) * AVAILABLE_PERCENT
+const STAY_WIDTH = (DURATION_STAY_MS / TOTAL_THRESHOLD_MS) * AVAILABLE_PERCENT
+const REGRESS_WIDTH =
+  (DURATION_REGRESS_MS / TOTAL_THRESHOLD_MS) * AVAILABLE_PERCENT
 const ZoneTimer: FC<Props> = ({ time, maxTime }) => {
   const progressPercent = Math.min(Math.max((time / maxTime) * 100, 0), 100)
 
@@ -21,9 +44,7 @@ const ZoneTimer: FC<Props> = ({ time, maxTime }) => {
         bgcolor: 'grey.300', // The color of the "empty" track
       }}
     >
-      {/* Layer 1: The Colored Zones (Background) 
-         UPDATED: Switched to Vivid colors (Main/Dark/Light) instead of Pastels
-      */}
+      {/* Layer 1: The Colored Zones (Background)*/}
       <Box
         sx={{
           display: 'flex',
@@ -34,17 +55,12 @@ const ZoneTimer: FC<Props> = ({ time, maxTime }) => {
           bottom: 0,
         }}
       >
-        {/* 0-15%: Deep Red */}
-        <Box sx={{ width: '15%', bgcolor: 'error.main' }} />
-
-        {/* 15-XX%: Orange-Red (Vivid) instead of Warning.Main */}
-        <Box sx={{ flex: 1, bgcolor: 'error.light' }} />
-
-        {/* XX-XX%: Amber (Vivid) instead of Warning.Light */}
-        <Box sx={{ flex: 1, bgcolor: 'warning.main' }} />
-
-        {/* End: Green */}
-        <Box sx={{ flex: 2, bgcolor: 'success.main' }} />
+        <Box
+          sx={{ width: `${TIMEOUT_ZONE_PERCENT}%`, bgcolor: 'error.main' }}
+        />
+        <Box sx={{ width: `${REGRESS_WIDTH}%`, bgcolor: 'warning.main' }} />
+        <Box sx={{ width: `${STAY_WIDTH}%`, bgcolor: 'warning.light' }} />
+        <Box sx={{ width: `${ADVANCE_WIDTH}%`, bgcolor: 'success.main' }} />
       </Box>
 
       {/* Layer 2: The "Curtain" (The Active Bar Indicator) */}
@@ -64,7 +80,6 @@ const ZoneTimer: FC<Props> = ({ time, maxTime }) => {
       />
 
       {/* Layer 3: The "Future/Empty" area 
-         UPDATED: Increased opacity so the "future" colors don't bleed through
          and wash out the look.
       */}
       <Box
