@@ -23,7 +23,7 @@ const StatsPanel: FC<Props> = ({ compact = false }) => {
   const accuracy = useMemo(() => {
     if (total === 0) return 100
     return Math.round((correct / total) * 100)
-  }, [correct, incorrect, total])
+  }, [correct, total])
 
   // The compact prop will now render the three StatsCards
   if (compact) {
