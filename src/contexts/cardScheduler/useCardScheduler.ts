@@ -14,6 +14,7 @@ import {
 
 import { shuffleOnce, SHUFFLE_THRESHOLDS } from './helpers/shuffleUtils'
 import { buildQueue } from './helpers/queueBuilder'
+import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
@@ -27,12 +28,14 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const [estimatedUniqueCards, setEstimatedUniqueCards] = useState(0)
   const sessionLengthRef = useRef(30)
   const shuffleCountsRef = useRef(new Set<number>())
+  const { setIsSessionActive } = useSessionStatusContext()
 
   const startSession = useCallback(
     (userSessionLength: number) => {
       sessionLengthRef.current = userSessionLength
       shuffleCountsRef.current = new Set<number>()
       if (!userCards?.length || !user) return
+      setIsSessionActive(true)
 
       logger(
         `🚀 Starting session. Building queue with size ${userSessionLength}`

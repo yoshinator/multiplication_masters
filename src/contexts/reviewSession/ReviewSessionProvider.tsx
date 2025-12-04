@@ -28,6 +28,7 @@ import { BOX_ADVANCE } from '../../constants/appConstants'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import type { FieldValueAllowed } from '../../utilities/typeutils'
 import { useLogger } from '../../hooks/useLogger'
+import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 
 interface Props {
   children: ReactNode
@@ -42,12 +43,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
   const [isMastered, setIsMastered] = useState(false)
   const { user, updateUser } = useUser()
-
-  // Renamed for clarity: These only track THIS active session
-  const [sessionCorrectCount, setSessionCorrectCount] = useState(0)
-  const [sessionIncorrectCount, setSessionIncorrectCount] = useState(0)
-
-  const [isSessionActive, setIsSessionActive] = useState(false)
+  const { setIsSessionActive } = useSessionStatusContext()
 
   const [isShowingAnswer, setIsShowingAnswer] = useState(false)
   const showAnswer = () => setIsShowingAnswer(true)
@@ -116,15 +112,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       }
     }
 
-    // B. Update User Lifetime Stats Atomically
-    // We use 'increment' so multiple flushes add up correctly
-    // without overwriting the total with just the session number.
-    const userRef = doc(db, 'users', user.username)
-    batch.update(userRef, {
-      lifetimeCorrect: increment(pendingUserFieldsRef.current.correct),
-      lifetimeIncorrect: increment(pendingUserFieldsRef.current.incorrect),
-    })
-
     // C. Commit and Clear Pending
     try {
       await batch.commit()
@@ -149,13 +136,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       if (card.wasLastReviewCorrect) {
         pendingUserFieldsRef.current.correct += 1
-        setSessionCorrectCount((prev) => prev + 1) // UI Update
 
         if (card.lastElapsedTime <= BOX_ADVANCE) fastCorrectRef.current++
         else slowCorrectRef.current++
       } else {
         pendingUserFieldsRef.current.incorrect += 1
-        setSessionIncorrectCount((prev) => prev + 1) // UI Update
       }
 
       // 2. Optimistic UI Update for Cards
@@ -204,8 +189,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     totalElapsedRef.current = 0
     totalAnswersRef.current = 0
     statsByTableRef.current = {}
-    setSessionCorrectCount(0)
-    setSessionIncorrectCount(0)
     setIsSessionActive(false)
 
     // Clear refs manually just in case
@@ -220,13 +203,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       mastered: boolean
     ) => {
       if (!app || !user || !sessionStartRef.current) return
+      const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
+      const finalTotalAnswers = totalAnswersRef.current
+      const finalIncorrect = finalTotalAnswers - finalCorrect
 
       const endedAt = Date.now()
-
-      // Calculate totals based on State (which tracks the whole session)
-      // We can't use pendingUserFieldsRef here because it might have been cleared by commitSessionUpdates
-      const correct = sessionCorrectCount
-      const incorrect = sessionIncorrectCount
 
       const statsByTableSnapshot = { ...statsByTableRef.current }
       const fastCorrect = fastCorrectRef.current
@@ -240,8 +221,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       // Safety Checks for Math
       const avgResponseTime = totalAnswers > 0 ? totalElapsed / totalAnswers : 0
-      const totalQuestions = correct + incorrect
-      const accuracy = totalQuestions > 0 ? correct / totalQuestions : 0
+
+      const accuracy =
+        finalTotalAnswers > 0 ? finalCorrect / finalTotalAnswers : 0
 
       // Final Flush (Save any remaining cards pending in the buffer)
       await commitSessionUpdates()
@@ -253,6 +235,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       const userDBUpdates: FieldValueAllowed<User> = {
         totalSessions: increment(1),
+        lifetimeCorrect: increment(finalCorrect),
+        lifetimeIncorrect: increment(finalIncorrect),
       }
       const localUserUpdates: Partial<User> = {
         totalSessions: (user.totalSessions || 0) + 1,
@@ -277,8 +261,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         startedAt: sessionStartRef.current,
         endedAt,
         durationMs: endedAt - sessionStartRef.current,
-        correct,
-        incorrect,
+        correct: finalCorrect,
+        incorrect: finalIncorrect,
         accuracy,
         avgResponseTime,
         fastCorrect,
@@ -293,29 +277,24 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       resetSessionState()
     },
-    [
-      app,
-      user,
-      commitSessionUpdates,
-      sessionCorrectCount,
-      sessionIncorrectCount,
-      updateUser,
-    ]
+    [app, user, commitSessionUpdates, updateUser]
   )
 
   return (
     <ReviewSessionContext.Provider
       value={{
         addUpdatedCardToSession,
-        correctCount: sessionCorrectCount, // Map to context API
-        incorrectCount: sessionIncorrectCount, // Map to context API
-        finishSession,
-        isSessionActive,
+        // Ref changes do not cause re-renders. addUpdatedCardToSession does the trick.
+        correctCount: fastCorrectRef.current + slowCorrectRef.current,
+        incorrectCount:
+          totalAnswersRef.current -
+          (fastCorrectRef.current + slowCorrectRef.current),
         latestSession,
         pendingUserCards: pendingUserCardsRef.current,
         isMastered,
         isShowingAnswer,
         showAnswer,
+        finishSession,
         hideAnswer,
       }}
     >
