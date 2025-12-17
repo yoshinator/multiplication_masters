@@ -18,7 +18,7 @@ const StatsPanel: FC<Props> = ({ compact = false }) => {
   const s = latestSession
   const correct = isSessionActive ? correctCount : (s?.correct ?? 0)
   const incorrect = isSessionActive ? incorrectCount : (s?.incorrect ?? 0)
-  const total = correctCount + incorrect
+  const total = correct + incorrect
 
   const accuracy = useMemo(() => {
     if (total === 0) return 100

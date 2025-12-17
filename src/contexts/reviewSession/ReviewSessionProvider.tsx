@@ -41,7 +41,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
   const { app, setUserCards } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
-  const [isMastered, setIsMastered] = useState(false)
+  const [percentageMastered, setPercentageMastered] = useState(0)
   const { user, updateUser } = useUser()
   const { setIsSessionActive } = useSessionStatusContext()
 
@@ -200,7 +200,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     async (
       sessionType: SessionRecord['sessionType'],
       sessionLength: number,
-      mastered: boolean
+      percentageMastered: number
     ) => {
       if (!app || !user || !sessionStartRef.current) return
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
@@ -242,11 +242,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         totalSessions: (user.totalSessions || 0) + 1,
       }
 
-      if (mastered) {
+      if (percentageMastered >= 80) {
         userDBUpdates.activeGroup = user.activeGroup + 1
         localUserUpdates.activeGroup = user.activeGroup + 1
       }
-      setIsMastered(mastered)
+      setPercentageMastered(percentageMastered)
 
       // Perform the combined database updates
       await updateDoc(userRef, userDBUpdates)
@@ -291,7 +291,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
           (fastCorrectRef.current + slowCorrectRef.current),
         latestSession,
         pendingUserCards: pendingUserCardsRef.current,
-        isMastered,
+        percentageMastered,
         isShowingAnswer,
         showAnswer,
         finishSession,

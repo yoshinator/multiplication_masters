@@ -8,8 +8,8 @@ import { useReviewSession } from '../reviewSession/reviewSessionContext'
 
 import {
   computeNewBox,
-  isGroupMastered,
   estimateReviewLoad,
+  percentMastered,
 } from './helpers/srsLogic'
 
 import { shuffleOnce, SHUFFLE_THRESHOLDS } from './helpers/shuffleUtils'
@@ -28,40 +28,35 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const [estimatedUniqueCards, setEstimatedUniqueCards] = useState(0)
   const sessionLengthRef = useRef(30)
   const shuffleCountsRef = useRef(new Set<number>())
-  const { setIsSessionActive } = useSessionStatusContext()
+  const { setIsSessionActive, sessionLength } = useSessionStatusContext()
 
-  const startSession = useCallback(
-    (userSessionLength: number) => {
-      sessionLengthRef.current = userSessionLength
-      shuffleCountsRef.current = new Set<number>()
-      if (!userCards?.length || !user) return
-      setIsSessionActive(true)
+  const startSession = useCallback(() => {
+    sessionLengthRef.current = sessionLength
+    shuffleCountsRef.current = new Set<number>()
+    if (!userCards?.length || !user) return
+    setIsSessionActive(true)
 
-      logger(
-        `🚀 Starting session. Building queue with size ${userSessionLength}`
-      )
-      const built = buildQueue(userCards, user, userSessionLength, logger)
+    logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
+    const built = buildQueue(userCards, user, sessionLength, logger)
 
-      if (!built) return
+    if (!built) return
 
-      queueRef.current = built.queue
+    queueRef.current = built.queue
 
-      const estimates = estimateReviewLoad(built.sessionCards)
-      setEstimatedReviews(estimates.estimatedReviews)
-      setEstimatedUniqueCards(estimates.uniqueCards)
+    const estimates = estimateReviewLoad(built.sessionCards)
+    setEstimatedReviews(estimates.estimatedReviews)
+    setEstimatedUniqueCards(estimates.uniqueCards)
 
-      logger('📥 Queue built:', debugQueue(queueRef.current))
-      logger('📏 Queue size:', queueRef.current?.size())
-      logger('📊 Estimated reviews:', estimates)
+    logger('📥 Queue built:', debugQueue(queueRef.current))
+    logger('📏 Queue size:', queueRef.current?.size())
+    logger('📊 Estimated reviews:', estimates)
 
-      const first = queueRef.current?.dequeue() ?? null
-      setCurrentCard(first)
-      setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
+    const first = queueRef.current?.dequeue() ?? null
+    setCurrentCard(first)
+    setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
 
-      logger('➡️ First card:', first)
-    },
-    [userCards, user, logger]
-  )
+    logger('➡️ First card:', first)
+  }, [userCards, user, logger])
 
   const getNextCard = useCallback(() => {
     const q = queueRef.current
@@ -136,11 +131,16 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
       const allUpdatedCards = userCards.map((c) => pendingUserCards[c.id] || c)
       if (!next && (!q || q.size() === 0)) {
-        const mastered = user
-          ? isGroupMastered(allUpdatedCards, user.activeGroup, user.table)
-          : false
+        const percentageMastered =
+          (user &&
+            percentMastered(allUpdatedCards, user.activeGroup, user.table)) ||
+          0
 
-        finishSession('multiplication', sessionLengthRef.current, mastered)
+        finishSession(
+          'multiplication',
+          sessionLengthRef.current,
+          percentageMastered
+        )
       }
 
       return updated

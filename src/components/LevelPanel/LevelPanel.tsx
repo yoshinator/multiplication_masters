@@ -1,40 +1,33 @@
 import { type FC, useEffect, useState } from 'react'
-import { Box, Typography, LinearProgress } from '@mui/material' // Removed Card
+import { Box, Typography, LinearProgress } from '@mui/material'
 import { EmojiEvents } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useUser } from '../../contexts/user/useUserContext'
 
-interface Props {
-  isMastered: boolean | null // value passed from session context AFTER session ends
-}
-
-const LevelPanel: FC<Props> = ({ isMastered }) => {
+const LevelPanel: FC = () => {
+  const { percentageMastered } = useReviewSession()
   const { user } = useUser()
 
   const [showAnimation, setShowAnimation] = useState(false)
   const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
 
-  // TODO: Calculate progress percent (0 to 100) to add to level progress
-
   // Trigger “Level Up!” animation
   useEffect(() => {
-    if (isMastered) {
+    if (percentageMastered >= 80) {
       setLocalLevel((prev: number) => prev + 1)
       setShowAnimation(true)
 
       const timer = setTimeout(() => setShowAnimation(false), 2400)
       return () => clearTimeout(timer)
     }
-  }, [isMastered])
-
+  }, [percentageMastered])
+  console.log({ percentageMastered })
   return (
     <Box sx={{ position: 'relative', width: '100%', maxWidth: 220 }}>
-      {/* Added a width constraint */}
-      {/* Level Info Stack (replacing the bulky Card) */}
       <Box
         sx={{
           p: 1.5,
-          // Removed Card styling, aligning with StatPanel's internal Boxes
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
@@ -59,7 +52,7 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
         {/* PROGRESS BAR (Now using actual session progress) */}
         <LinearProgress
           variant="determinate"
-          value={0} // SEE TODO: above.
+          value={percentageMastered}
           sx={{
             width: '100%',
             height: 8, // Slightly thicker bar
@@ -71,7 +64,7 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
           }}
         />
         <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
-          {/* TODO: update  with calculated value*/}0
+          {percentageMastered}%
         </Typography>
       </Box>
       {/* 🎉 LEVEL UP ANIMATION (Framer Motion) - remains the same, adjusted styling slightly */}

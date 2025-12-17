@@ -7,10 +7,16 @@ interface Props {
 
 const SessionStatusProvider: FC<Props> = ({ children }) => {
   const [isSessionActive, setIsSessionActive] = useState(false)
+  const [sessionLength, setSessionLength] = useState(15)
 
   return (
     <SessionStatusContext.Provider
-      value={{ isSessionActive, setIsSessionActive }}
+      value={{
+        isSessionActive,
+        setIsSessionActive,
+        sessionLength,
+        setSessionLength,
+      }}
     >
       {children}
     </SessionStatusContext.Provider>
