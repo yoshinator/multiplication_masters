@@ -8,11 +8,11 @@ interface ReviewSessionContextValue {
   finishSession: (
     sessionType: 'multiplication' | 'division' | 'mixed',
     sessionLength: number,
-    mastered: boolean
+    percentageMastered: number
   ) => Promise<void>
   latestSession: SessionRecord | null
   pendingUserCards: Record<string, UserCard>
-  isMastered: boolean
+  percentageMastered: number
   isShowingAnswer: boolean
   showAnswer: () => void
   hideAnswer: () => void

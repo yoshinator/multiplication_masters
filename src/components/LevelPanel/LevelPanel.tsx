@@ -1,40 +1,42 @@
-import { type FC, useEffect, useState } from 'react'
-import { Box, Typography, LinearProgress } from '@mui/material' // Removed Card
+import { type FC, useEffect, useRef, useState } from 'react'
+import { Box, Typography, LinearProgress } from '@mui/material'
 import { EmojiEvents } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useUser } from '../../contexts/user/useUserContext'
 
-interface Props {
-  isMastered: boolean | null // value passed from session context AFTER session ends
-}
+const THRESHOLD = 80
 
-const LevelPanel: FC<Props> = ({ isMastered }) => {
+const LevelPanel: FC = () => {
+  const { percentageMastered } = useReviewSession()
   const { user } = useUser()
 
   const [showAnimation, setShowAnimation] = useState(false)
   const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
+  const prevPercentRef = useRef<number>(percentageMastered)
 
-  // TODO: Calculate progress percent (0 to 100) to add to level progress
-
-  // Trigger “Level Up!” animation
+  // Trigger “Level Up!” animation when Once when threshold is crossed.
   useEffect(() => {
-    if (isMastered) {
-      setLocalLevel((prev: number) => prev + 1)
-      setShowAnimation(true)
+    const prevPercentage = prevPercentRef.current
+    const crossedThresholdOnce =
+      prevPercentage < THRESHOLD && percentageMastered >= THRESHOLD
 
-      const timer = setTimeout(() => setShowAnimation(false), 2400)
-      return () => clearTimeout(timer)
+    if (!crossedThresholdOnce) {
+      return
     }
-  }, [isMastered])
+
+    setLocalLevel((prevLevel: number) => prevLevel + 1)
+    setShowAnimation(true)
+
+    const timer = setTimeout(() => setShowAnimation(false), 2400)
+    return () => clearTimeout(timer)
+  }, [percentageMastered])
 
   return (
     <Box sx={{ position: 'relative', width: '100%', maxWidth: 220 }}>
-      {/* Added a width constraint */}
-      {/* Level Info Stack (replacing the bulky Card) */}
       <Box
         sx={{
           p: 1.5,
-          // Removed Card styling, aligning with StatPanel's internal Boxes
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
@@ -59,7 +61,7 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
         {/* PROGRESS BAR (Now using actual session progress) */}
         <LinearProgress
           variant="determinate"
-          value={0} // SEE TODO: above.
+          value={percentageMastered}
           sx={{
             width: '100%',
             height: 8, // Slightly thicker bar
@@ -71,16 +73,16 @@ const LevelPanel: FC<Props> = ({ isMastered }) => {
           }}
         />
         <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
-          {/* TODO: update  with calculated value*/}0
+          {percentageMastered}%
         </Typography>
       </Box>
       {/* 🎉 LEVEL UP ANIMATION (Framer Motion) - remains the same, adjusted styling slightly */}
       <AnimatePresence>
         {showAnimation && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.4, y: -30 }}
-            animate={{ opacity: 1, scale: 1, y: -45 }} // Moved up slightly
-            exit={{ opacity: 0, scale: 0.5, y: -20 }}
+            initial={{ opacity: 0, scale: 0.1, y: -30 }}
+            animate={{ opacity: 1, scale: 0.4, y: -45 }} // Moved up slightly
+            exit={{ opacity: 0, scale: 0.2, y: -20 }}
             transition={{ type: 'spring', stiffness: 180, damping: 12 }}
             style={{
               position: 'absolute',

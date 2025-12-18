@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react'
 import type { UserCard } from '../../constants/dataModels'
 
 interface CardSchedulerContextValue {
-  startSession: (sessionLength: number) => void
+  startSession: () => void
   getNextCard: () => UserCard | null
   submitAnswer: (card: UserCard, correct: boolean, elapsed: number) => void
   currentCard: UserCard | null

@@ -7,7 +7,7 @@
  *
  */
 
-import type { FieldValue } from 'firebase/firestore'
+import type { Timestamp } from 'firebase/firestore'
 import type { SceneTheme } from './sceneDefinitions'
 import type { SceneObjectInstance } from '../components/SceneBuilder/sceneBuilderTypes'
 
@@ -38,7 +38,8 @@ export type UserCard = {
 
 export interface User {
   username: string
-  createdAt: FieldValue | null
+  createdAt: Timestamp | null
+  lastLogin: Timestamp | null
   subscriptionStatus: 'free' | 'premium'
 
   activeGroup: number

@@ -25,11 +25,19 @@ export function isGroupMastered(
   group: number,
   table: number
 ) {
-  const groupCards = cards.filter((c) => c.group === group && c.table === table)
-  if (groupCards.length === 0) return false
+  return percentMastered(cards, group, table) >= 80
+}
 
-  // 36 cards per group for 12 table. Level up when 29+ are in box > 3 ~ 80% mastered
-  return groupCards.filter((c) => c.box > 3).length > 29
+export function percentMastered(
+  cards: UserCard[],
+  group: number,
+  table: number
+): number {
+  const groupCards = cards.filter((c) => c.group === group && c.table === table)
+  if (groupCards.length === 0) return 0
+
+  const masteredCount = groupCards.filter((c) => c.box > 3).length
+  return Math.round((masteredCount / groupCards.length) * 100)
 }
 
 export function estimateReviewsForCard(card: UserCard): number {

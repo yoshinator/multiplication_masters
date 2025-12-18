@@ -8,6 +8,8 @@ import {
 interface SessionStatusContextValue {
   isSessionActive: boolean
   setIsSessionActive: Dispatch<SetStateAction<boolean>>
+  sessionLength: number
+  setSessionLength: Dispatch<SetStateAction<number>>
 }
 
 export const SessionStatusContext =

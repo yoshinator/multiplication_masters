@@ -1,119 +1,47 @@
-import { useState, type FC } from 'react'
-import {
-  Box,
-  Collapse,
-  IconButton,
-  Stack,
-  Typography,
-  Tooltip,
-  Divider,
-  Button,
-} from '@mui/material'
-import SettingsIcon from '@mui/icons-material/Settings'
-import CloseIcon from '@mui/icons-material/Close'
+import { type FC } from 'react'
+import { Box, Button, Typography } from '@mui/material'
+
 import TimerContextProvider from '../../contexts/timer/TimerProvider'
 import MultiplicationCard from '../MultiplicationCard/MultiplicationCard'
 import StatsPanel from '../StatsPanel/StatsPanel'
 import LevelPanel from '../LevelPanel/LevelPanel'
-import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
+import SessionSummary from '../SessionSummary/SessionSummary'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
+import { useUser } from '../../contexts/user/useUserContext'
+import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 
 const PracticeArea: FC = () => {
-  const [sessionLength, setSessionLength] = useState<number>(30)
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(false)
-  const { isMastered } = useReviewSession()
   const { startSession } = useCardSchedulerContext()
   const { isSessionActive } = useSessionStatusContext()
+  const { latestSession } = useReviewSession()
+  const { user } = useUser()
 
+  const isPlayedSession =
+    (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
   return (
-    <Box sx={{ width: '100%', p: 2 }}>
+    <Box
+      sx={{
+        width: '100%',
+        p: 2,
+        height: 'calc(100vh - 64px)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+      }}
+    >
       {/* TOP HUD: Level + Stats */}
-      <Stack
-        direction="row"
-        spacing={2}
-        alignItems="flex-start" // 💡 Changed from 'center' to 'flex-start' for cleaner vertical alignment
-        sx={{ mb: 2, justifyContent: 'space-between' }}
+
+      {/* StatsPanel sits next to LevelPanel */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
       >
-        <LevelPanel isMastered={isMastered} />
-
-        {/* StatsPanel sits next to LevelPanel */}
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 2,
-            alignItems: 'center',
-          }}
-        >
-          <StatsPanel compact />
-          {/* Settings button */}
-          <Tooltip title="Session Settings">
-            <IconButton
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              color="primary"
-            >
-              {settingsOpen ? <CloseIcon /> : <SettingsIcon />}
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Stack>
-      {/* Collapsible session settings */}
-      <Collapse in={settingsOpen}>
-        <Box
-          sx={{
-            p: 2,
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Cards per Session
-          </Typography>
-
-          <Stack direction="row" spacing={2}>
-            {[15, 30, 45].map((num) => (
-              <Box
-                key={num}
-                onClick={() => setSessionLength(num)}
-                sx={{
-                  px: 2,
-                  py: 1,
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor:
-                    sessionLength === num ? 'primary.main' : 'divider',
-                  cursor: 'pointer',
-                  bgcolor:
-                    sessionLength === num
-                      ? 'primary.light'
-                      : 'background.paper',
-                  color:
-                    sessionLength === num ? 'primary.contrastText' : 'inherit',
-                  transition: '0.2s',
-                  fontWeight: 600,
-                }}
-              >
-                {num}
-              </Box>
-            ))}
-          </Stack>
-        </Box>
-      </Collapse>
-
-      <Divider sx={{ mb: 3 }} />
-
-      {!isSessionActive ? (
-        <Box display="flex" justifyContent="center" height={32}>
-          <Button onClick={() => startSession(sessionLength)}>Start</Button>
-        </Box>
-      ) : (
-        <Box height={32} />
-      )}
+        {isSessionActive ? <StatsPanel compact /> : <LevelPanel />}
+      </Box>
 
       {/* MAIN GAME */}
       <Box
@@ -121,12 +49,27 @@ const PracticeArea: FC = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 2,
+          justifyContent: 'flex-start',
+          flex: 1,
         }}
       >
-        <TimerContextProvider>
-          <MultiplicationCard />
-        </TimerContextProvider>
+        {/* if session is active display multiplication card, else if last session 
+        happened after the last login display the summary if you just logged in and 
+        have not played a session display the welcome back component*/}
+        {isSessionActive ? (
+          <TimerContextProvider>
+            <MultiplicationCard />
+          </TimerContextProvider>
+        ) : isPlayedSession ? (
+          <SessionSummary />
+        ) : (
+          <Box mt={24}>
+            <Typography>Welcome Back</Typography>
+            <Box display="flex" justifyContent="center" height={32}>
+              <Button onClick={() => startSession()}>Start</Button>
+            </Box>
+          </Box>
+        )}
       </Box>
     </Box>
   )
