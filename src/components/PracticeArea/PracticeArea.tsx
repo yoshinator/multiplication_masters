@@ -9,7 +9,7 @@ import SessionSummary from '../SessionSummary/SessionSummary'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import { useUser } from '../../contexts/user/useUserContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
-import WelcomeBack from '../WelcomBack/WelcomeBack'
+import WelcomeBack from '../WelcomeBack/WelcomeBack'
 
 const PracticeArea: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
