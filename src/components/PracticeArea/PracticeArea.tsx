@@ -1,18 +1,17 @@
 import { type FC } from 'react'
-import { Box, Button, Typography } from '@mui/material'
+import { Box } from '@mui/material'
 
 import TimerContextProvider from '../../contexts/timer/TimerProvider'
 import MultiplicationCard from '../MultiplicationCard/MultiplicationCard'
 import StatsPanel from '../StatsPanel/StatsPanel'
 import LevelPanel from '../LevelPanel/LevelPanel'
 import SessionSummary from '../SessionSummary/SessionSummary'
-import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import { useUser } from '../../contexts/user/useUserContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
+import WelcomeBack from '../WelcomBack/WelcomeBack'
 
 const PracticeArea: FC = () => {
-  const { startSession } = useCardSchedulerContext()
   const { isSessionActive } = useSessionStatusContext()
   const { latestSession } = useReviewSession()
   const { user } = useUser()
@@ -63,12 +62,7 @@ const PracticeArea: FC = () => {
         ) : isPlayedSession ? (
           <SessionSummary />
         ) : (
-          <Box mt={24}>
-            <Typography>Welcome Back</Typography>
-            <Box display="flex" justifyContent="center" height={32}>
-              <Button onClick={() => startSession()}>Start</Button>
-            </Box>
-          </Box>
+          <WelcomeBack />
         )}
       </Box>
     </Box>
