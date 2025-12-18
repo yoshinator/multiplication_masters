@@ -25,6 +25,7 @@ const SessionSummary: FC = () => {
   const { setIsSessionActive } = useSessionStatusContext()
 
   const s = latestSession
+  console.log({ s })
 
   // Fallback: If somehow we have no session record, use currentCounts
   const correct = s?.correct ?? correctCount
@@ -42,7 +43,7 @@ const SessionSummary: FC = () => {
 
   const restart = () => {
     setIsSessionActive(true)
-    startSession(s?.sessionLength ?? 15)
+    startSession()
   }
 
   const goHome = () => {

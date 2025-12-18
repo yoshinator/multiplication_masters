@@ -5,10 +5,10 @@ interface Props {
   children?: ReactElement
 }
 
+// TODO: See about moving percentageMastered here.
 const SessionStatusProvider: FC<Props> = ({ children }) => {
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [sessionLength, setSessionLength] = useState(15)
-
   return (
     <SessionStatusContext.Provider
       value={{

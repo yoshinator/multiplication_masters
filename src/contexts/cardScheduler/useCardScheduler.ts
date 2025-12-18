@@ -18,7 +18,7 @@ import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusCo
 
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
-  const logger = useLogger('Scheduler', true)
+  const logger = useLogger('Scheduler')
   const { addUpdatedCardToSession, finishSession, pendingUserCards } =
     useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
@@ -56,7 +56,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
 
     logger('➡️ First card:', first)
-  }, [userCards, user, logger])
+  }, [userCards, user, logger, setIsSessionActive, sessionLength])
 
   const getNextCard = useCallback(() => {
     const q = queueRef.current
@@ -128,7 +128,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
       const next = getNextCard()
       setCurrentCard(next)
-
+      //TODO: Think of way of decoupling percentage mastered calculation from here
       const allUpdatedCards = userCards.map((c) => pendingUserCards[c.id] || c)
       if (!next && (!q || q.size() === 0)) {
         const percentageMastered =

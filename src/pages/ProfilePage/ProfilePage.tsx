@@ -5,6 +5,15 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 const ProfilePage: FC = () => {
   const { sessionLength, setSessionLength } = useSessionStatusContext()
+
+  const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    // Make Enter/Space activate consistently and prevent page scroll on Space.
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      e.currentTarget.click()
+    }
+  }
+
   return (
     <Box
       sx={{
@@ -49,28 +58,57 @@ const ProfilePage: FC = () => {
         </Tooltip>
       </Box>
 
-      <Stack direction="row" spacing={2}>
-        {[15, 30, 45].map((num) => (
-          <Box
-            key={num}
-            onClick={() => setSessionLength(num)}
-            sx={{
-              px: 2,
-              py: 1,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: sessionLength === num ? 'primary.main' : 'divider',
-              cursor: 'pointer',
-              bgcolor:
-                sessionLength === num ? 'primary.light' : 'background.paper',
-              color: sessionLength === num ? 'primary.contrastText' : 'inherit',
-              transition: '0.2s',
-              fontWeight: 600,
-            }}
-          >
-            {num}
-          </Box>
-        ))}
+      <Stack
+        direction="row"
+        spacing={2}
+        role="group"
+        aria-label="Cards per session"
+      >
+        {[15, 30, 45].map((num) => {
+          const selected = sessionLength === num
+
+          return (
+            <Box
+              component="button"
+              type="button"
+              key={num}
+              onClick={() => setSessionLength(num)}
+              onKeyDown={handleChoiceKeyDown}
+              aria-label={`Set cards per session to ${num}`}
+              aria-pressed={selected}
+              sx={{
+                // reset default button styles
+                all: 'unset',
+                px: 2,
+                py: 1,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: selected ? 'primary.main' : 'divider',
+                cursor: 'pointer',
+                bgcolor: selected ? 'primary.light' : 'background.paper',
+                color: selected ? 'primary.contrastText' : 'inherit',
+                transition: '0.2s',
+                fontWeight: 600,
+                textAlign: 'center',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 56,
+
+                '&:hover': {
+                  borderColor: selected ? 'primary.main' : 'text.primary',
+                },
+                '&:focus-visible': {
+                  outline: '2px solid',
+                  outlineColor: 'primary.main',
+                  outlineOffset: 2,
+                },
+              }}
+            >
+              {num}
+            </Box>
+          )
+        })}
       </Stack>
     </Box>
   )

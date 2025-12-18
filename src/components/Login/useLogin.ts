@@ -9,6 +9,7 @@ import {
   getDocs,
   serverTimestamp,
   writeBatch,
+  updateDoc,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useLogger } from '../../hooks/useLogger'
@@ -18,6 +19,7 @@ import type { User } from '../../constants/dataModels'
 const initialUser: User = {
   username: '',
   createdAt: null,
+  lastLogin: null,
   activeGroup: 1,
   table: 12,
   totalAccuracy: 100,
@@ -34,7 +36,7 @@ export const useLogin = () => {
   const [loading, setLoading] = useState(false)
   const { user, setUser } = useUser()
   const [error, setError] = useState<string | null>(null)
-  const logger = useLogger('useLogin')
+  const logger = useLogger('useLogin', true)
 
   useEffect(() => {
     if (!user?.username) return
@@ -59,21 +61,24 @@ export const useLogin = () => {
         // check/create user
         const userRef = doc(db, 'users', username)
         const userSnap = await getDoc(userRef)
-        let finalUser: User
 
         if (!userSnap.exists()) {
-          finalUser = {
+          await setDoc(userRef, {
             ...initialUser,
             username,
             createdAt: serverTimestamp(),
-          }
-          await setDoc(userRef, finalUser)
+            lastLogin: serverTimestamp(),
+          })
         } else {
-          finalUser = userSnap.data() as User
+          await updateDoc(userRef, {
+            lastLogin: serverTimestamp(),
+          })
         }
 
-        logger('User logged in:', finalUser)
-        setUser(finalUser)
+        const freshSnap = await getDoc(userRef)
+        setUser(freshSnap.data() as User)
+
+        logger('User logged in:', freshSnap.data())
         // ensure user has UserCards sub-collection; if empty, create copies
         const userCardsCol = collection(db, 'users', username, 'UserCards')
         const userCardsSnap = await getDocs(userCardsCol)

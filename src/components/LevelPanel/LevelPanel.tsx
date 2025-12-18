@@ -1,9 +1,11 @@
-import { type FC, useEffect, useState } from 'react'
+import { type FC, useEffect, useRef, useState } from 'react'
 import { Box, Typography, LinearProgress } from '@mui/material'
 import { EmojiEvents } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useUser } from '../../contexts/user/useUserContext'
+
+const THRESHOLD = 80
 
 const LevelPanel: FC = () => {
   const { percentageMastered } = useReviewSession()
@@ -11,18 +13,25 @@ const LevelPanel: FC = () => {
 
   const [showAnimation, setShowAnimation] = useState(false)
   const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
+  const prevPercentRef = useRef<number>(percentageMastered)
 
-  // Trigger “Level Up!” animation
+  // Trigger “Level Up!” animation when Once when threshold is crossed.
   useEffect(() => {
-    if (percentageMastered >= 80) {
-      setLocalLevel((prev: number) => prev + 1)
-      setShowAnimation(true)
+    const prevPercentage = prevPercentRef.current
+    const crossedThresholdOnce =
+      prevPercentage < THRESHOLD && percentageMastered >= THRESHOLD
 
-      const timer = setTimeout(() => setShowAnimation(false), 2400)
-      return () => clearTimeout(timer)
+    if (!crossedThresholdOnce) {
+      return
     }
+
+    setLocalLevel((prevLevel: number) => prevLevel + 1)
+    setShowAnimation(true)
+
+    const timer = setTimeout(() => setShowAnimation(false), 2400)
+    return () => clearTimeout(timer)
   }, [percentageMastered])
-  console.log({ percentageMastered })
+
   return (
     <Box sx={{ position: 'relative', width: '100%', maxWidth: 220 }}>
       <Box
@@ -71,9 +80,9 @@ const LevelPanel: FC = () => {
       <AnimatePresence>
         {showAnimation && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.4, y: -30 }}
-            animate={{ opacity: 1, scale: 1, y: -45 }} // Moved up slightly
-            exit={{ opacity: 0, scale: 0.5, y: -20 }}
+            initial={{ opacity: 0, scale: 0.1, y: -30 }}
+            animate={{ opacity: 1, scale: 0.4, y: -45 }} // Moved up slightly
+            exit={{ opacity: 0, scale: 0.2, y: -20 }}
             transition={{ type: 'spring', stiffness: 180, damping: 12 }}
             style={{
               position: 'absolute',
