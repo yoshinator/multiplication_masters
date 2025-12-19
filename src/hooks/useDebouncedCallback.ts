@@ -8,7 +8,7 @@ interface DebouncedCallback<TArgs extends unknown[]> {
 /**
  * Returns a debounced version of a callback plus a cancel function.
  * The debounced function delays invoking `fn` until after `delayMs`
- * have elapsed since the last time it was called.
+ * has elapsed since the last time it was called.
  */
 
 export function useDebouncedCallback<TArgs extends unknown[]>(
