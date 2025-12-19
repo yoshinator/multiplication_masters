@@ -62,7 +62,7 @@ export type SessionRecord = {
   userId: string // username, for convenience
 
   sessionType: 'multiplication' | 'division' | 'mixed'
-  sessionLength: number //10, 15, 30, 45
+  sessionLength: number // 10, 15, 30, 45
 
   startedAt: number // timestamp
   endedAt: number // timestamp
