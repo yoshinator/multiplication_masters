@@ -64,7 +64,7 @@ const ProfilePage: FC = () => {
         role="group"
         aria-label="Cards per session"
       >
-        {[15, 30, 45].map((num) => {
+        {[10, 15, 30, 45].map((num) => {
           const selected = sessionLength === num
 
           return (

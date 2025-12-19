@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type FC, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FC,
+  type FormEvent,
+} from 'react'
 import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import Timer from '../Timer/Timer'
@@ -61,17 +68,6 @@ const MultiplicationCard: FC = () => {
     }
   }, [time, showAnswer, currentCard, stopTimer, isShowingAnswer])
 
-  useEffect(() => {
-    if (!currentCard) return
-    if (isShowingAnswer) return
-    if (answer.length === 0) return
-
-    // Auto-submit when input length matches expected answer length
-    if (answer.length === expectedLength) {
-      handleAutoSubmit()
-    }
-  }, [answer, expectedLength, currentCard, isShowingAnswer])
-
   const handleResume = () => {
     hideAnswer()
     setCardColor('background.paper')
@@ -83,7 +79,7 @@ const MultiplicationCard: FC = () => {
     startTimer()
   }
 
-  const handleAutoSubmit = () => {
+  const handleAutoSubmit = useCallback(() => {
     if (!answer || !currentCard) return
 
     const correct = Number(answer) === value
@@ -112,13 +108,33 @@ const MultiplicationCard: FC = () => {
       setCardColor('background.paper')
       timeoutRef.current = null
     }, 700)
-  }
+  }, [
+    answer,
+    currentCard,
+    value,
+    getElapsed,
+    resetTimer,
+    setAnswer,
+    showAnswer,
+    stopTimer,
+    submitAnswer,
+  ])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     handleAutoSubmit()
   }
 
+  useEffect(() => {
+    if (!currentCard) return
+    if (isShowingAnswer) return
+    if (answer.length === 0) return
+
+    // Auto-submit when input length matches expected answer length
+    if (answer.length === expectedLength) {
+      handleAutoSubmit()
+    }
+  }, [answer, expectedLength, currentCard, isShowingAnswer, handleAutoSubmit])
   if (!currentCard) return null
 
   return (

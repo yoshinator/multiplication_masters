@@ -49,6 +49,7 @@ export interface User {
   lifetimeCorrect: number
   lifetimeIncorrect: number
   totalSessions: number
+  userDefaultSessionLength?: number
 
   unlockedScenes?: SceneTheme[]
   activeScene?: SceneTheme
