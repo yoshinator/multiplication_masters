@@ -7,8 +7,8 @@ import {
   useEffect,
 } from 'react'
 import { TimerContext, type TimerContextValue } from './timerContext'
-import { useReviewSession } from '../reviewSession/reviewSessionContext'
 import { BOX_REGRESS } from '../../constants/appConstants'
+import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 
 interface Props {
   children: ReactNode
@@ -16,38 +16,53 @@ interface Props {
 
 const TimerContextProvider: FC<Props> = ({ children }) => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startTimeRef = useRef<number | null>(null)
+  const elapsedRef = useRef(0)
   const [timeValue, setTimeValue] = useState<number>(BOX_REGRESS)
   const [isRunning, setIsRunning] = useState(false)
-  const { isSessionActive } = useReviewSession()
+  const { isSessionActive } = useSessionStatusContext()
 
   const stopTimer = useCallback(() => {
+    if (intervalRef.current && startTimeRef.current) {
+      elapsedRef.current += performance.now() - startTimeRef.current
+    }
+
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
+
+    startTimeRef.current = null
     setIsRunning(false)
   }, [])
 
   const startTimer = useCallback(() => {
-    if (intervalRef.current) return // already running
+    if (intervalRef.current) return
+
+    startTimeRef.current = performance.now()
     setIsRunning(true)
+
     intervalRef.current = setInterval(() => {
-      setTimeValue((prevTime) => {
-        if (prevTime <= 100) {
-          // Check against 100ms remaining
-          stopTimer()
-          return 0
-        }
-        return prevTime - 100
-      })
+      if (!startTimeRef.current) return
+
+      const elapsed =
+        elapsedRef.current + (performance.now() - startTimeRef.current)
+
+      const remaining = Math.max(BOX_REGRESS - elapsed, 0)
+      setTimeValue(remaining)
+
+      if (remaining === 0) {
+        stopTimer()
+      }
     }, 100)
   }, [stopTimer])
 
   const resetTimer = useCallback(() => {
     stopTimer()
-    // 3. Reset state
+    elapsedRef.current = 0
     setTimeValue(BOX_REGRESS)
   }, [stopTimer])
+
   useEffect(() => {
     if (!isSessionActive) {
       resetTimer()
