@@ -27,6 +27,7 @@ const MultiplicationCard: FC = () => {
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
   const { top, bottom, value } = currentCard ?? {}
+  const expectedLength = value != null ? String(value).length : 0
 
   const getElapsed = () => BOX_REGRESS - time
 
@@ -60,6 +61,17 @@ const MultiplicationCard: FC = () => {
     }
   }, [time, showAnswer, currentCard, stopTimer, isShowingAnswer])
 
+  useEffect(() => {
+    if (!currentCard) return
+    if (isShowingAnswer) return
+    if (answer.length === 0) return
+
+    // Auto-submit when input length matches expected answer length
+    if (answer.length === expectedLength) {
+      handleAutoSubmit()
+    }
+  }, [answer, expectedLength, currentCard, isShowingAnswer])
+
   const handleResume = () => {
     hideAnswer()
     setCardColor('background.paper')
@@ -71,8 +83,7 @@ const MultiplicationCard: FC = () => {
     startTimer()
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleAutoSubmit = () => {
     if (!answer || !currentCard) return
 
     const correct = Number(answer) === value
@@ -93,7 +104,6 @@ const MultiplicationCard: FC = () => {
     setCardColor(color)
 
     resetTimer()
-
     submitAnswer(currentCard, true, getElapsed())
     setAnswer('')
 
@@ -102,6 +112,11 @@ const MultiplicationCard: FC = () => {
       setCardColor('background.paper')
       timeoutRef.current = null
     }, 700)
+  }
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    handleAutoSubmit()
   }
 
   if (!currentCard) return null
@@ -200,6 +215,11 @@ const MultiplicationCard: FC = () => {
                   value={answer}
                   fullWidth
                   inputRef={inputRef}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                    }
+                  }}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '')
                     setAnswer(val)
