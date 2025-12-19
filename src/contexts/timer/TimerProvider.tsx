@@ -52,7 +52,18 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
       setTimeValue(remaining)
 
       if (remaining === 0) {
-        stopTimer()
+        // Finalize elapsed exactly once
+        elapsedRef.current = BOX_REGRESS
+
+        // Stop without re-accumulating
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+        startTimeRef.current = null
+        setIsRunning(false)
+
+        setTimeValue(0)
       }
     }, 100)
   }, [stopTimer])
