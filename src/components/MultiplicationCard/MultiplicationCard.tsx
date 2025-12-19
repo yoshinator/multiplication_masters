@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type FC, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FC,
+  type FormEvent,
+} from 'react'
 import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import Timer from '../Timer/Timer'
@@ -27,6 +34,7 @@ const MultiplicationCard: FC = () => {
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
   const { top, bottom, value } = currentCard ?? {}
+  const expectedLength = value != null ? String(value).length : 0
 
   const getElapsed = () => BOX_REGRESS - time
 
@@ -71,8 +79,7 @@ const MultiplicationCard: FC = () => {
     startTimer()
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleAutoSubmit = useCallback(() => {
     if (!answer || !currentCard) return
 
     const correct = Number(answer) === value
@@ -93,7 +100,6 @@ const MultiplicationCard: FC = () => {
     setCardColor(color)
 
     resetTimer()
-
     submitAnswer(currentCard, true, getElapsed())
     setAnswer('')
 
@@ -102,8 +108,33 @@ const MultiplicationCard: FC = () => {
       setCardColor('background.paper')
       timeoutRef.current = null
     }, 700)
+  }, [
+    answer,
+    currentCard,
+    value,
+    getElapsed,
+    resetTimer,
+    setAnswer,
+    showAnswer,
+    stopTimer,
+    submitAnswer,
+  ])
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    handleAutoSubmit()
   }
 
+  useEffect(() => {
+    if (!currentCard) return
+    if (isShowingAnswer) return
+    if (answer.length === 0) return
+
+    // Auto-submit when input length matches expected answer length
+    if (answer.length === expectedLength) {
+      handleAutoSubmit()
+    }
+  }, [answer, expectedLength, currentCard, isShowingAnswer, handleAutoSubmit])
   if (!currentCard) return null
 
   return (
@@ -200,6 +231,11 @@ const MultiplicationCard: FC = () => {
                   value={answer}
                   fullWidth
                   inputRef={inputRef}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                    }
+                  }}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '')
                     setAnswer(val)
