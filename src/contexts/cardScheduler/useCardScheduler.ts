@@ -26,9 +26,9 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
   const [estimatedReviews, setEstimatedReviews] = useState(0)
   const [estimatedUniqueCards, setEstimatedUniqueCards] = useState(0)
-  const sessionLengthRef = useRef(30)
-  const shuffleCountsRef = useRef(new Set<number>())
   const { setIsSessionActive, sessionLength } = useSessionStatusContext()
+  const sessionLengthRef = useRef(sessionLength)
+  const shuffleCountsRef = useRef(new Set<number>())
 
   const startSession = useCallback(() => {
     sessionLengthRef.current = sessionLength

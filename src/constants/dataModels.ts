@@ -49,7 +49,7 @@ export interface User {
   lifetimeCorrect: number
   lifetimeIncorrect: number
   totalSessions: number
-  userDefaultSessionLength?: number
+  userDefaultSessionLength: number
 
   unlockedScenes?: SceneTheme[]
   activeScene?: SceneTheme
@@ -62,7 +62,7 @@ export type SessionRecord = {
   userId: string // username, for convenience
 
   sessionType: 'multiplication' | 'division' | 'mixed'
-  sessionLength: number // 15, 30, 45, or custom
+  sessionLength: number //10, 15, 30, 45
 
   startedAt: number // timestamp
   endedAt: number // timestamp

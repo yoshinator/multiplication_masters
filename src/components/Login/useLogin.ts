@@ -15,6 +15,7 @@ import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useLogger } from '../../hooks/useLogger'
 import { useUser } from '../../contexts/user/useUserContext'
 import type { User } from '../../constants/dataModels'
+import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
 const initialUser: User = {
   username: '',
@@ -23,6 +24,7 @@ const initialUser: User = {
   activeGroup: 1,
   table: 12,
   totalAccuracy: 100,
+  userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
 
   lifetimeCorrect: 0,
   lifetimeIncorrect: 0,
@@ -43,7 +45,7 @@ export const useLogin = () => {
     logger(`Loading user cards for ${user.username}`)
     const unsubscribe = loadUserCards(user.username)
     return () => unsubscribe && unsubscribe()
-  }, [user?.username])
+  }, [user?.username, loadUserCards, logger])
 
   const handleLogin = useCallback(
     async (username: string) => {
