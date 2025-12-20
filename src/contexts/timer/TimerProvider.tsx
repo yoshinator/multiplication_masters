@@ -23,7 +23,7 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
   const { isSessionActive } = useSessionStatusContext()
 
   const stopTimer = useCallback(() => {
-    if (intervalRef.current && startTimeRef.current) {
+    if (startTimeRef.current) {
       elapsedRef.current += performance.now() - startTimeRef.current
     }
 
