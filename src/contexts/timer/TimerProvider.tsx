@@ -60,7 +60,7 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
         stopTimer()
       }
     }, 100)
-  }, [])
+  }, [stopTimer])
 
   const resetTimer = useCallback(() => {
     stopTimer()
