@@ -55,18 +55,12 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
         // Finalize elapsed exactly once
         elapsedRef.current = BOX_REGRESS
 
-        // Stop without re-accumulating
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
-        }
+        // Prevent stopTimer from re-accumulating
         startTimeRef.current = null
-        setIsRunning(false)
-
-        setTimeValue(0)
+        stopTimer()
       }
     }, 100)
-  }, [stopTimer])
+  }, [])
 
   const resetTimer = useCallback(() => {
     stopTimer()
