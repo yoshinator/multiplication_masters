@@ -12,12 +12,15 @@ import {
   Firestore,
   query,
   orderBy,
+  writeBatch,
+  doc,
+  getDocs,
 } from 'firebase/firestore'
 import {
   getAuth,
   connectAuthEmulator,
-  onAuthStateChanged,
   type Auth,
+  type Unsubscribe,
 } from 'firebase/auth'
 import { seedCardsData } from '../../utilities/seedFirestore'
 import { useLogger } from '../../hooks/useLogger'
@@ -111,33 +114,12 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
   }, [firebaseAuth, EMULATOR_HOST, logger])
 
-  useEffect(() => {
-    if (!firebaseAuth) return
-
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (authUser) => {
-      if (!authUser) {
-        logger('Auth state: signed out')
-        return
-      }
-
-      logger(`Auth state: signed in (uid=${authUser.uid})`)
-    })
-
-    return unsubscribe
-  }, [firebaseAuth, logger])
-
   const subscribeToUserCards = useCallback(
-    (username: string) => {
+    (uid: string) => {
       if (!firestoreDb) return () => {}
 
-      const userCardsCol = collection(
-        firestoreDb,
-        'users',
-        username,
-        'UserCards'
-      )
+      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
 
-      // orderBy to stabilize order
       const q = query(userCardsCol, orderBy('id'))
 
       return onSnapshot(q, (snapshot) => {
@@ -152,13 +134,52 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   )
 
   const loadUserCards = useCallback(
-    (username: string) => {
+    (uid: string): Unsubscribe => {
       logger('Loading user cards')
-      if (!firestoreDb || !username) return () => {}
-
-      return subscribeToUserCards(username)
+      if (!firestoreDb || !uid) return () => {}
+      return subscribeToUserCards(uid)
     },
     [firestoreDb, subscribeToUserCards, logger]
+  )
+
+  const ensureUserCards = useCallback(
+    async (uid: string) => {
+      if (!firestoreDb || !uid) return
+
+      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
+
+      const snap = await getDocs(userCardsCol)
+      if (!snap.empty) {
+        logger(`UserCards already exist for uid: ${uid}`)
+        return
+      }
+
+      logger(`Seeding UserCards for uid: ${uid}`)
+
+      const cardsCol = collection(firestoreDb, 'cards')
+      const cardsSnap = await getDocs(cardsCol)
+
+      const cards = cardsSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }))
+
+      if (cards.length !== 576) {
+        logger(`⚠️ Expected 576 cards, got ${cards.length}. Check seeding.`)
+      }
+
+      const CHUNK_SIZE = 500
+      for (let i = 0; i < cards.length; i += CHUNK_SIZE) {
+        const batch = writeBatch(firestoreDb)
+        for (const card of cards.slice(i, i + CHUNK_SIZE)) {
+          batch.set(doc(userCardsCol, card.id), card)
+        }
+        await batch.commit()
+      }
+
+      logger(`✅ UserCards initialized for uid: ${uid}`)
+    },
+    [firestoreDb, logger]
   )
 
   /**
@@ -185,6 +206,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     auth: firebaseAuth,
     userCards,
     loadUserCards,
+    ensureUserCards,
     setUserCards,
   }
 

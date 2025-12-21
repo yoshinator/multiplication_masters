@@ -7,7 +7,7 @@ import {
   type FormEvent,
 } from 'react'
 import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
-import { useTimerContext } from '../../contexts/timer/timerContext'
+import { useTimerContext } from '../../contexts/timerContext/timerContext'
 import Timer from '../Timer/Timer'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import {

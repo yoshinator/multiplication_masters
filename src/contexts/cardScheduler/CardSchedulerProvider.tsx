@@ -1,7 +1,7 @@
 import { type FC, type ReactNode } from 'react'
 import { useCardScheduler } from './useCardScheduler'
 
-import { useUser } from '../user/useUserContext'
+import { useUser } from '../userContext/useUserContext'
 import { CardSchedulerContext } from './cardSchedulerContext'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 

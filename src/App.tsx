@@ -3,7 +3,7 @@ import { Box, Toolbar } from '@mui/material'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import Header from './components/Header/Header'
-import { useUser } from './contexts/user/useUserContext'
+import { useUser } from './contexts/userContext/useUserContext'
 
 // Pages (you will create these shortly)
 import PracticeArea from './components/PracticeArea/PracticeArea'

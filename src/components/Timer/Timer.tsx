@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material'
 import type { FC } from 'react'
-import { useTimerContext } from '../../contexts/timer/timerContext'
+import { useTimerContext } from '../../contexts/timerContext/timerContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useIsMobile } from '../../hooks/useIsMobile'

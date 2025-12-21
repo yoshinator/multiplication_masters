@@ -37,6 +37,7 @@ export type UserCard = {
 }
 
 export interface User {
+  uid: string
   username: string
   userRole: 'student' | 'teacher' | 'parent'
   createdAt: Timestamp | null
@@ -61,7 +62,7 @@ export interface User {
 }
 
 export type SessionRecord = {
-  userId: string // username, for convenience
+  userId: string // uid
 
   sessionType: 'multiplication' | 'division' | 'mixed'
   sessionLength: number // 10, 15, 30, 45

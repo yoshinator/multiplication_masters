@@ -1,7 +1,7 @@
 import { type FC, type ReactElement, useCallback, useState } from 'react'
 import { SessionStatusContext } from './sessionStatusContext'
 
-import { useUser } from '../user/useUserContext'
+import { useUser } from '../userContext/useUserContext'
 
 interface Props {
   children?: ReactElement

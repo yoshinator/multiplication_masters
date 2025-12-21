@@ -7,7 +7,7 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material'
-import { useUser } from '../../contexts/user/useUserContext'
+import { useUser } from '../../contexts/userContext/useUserContext'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 

@@ -3,7 +3,7 @@ import { Box, Typography, LinearProgress, Card } from '@mui/material'
 import { EmojiEvents } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
-import { useUser } from '../../contexts/user/useUserContext'
+import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const THRESHOLD = 80
