@@ -158,3 +158,19 @@ npm run build
 Summary
 
 Multiplication Masters combines a speed-adaptive Leitner system with SM-2 scheduling to create a highly effective multiplication fact trainer. The project now includes a complete session scheduler, a session update pipeline with batching, and logic to persist card states to Firestore. Remaining tasks involve UI refinement, improved analytics, enhanced SRS logic, and production hardening.
+
+## License and Terms of Use
+
+This project is licensed under a **Source Available License** (see [LICENSE](LICENSE) for full details).
+
+### What you CAN do:
+* **Personal Use:** Download, run, and play with the software for yourself.
+* **Modify:** Change the code to add features or fix bugs for your own use.
+* **Classroom Use:** If you are a teacher, you can use this with your students in your classroom.
+
+### What you CANNOT do:
+* **Commercial Use:** You may not sell this software or use it to make money.
+* **Public Re-hosting:** You may not upload this code (modified or original) to your own public website, GitHub, or app store.
+* **Third-Party Distribution:** You may not give this software to other schools or organizations. Please direct them to this original repository instead.
+
+**For commercial licensing or questions regarding distribution, please contact:** [yoanante@gmail.com]
