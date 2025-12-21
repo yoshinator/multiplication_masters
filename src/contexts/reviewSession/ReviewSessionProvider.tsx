@@ -258,6 +258,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
         localUserUpdates.activeGroup = user.activeGroup + 1
         localUserUpdates.currentLevelProgress = 0
+        setPercentageMastered(0)
+      } else {
+        setPercentageMastered(percentageMastered)
       }
 
       setPercentageMastered(percentageMastered)
