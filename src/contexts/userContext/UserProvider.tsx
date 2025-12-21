@@ -133,25 +133,30 @@ const UserProvider: FC<Props> = ({ children }) => {
         return
       }
 
-      const uid = authUser.uid
-      const userRef = doc(db, 'users', uid)
-      const snap = await getDoc(userRef)
+      try {
+        const uid = authUser.uid
+        const userRef = doc(db, 'users', uid)
+        const snap = await getDoc(userRef)
 
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          ...initialUser,
-          uid,
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
-        })
-      } else {
-        await updateDoc(userRef, {
-          lastLogin: serverTimestamp(),
-        })
+        if (!snap.exists()) {
+          await setDoc(userRef, {
+            ...initialUser,
+            uid,
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp(),
+          })
+        } else {
+          await updateDoc(userRef, {
+            lastLogin: serverTimestamp(),
+          })
+        }
+
+        const fresh = await getDoc(userRef)
+        setUser(fresh.data() as User)
+      } catch (error) {
+        console.error('Failed to initialize or update user document:', error)
+        setUser(null)
       }
-
-      const fresh = await getDoc(userRef)
-      setUser(fresh.data() as User)
     })
 
     return unsubscribe
