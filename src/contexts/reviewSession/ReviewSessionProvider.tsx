@@ -127,7 +127,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     // Note: We do NOT reset sessionCorrectCount state here,
     // because the session is still active visually.
-  }, [app, user])
+  }, [app, user, logger])
 
   const addUpdatedCardToSession = useCallback(
     (card: UserCard, oldBox: number) => {

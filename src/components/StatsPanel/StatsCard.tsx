@@ -12,7 +12,6 @@ const StatsCard: FC<Props> = ({ icon, label, value, color }) => {
   return (
     <Card
       component={Box}
-      elevation={0}
       sx={{
         display: 'flex',
         flex: 1,

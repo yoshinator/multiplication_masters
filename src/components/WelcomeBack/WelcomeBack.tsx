@@ -15,24 +15,24 @@ const WelcomeBack: FC = () => {
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        px: isMobile ? 0 : 2,
+        px: { sm: 2 },
         mt: { xs: 6, sm: 24 },
       }}
     >
       <Card
         component={isMobile ? Box : Card}
-        elevation={isMobile ? 0 : 0}
+        elevation={isMobile ? undefined : 0}
         sx={{
           width: '100%',
-          maxWidth: isMobile ? '100%' : 560,
-          p: isMobile ? 0 : { xs: 3, sm: 4 },
+          maxWidth: { xs: '100%', sm: 560 },
+          p: { xs: 0, sm: 4 },
 
           // Card-only visuals
-          borderRadius: isMobile ? 0 : 3,
-          border: isMobile ? 'none' : '1px solid',
+          borderRadius: { xs: 0, sm: 3 },
+          border: { xs: 'none', sm: '1px solid' },
           borderColor: 'divider',
-          bgcolor: isMobile ? 'transparent' : 'background.paper',
-          boxShadow: isMobile ? 'none' : undefined,
+          bgcolor: { xs: 'transparent', sm: 'background.paper' },
+          boxShadow: { xs: 'none', sm: undefined },
         }}
       >
         <Stack spacing={2.25} alignItems="center" textAlign="center">

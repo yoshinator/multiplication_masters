@@ -39,8 +39,8 @@ const LevelPanel: FC = () => {
       sx={{
         position: 'relative',
         width: '100%',
-        maxWidth: isMobile ? '100%' : 220,
-        mx: isMobile ? 0 : 'auto',
+        maxWidth: { xs: '100%', sm: 220 },
+        mx: { xs: 0, sm: 'auto' },
       }}
     >
       <Card
@@ -48,7 +48,7 @@ const LevelPanel: FC = () => {
         elevation={0}
         sx={{
           p: { xs: 2, sm: 2.5 },
-          pb: { xs: 0 },
+          pb: { xs: 0, sm: 2 },
 
           borderRadius: { xs: 0, sm: 2 },
           border: { xs: 'none', sm: '1px solid' },
