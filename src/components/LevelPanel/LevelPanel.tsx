@@ -1,5 +1,5 @@
 import { type FC, useEffect, useRef, useState } from 'react'
-import { Box, Typography, LinearProgress } from '@mui/material'
+import { Box, Typography, LinearProgress, Card } from '@mui/material'
 import { EmojiEvents } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
@@ -17,17 +17,17 @@ const LevelPanel: FC = () => {
   const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
   const prevPercentRef = useRef<number>(percentageMastered)
 
-  // Trigger “Level Up!” animation when Once when threshold is crossed.
+  // Trigger “Level Up!” animation once when threshold is crossed
   useEffect(() => {
     const prevPercentage = prevPercentRef.current
     const crossedThresholdOnce =
       prevPercentage < THRESHOLD && percentageMastered >= THRESHOLD
 
-    if (!crossedThresholdOnce) {
-      return
-    }
+    prevPercentRef.current = percentageMastered
 
-    setLocalLevel((prevLevel: number) => prevLevel + 1)
+    if (!crossedThresholdOnce) return
+
+    setLocalLevel((prev) => prev + 1)
     setShowAnimation(true)
 
     const timer = setTimeout(() => setShowAnimation(false), 2400)
@@ -43,17 +43,23 @@ const LevelPanel: FC = () => {
         mx: isMobile ? 0 : 'auto',
       }}
     >
-      <Box
+      <Card
+        component={isMobile ? Box : Card}
+        elevation={0}
         sx={{
-          p: isMobile ? 1 : 1.5,
+          p: { xs: 2, sm: 2.5 },
+          pb: { xs: 0 },
+
+          borderRadius: { xs: 0, sm: 2 },
+          border: { xs: 'none', sm: '1px solid' },
+          borderColor: 'divider',
+          bgcolor: { xs: 'transparent', sm: 'background.paper' },
+          boxShadow: { xs: 'none', sm: 'inherit' },
+
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           textAlign: 'left',
-          borderRadius: isMobile ? 1 : 2,
-          border: isMobile ? 'none' : '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
         }}
       >
         {!isMobile && (
@@ -69,20 +75,19 @@ const LevelPanel: FC = () => {
           variant="caption"
           sx={{
             opacity: 0.7,
-            mb: isMobile ? 0.5 : 1,
-            fontWeight: isMobile ? 600 : 400,
+            mb: { xs: 0.5, sm: 1 },
+            fontWeight: { xs: 600, sm: 400 },
           }}
         >
           Mastery Progress {isMobile && `· Level ${localLevel} 🏆`}
         </Typography>
 
-        {/* PROGRESS BAR (Now using actual session progress) */}
         <LinearProgress
           variant="determinate"
           value={percentageMastered}
           sx={{
             width: '100%',
-            height: 8, // Slightly thicker bar
+            height: 8,
             borderRadius: 10,
             bgcolor: 'grey.300',
             '& .MuiLinearProgress-bar': {
@@ -90,22 +95,24 @@ const LevelPanel: FC = () => {
             },
           }}
         />
+
         <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
           {percentageMastered}%
         </Typography>
-      </Box>
-      {/* 🎉 LEVEL UP ANIMATION (Framer Motion) - remains the same, adjusted styling slightly */}
+      </Card>
+
+      {/* 🎉 LEVEL UP ANIMATION */}
       <AnimatePresence>
         {showAnimation && (
           <motion.div
             initial={{ opacity: 0, scale: 0.1, y: -30 }}
-            animate={{ opacity: 1, scale: 0.4, y: -45 }} // Moved up slightly
+            animate={{ opacity: 1, scale: 0.4, y: -45 }}
             exit={{ opacity: 0, scale: 0.2, y: -20 }}
             transition={{ type: 'spring', stiffness: 180, damping: 12 }}
             style={{
               position: 'absolute',
               left: '50%',
-              top: '0%',
+              top: 0,
               transform: 'translateX(-50%)',
               pointerEvents: 'none',
               zIndex: 20,

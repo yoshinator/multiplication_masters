@@ -28,7 +28,6 @@ const SessionSummary: FC = () => {
 
   const s = latestSession
 
-  // Fallback: If somehow we have no session record, use currentCounts
   const correct = s?.correct ?? correctCount
   const incorrect = s?.incorrect ?? incorrectCount
   const total = correct + incorrect
@@ -53,31 +52,36 @@ const SessionSummary: FC = () => {
   }
 
   return (
-    <Box
+    <Card
+      component={Box}
+      elevation={0}
       sx={{
-        maxWidth: isMobile ? '100%' : 480,
+        maxWidth: { xs: '100%', sm: 480 },
         mx: 'auto',
-        mt: isMobile ? 1 : 4,
-        p: isMobile ? 2 : 3,
-        bgcolor: 'background.paper',
-        borderRadius: isMobile ? 0 : 3,
-        border: isMobile ? 'none' : '1px solid',
+        mt: { xs: 0, sm: 4 },
+        p: { xs: 2, sm: 3 },
+
+        borderRadius: { xs: 0, sm: 3 },
+        border: { xs: 'none', sm: '1px solid' },
         borderColor: 'divider',
+        bgcolor: { xs: 'transparent', sm: 'background.paper' },
+        boxShadow: 'none',
+
         textAlign: 'center',
       }}
     >
       <Typography
         variant={isMobile ? 'h5' : 'h4'}
-        sx={{ fontWeight: 800, mb: isMobile ? 1 : 2 }}
+        sx={{ fontWeight: 800, mb: { xs: 1, sm: 2 } }}
       >
         Session Complete!
       </Typography>
 
-      <Typography variant="body2" sx={{ opacity: 0.75, mb: isMobile ? 2 : 3 }}>
+      <Typography variant="body2" sx={{ opacity: 0.75, mb: { xs: 2, sm: 3 } }}>
         Great job! Here's how you did this round.
       </Typography>
 
-      {/* Core Stats Row */}
+      {/* Core Stats */}
       <Stack direction="row" spacing={1.5} sx={{ mb: { xs: 1, sm: 2 } }}>
         <StatsCard
           icon={<CheckCircleOutlineIcon color="success" />}
@@ -99,37 +103,28 @@ const SessionSummary: FC = () => {
         />
       </Stack>
 
-      {/* Additional Stats */}
-      <Stack
-        spacing={1.5}
-        sx={{
-          mt: 2,
-          mb: { xs: 2, sm: 3 },
-        }}
-      >
-        <SecondaryStatCard
+      {/* Secondary Stats */}
+      <Stack spacing={1.5} sx={{ mt: 2, mb: { xs: 2, sm: 3 } }}>
+        <SecondaryStatRow
           icon={<AccessTimeIcon />}
-          isMobile={isMobile}
           label="Avg Response Time"
           value={avgTime ? `${(avgTime / 1000).toFixed(2)} seconds` : '--'}
         />
 
-        <SecondaryStatCard
-          isMobile={isMobile}
+        <SecondaryStatRow
           icon={<FlashOnIcon />}
           label="Fast Correct"
           value={fastCorrect}
         />
 
-        <SecondaryStatCard
-          isMobile={isMobile}
+        <SecondaryStatRow
           icon={<SlowMotionVideoIcon />}
           label="Slow Correct"
           value={slowCorrect}
         />
       </Stack>
 
-      {/* Buttons */}
+      {/* Actions */}
       <Stack spacing={2} sx={{ mt: { xs: 1, sm: 3 } }}>
         <Button
           variant="contained"
@@ -149,51 +144,43 @@ const SessionSummary: FC = () => {
           Back to Home
         </Button>
       </Stack>
-    </Box>
+    </Card>
   )
 }
 
 export default SessionSummary
 
-// Helper Card Component
 type SSCProps = {
   icon: React.ReactElement
   label: string
   value: string | number
 }
 
-const SecondaryStatCard: FC<SSCProps & { isMobile?: boolean }> = ({
-  icon,
-  label,
-  value,
-  isMobile,
-}) => {
+const SecondaryStatRow: FC<SSCProps> = ({ icon, label, value }) => {
   return (
-    <Card
+    <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
-        p: isMobile ? 1 : 1.5,
-        borderRadius: 2,
-        border: '1px solid',
+        p: { xs: 1, sm: 1.5 },
+
+        borderRadius: { xs: 0, sm: 2 },
+        border: { xs: 'none', sm: '1px solid' },
         borderColor: 'divider',
-        boxShadow: 'none',
+        bgcolor: { xs: 'transparent', sm: 'background.paper' },
       }}
     >
-      <Box sx={{ fontSize: isMobile ? 20 : 24, mr: 1 }}>{icon}</Box>
+      <Box sx={{ fontSize: { xs: 20, sm: 24 }, mr: 1 }}>{icon}</Box>
 
       <Box sx={{ textAlign: 'left' }}>
         <Typography variant="caption" sx={{ opacity: 0.7, lineHeight: 1.1 }}>
           {label}
         </Typography>
 
-        <Typography
-          variant={isMobile ? 'subtitle1' : 'h6'}
-          sx={{ fontWeight: 700 }}
-        >
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           {value}
         </Typography>
       </Box>
-    </Card>
+    </Box>
   )
 }

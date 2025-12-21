@@ -9,7 +9,6 @@ const ProfilePage: FC = () => {
   const isMobile = useIsMobile()
 
   const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    // Make Enter/Space activate consistently and prevent page scroll on Space.
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       e.currentTarget.click()
@@ -19,18 +18,21 @@ const ProfilePage: FC = () => {
   return (
     <Box
       sx={{
-        p: isMobile ? 1.5 : 2,
-        my: isMobile ? 1 : 2,
-        borderRadius: 2,
-        border: '1px solid',
+        p: { xs: 1.5, sm: 2 },
+        m: { xs: 1, sm: 2 },
+
+        // Card visuals only on desktop
+        borderRadius: { xs: 0, sm: 2 },
+        border: { xs: 'none', sm: '1px solid' },
         borderColor: 'divider',
-        bgcolor: 'background.paper',
+        bgcolor: { xs: 'transparent', sm: 'background.paper' },
       }}
     >
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: { xs: 'flex-start', sm: 'center' },
           gap: 0.5,
           mb: 1,
           flexDirection: { xs: 'column', sm: 'row' },
@@ -85,12 +87,16 @@ const ProfilePage: FC = () => {
         )}
       </Box>
 
+      {/* Choices */}
       <Box
         role="group"
         aria-label="Cards per session"
         sx={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+          gridTemplateColumns: {
+            xs: 'repeat(2, 1fr)',
+            sm: 'repeat(4, 1fr)',
+          },
           gap: 1,
         }}
       >
@@ -107,7 +113,6 @@ const ProfilePage: FC = () => {
               aria-label={`Set cards per session to ${num}`}
               aria-pressed={selected}
               sx={{
-                // reset default button styles
                 all: 'unset',
                 px: 2,
                 py: 1,

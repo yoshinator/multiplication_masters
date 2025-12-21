@@ -2,10 +2,12 @@ import { type FC } from 'react'
 import { Box, Button, Card, Stack, Typography } from '@mui/material'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useUser } from '../../contexts/user/useUserContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const WelcomeBack: FC = () => {
   const { startSession } = useCardSchedulerContext()
   const { user } = useUser()
+  const isMobile = useIsMobile()
 
   return (
     <Box
@@ -13,20 +15,24 @@ const WelcomeBack: FC = () => {
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        px: 2,
-        mt: { xs: 8, sm: 24 },
+        px: isMobile ? 0 : 2,
+        mt: { xs: 6, sm: 24 },
       }}
     >
       <Card
-        elevation={0}
+        component={isMobile ? Box : Card}
+        elevation={isMobile ? 0 : 0}
         sx={{
           width: '100%',
-          maxWidth: 560,
-          p: { xs: 3, sm: 4 },
-          borderRadius: 3,
-          border: '1px solid',
+          maxWidth: isMobile ? '100%' : 560,
+          p: isMobile ? 0 : { xs: 3, sm: 4 },
+
+          // Card-only visuals
+          borderRadius: isMobile ? 0 : 3,
+          border: isMobile ? 'none' : '1px solid',
           borderColor: 'divider',
-          bgcolor: 'background.paper',
+          bgcolor: isMobile ? 'transparent' : 'background.paper',
+          boxShadow: isMobile ? 'none' : undefined,
         }}
       >
         <Stack spacing={2.25} alignItems="center" textAlign="center">

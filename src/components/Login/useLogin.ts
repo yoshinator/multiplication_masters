@@ -19,6 +19,7 @@ import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
 const initialUser: User = {
   username: '',
+  userRole: 'student',
   createdAt: null,
   lastLogin: null,
   activeGroup: 1,
