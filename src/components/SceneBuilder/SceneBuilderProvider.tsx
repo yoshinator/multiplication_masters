@@ -1,4 +1,4 @@
-import { type FC, useRef, useState } from 'react'
+import { type FC, type ReactNode, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { SceneBuilderContext } from './sceneBuilderContext'
 
@@ -16,7 +16,7 @@ type Props = {
   unlockedItemIds: string[]
   initialObjects?: SceneObjectInstance[]
   onLayoutChange?: (objects: SceneObjectInstance[]) => void
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export const SceneBuilderProvider: FC<Props> = ({

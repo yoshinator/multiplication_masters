@@ -78,7 +78,7 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {
-    if (!app || !user) return
+    if (!app || !user?.uid) return
 
     // save and clear the buffer
     const pending = omitUndefined(pendingUpdateRef.current)

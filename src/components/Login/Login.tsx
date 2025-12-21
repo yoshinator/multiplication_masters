@@ -29,7 +29,7 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
 
       await loginWithUsername(name)
 
-      onSuccess?.() // 👈 close modal
+      onSuccess?.()
       navigate(ROUTES.TRAIN)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

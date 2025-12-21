@@ -222,7 +222,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       sessionType: SessionRecord['sessionType'],
       sessionLength: number
     ) => {
-      if (!app || !user || !sessionStartRef.current) return
+      if (!app || !user?.uid || !sessionStartRef.current) return
       const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
