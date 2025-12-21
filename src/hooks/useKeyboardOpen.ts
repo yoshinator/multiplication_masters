@@ -15,10 +15,16 @@ export const useKeyboardOpen = (threshold = 120) => {
     if (!window.visualViewport) return
 
     const viewport = window.visualViewport
-    const initialHeight = viewport.height
+    let baselineHeight = viewport.height
 
     const onResize = () => {
-      const heightDiff = initialHeight - viewport.height
+      // If the viewport height increases (keyboard closes or UI changes),
+      // treat the new height as the new baseline.
+      if (viewport.height > baselineHeight) {
+        baselineHeight = viewport.height
+      }
+
+      const heightDiff = baselineHeight - viewport.height
       setIsOpen(heightDiff > threshold)
     }
 
