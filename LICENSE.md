@@ -1,6 +1,6 @@
 # Software License Agreement (Non-Commercial, Personal & Internal Use)
 
-**Copyright (c) 2025 Yoan Amte**
+**Copyright (c) 2025 Yoan Ante**
 
 ## 1. Permitted Use
 You are granted a non-exclusive, non-transferable license to:
