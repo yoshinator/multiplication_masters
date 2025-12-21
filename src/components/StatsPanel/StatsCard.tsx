@@ -3,7 +3,7 @@ import { Box, Typography, Card } from '@mui/material'
 
 interface Props {
   icon: ReactElement
-  label: string
+  label?: string
   value: string | number
   color: string
 }
@@ -31,9 +31,11 @@ const StatsCard: FC<Props> = ({ icon, label, value, color }) => (
       {value}
     </Typography>
 
-    <Typography variant="caption" sx={{ opacity: 0.7, lineHeight: 1.2 }}>
-      {label}
-    </Typography>
+    {label && (
+      <Typography variant="caption" sx={{ opacity: 0.7, lineHeight: 1.2 }}>
+        {label}
+      </Typography>
+    )}
   </Card>
 )
 

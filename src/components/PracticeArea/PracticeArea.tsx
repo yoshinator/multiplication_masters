@@ -1,4 +1,4 @@
-import { type FC } from 'react'
+import { useEffect, type FC } from 'react'
 import { Box } from '@mui/material'
 
 import TimerContextProvider from '../../contexts/timer/TimerProvider'
@@ -10,28 +10,38 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import { useUser } from '../../contexts/user/useUserContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import WelcomeBack from '../WelcomeBack/WelcomeBack'
+import { useIsMobile } from '../../hooks/useIsMobile'
+import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 
 const PracticeArea: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
   const { latestSession } = useReviewSession()
   const { user } = useUser()
+  const isMobile = useIsMobile()
+  const isKeyboardOpen = useKeyboardOpen()
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
+
+  useEffect(() => {
+    if (isKeyboardOpen) {
+      // Scroll to top so content is never partially hidden
+      // I hate this but needed it for mobile safari. Chrome works fine.
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [isKeyboardOpen])
+
   return (
     <Box
       sx={{
-        width: '100%',
-        p: 2,
-        height: 'calc(100vh - 64px)',
+        p: { xs: 1, sm: 2 },
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-start',
+        flex: 1,
+        overflowY: isKeyboardOpen ? 'hidden' : 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
-      {/* TOP HUD: Level + Stats */}
-
-      {/* StatsPanel sits next to LevelPanel */}
       <Box
         sx={{
           display: 'flex',
@@ -39,7 +49,7 @@ const PracticeArea: FC = () => {
           alignItems: 'center',
         }}
       >
-        {isSessionActive ? <StatsPanel compact /> : <LevelPanel />}
+        {isSessionActive ? !isMobile && <StatsPanel /> : <LevelPanel />}
       </Box>
 
       {/* MAIN GAME */}

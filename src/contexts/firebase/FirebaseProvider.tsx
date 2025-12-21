@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from 'react'
-import { useMemo, useState, useCallback, useEffect } from 'react' // Import useEffect
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react' // Import useEffect
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import type { Analytics } from 'firebase/analytics'
@@ -54,8 +54,12 @@ const configFromEnv = () => {
 
 const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
+  const isEmulatorConnectedRef = useRef(false)
 
-  const logger = useLogger('Firebase Povider')
+  const logger = useLogger('Firebase Provider')
+
+  const EMULATOR_HOST =
+    location.hostname === 'localhost' ? 'localhost' : location.hostname
 
   const firebaseApp = useMemo<FirebaseApp | null>(() => {
     const cfg = configFromEnv()
@@ -80,10 +84,14 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   }, [firebaseApp])
 
   // ONLY connect to the emulator if running locally
-  if (location.hostname === 'localhost' && firestoreDb) {
-    connectFirestoreEmulator(firestoreDb, 'localhost', 8080)
-    logger('Connected to Firestore emulator!')
-  }
+  useEffect(() => {
+    if (!import.meta.env.DEV || !firestoreDb || isEmulatorConnectedRef.current)
+      return
+
+    connectFirestoreEmulator(firestoreDb, EMULATOR_HOST, 8080)
+    isEmulatorConnectedRef.current = true
+    logger(`Connected to Firestore emulator at ${EMULATOR_HOST}:8080`)
+  }, [firestoreDb, EMULATOR_HOST, logger])
 
   const subscribeToUserCards = useCallback(
     (username: string) => {

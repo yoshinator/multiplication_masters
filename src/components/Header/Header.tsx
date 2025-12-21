@@ -1,35 +1,48 @@
-import { AppBar, Toolbar, Typography, Box } from '@mui/material'
+import { AppBar, Toolbar, Typography, Button } from '@mui/material'
+import { useState } from 'react'
 import { useUser } from '../../contexts/user/useUserContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import Login from '../Login/Login'
+import LoginModal from '../Login/LoginModal'
 import UserMenu from '../UserMenu/UserMenu'
 
 const Header = () => {
   const { user } = useUser()
+  const isMobile = useIsMobile()
+  const [loginOpen, setLoginOpen] = useState(false)
 
   return (
-    <AppBar
-      position="fixed"
-      color="inherit"
-      elevation={1}
-      sx={{
-        backdropFilter: 'blur(6px)',
-        backgroundColor: 'rgba(255,255,255,0.8)',
-      }}
-    >
-      <Toolbar
+    <>
+      <AppBar
+        position="fixed"
+        color="inherit"
+        elevation={1}
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          backdropFilter: 'blur(6px)',
+          backgroundColor: 'rgba(255,255,255,0.8)',
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          Multiplication Masters
-        </Typography>
+        <Toolbar sx={{ minWidth: 0 }}>
+          <Typography variant="h6" noWrap sx={{ fontWeight: 800, flexGrow: 1 }}>
+            Math Builders
+          </Typography>
 
-        <Box sx={{ flexShrink: 0 }}>{!user ? <Login /> : <UserMenu />}</Box>
-      </Toolbar>
-    </AppBar>
+          {!user ? (
+            isMobile ? (
+              <Button size="small" onClick={() => setLoginOpen(true)}>
+                Login
+              </Button>
+            ) : (
+              <Login />
+            )
+          ) : (
+            <UserMenu />
+          )}
+        </Toolbar>
+      </AppBar>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   )
 }
 

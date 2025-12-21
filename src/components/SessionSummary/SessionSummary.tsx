@@ -16,16 +16,17 @@ import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedu
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const SessionSummary: FC = () => {
   const { correctCount, incorrectCount, latestSession } = useReviewSession()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const { startSession } = useCardSchedulerContext()
   const { setIsSessionActive } = useSessionStatusContext()
 
   const s = latestSession
-  console.log({ s })
 
   // Fallback: If somehow we have no session record, use currentCounts
   const correct = s?.correct ?? correctCount
@@ -54,28 +55,30 @@ const SessionSummary: FC = () => {
   return (
     <Box
       sx={{
-        maxWidth: 480,
+        maxWidth: isMobile ? '100%' : 480,
         mx: 'auto',
-        mt: 4,
-        p: 3,
+        mt: isMobile ? 1 : 4,
+        p: isMobile ? 2 : 3,
         bgcolor: 'background.paper',
-        borderRadius: 3,
-        border: '1px solid',
+        borderRadius: isMobile ? 0 : 3,
+        border: isMobile ? 'none' : '1px solid',
         borderColor: 'divider',
         textAlign: 'center',
       }}
     >
-      {/* Title */}
-      <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
+      <Typography
+        variant={isMobile ? 'h5' : 'h4'}
+        sx={{ fontWeight: 800, mb: isMobile ? 1 : 2 }}
+      >
         Session Complete!
       </Typography>
 
-      <Typography variant="body1" sx={{ opacity: 0.75, mb: 3 }}>
+      <Typography variant="body2" sx={{ opacity: 0.75, mb: isMobile ? 2 : 3 }}>
         Great job! Here's how you did this round.
       </Typography>
 
       {/* Core Stats Row */}
-      <Stack direction="row" spacing={1.5} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1.5} sx={{ mb: { xs: 1, sm: 2 } }}>
         <StatsCard
           icon={<CheckCircleOutlineIcon color="success" />}
           label="Correct"
@@ -101,22 +104,25 @@ const SessionSummary: FC = () => {
         spacing={1.5}
         sx={{
           mt: 2,
-          mb: 3,
+          mb: { xs: 2, sm: 3 },
         }}
       >
         <SecondaryStatCard
           icon={<AccessTimeIcon />}
+          isMobile={isMobile}
           label="Avg Response Time"
-          value={avgTime ? `${avgTime.toFixed(2)}s` : '--'}
+          value={avgTime ? `${(avgTime / 1000).toFixed(2)} seconds` : '--'}
         />
 
         <SecondaryStatCard
+          isMobile={isMobile}
           icon={<FlashOnIcon />}
           label="Fast Correct"
           value={fastCorrect}
         />
 
         <SecondaryStatCard
+          isMobile={isMobile}
           icon={<SlowMotionVideoIcon />}
           label="Slow Correct"
           value={slowCorrect}
@@ -124,7 +130,7 @@ const SessionSummary: FC = () => {
       </Stack>
 
       {/* Buttons */}
-      <Stack spacing={2} sx={{ mt: 3 }}>
+      <Stack spacing={2} sx={{ mt: { xs: 1, sm: 3 } }}>
         <Button
           variant="contained"
           size="large"
@@ -156,27 +162,35 @@ type SSCProps = {
   value: string | number
 }
 
-const SecondaryStatCard: FC<SSCProps> = ({ icon, label, value }) => {
+const SecondaryStatCard: FC<SSCProps & { isMobile?: boolean }> = ({
+  icon,
+  label,
+  value,
+  isMobile,
+}) => {
   return (
     <Card
       sx={{
         display: 'flex',
         alignItems: 'center',
-        p: 1.5,
+        p: isMobile ? 1 : 1.5,
         borderRadius: 2,
         border: '1px solid',
         borderColor: 'divider',
         boxShadow: 'none',
       }}
     >
-      <Box sx={{ fontSize: 24, mr: 1 }}>{icon}</Box>
+      <Box sx={{ fontSize: isMobile ? 20 : 24, mr: 1 }}>{icon}</Box>
 
       <Box sx={{ textAlign: 'left' }}>
-        <Typography variant="subtitle2" sx={{ opacity: 0.7, lineHeight: 1 }}>
+        <Typography variant="caption" sx={{ opacity: 0.7, lineHeight: 1.1 }}>
           {label}
         </Typography>
 
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography
+          variant={isMobile ? 'subtitle1' : 'h6'}
+          sx={{ fontWeight: 700 }}
+        >
           {value}
         </Typography>
       </Box>
