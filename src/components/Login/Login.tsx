@@ -5,17 +5,29 @@ import { useLogin } from './useLogin'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 
-const Login: FC = () => {
+type LoginProps = {
+  onSuccess?: () => void
+}
+
+const Login: FC<LoginProps> = ({ onSuccess }) => {
   const [username, setUsername] = useState('')
   const { login, loading, error } = useLogin()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     const name = username.trim()
     if (!name) return
-    await login(name)
-    navigate(ROUTES.TRAIN)
+
+    try {
+      await login(name)
+
+      onSuccess?.()
+      navigate(ROUTES.TRAIN)
+    } catch {
+      // error already handled in useLogin
+    }
   }
 
   return (

@@ -22,7 +22,8 @@ const App: FC = () => {
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          minHeight: '100vh',
+          minHeight: 'calc(64px - 100dvh)',
+          overflow: 'hidden',
         }}
       >
         <Header />

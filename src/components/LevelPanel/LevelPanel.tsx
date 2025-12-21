@@ -4,12 +4,14 @@ import { EmojiEvents } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useUser } from '../../contexts/user/useUserContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const THRESHOLD = 80
 
 const LevelPanel: FC = () => {
   const { percentageMastered } = useReviewSession()
   const { user } = useUser()
+  const isMobile = useIsMobile()
 
   const [showAnimation, setShowAnimation] = useState(false)
   const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
@@ -33,29 +35,45 @@ const LevelPanel: FC = () => {
   }, [percentageMastered])
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', maxWidth: 220 }}>
+    <Box
+      sx={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: isMobile ? '100%' : 220,
+        mx: isMobile ? 0 : 'auto',
+      }}
+    >
       <Box
         sx={{
-          p: 1.5,
+          p: isMobile ? 1 : 1.5,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           textAlign: 'left',
-          borderRadius: 2,
-          border: '1px solid',
+          borderRadius: isMobile ? 1 : 2,
+          border: isMobile ? 'none' : '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
-          <EmojiEvents sx={{ fontSize: 32, color: '#FFD700' }} />
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            Level {localLevel}
-          </Typography>
-        </Box>
+        {!isMobile && (
+          <Box display="flex" alignItems="center" gap={1}>
+            <EmojiEvents sx={{ fontSize: 32, color: '#FFD700' }} />
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              Level {localLevel}
+            </Typography>
+          </Box>
+        )}
 
-        <Typography variant="caption" sx={{ opacity: 0.7, mb: 1 }}>
-          Mastery Progress
+        <Typography
+          variant="caption"
+          sx={{
+            opacity: 0.7,
+            mb: isMobile ? 0.5 : 1,
+            fontWeight: isMobile ? 600 : 400,
+          }}
+        >
+          Mastery Progress {isMobile && `· Level ${localLevel} 🏆`}
         </Typography>
 
         {/* PROGRESS BAR (Now using actual session progress) */}

@@ -7,11 +7,7 @@ import { useReviewSession } from '../../contexts/reviewSession/reviewSessionCont
 import StatsCard from './StatsCard'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 
-type Props = {
-  compact?: boolean
-}
-
-const StatsPanel: FC<Props> = ({ compact = false }) => {
+const StatsPanel: FC = () => {
   const { correctCount, incorrectCount, latestSession } = useReviewSession()
   const { isSessionActive } = useSessionStatusContext()
 
@@ -25,48 +21,41 @@ const StatsPanel: FC<Props> = ({ compact = false }) => {
     return Math.round((correct / total) * 100)
   }, [correct, total])
 
-  // The compact prop will now render the three StatsCards
-  if (compact) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 1.5, // Reduced gap slightly for compact layout
-          alignItems: 'stretch', // Make all cards stretch to the same height
-          // Added Box wrapper for visual cohesion with LevelPanel's style
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-          p: 1.5,
-        }}
-      >
-        <StatsCard
-          icon={<CheckCircleOutlineIcon color="success" />}
-          label="Correct"
-          value={correct}
-          color="success.main"
-        />
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 1.5, // Reduced gap slightly for compact layout
+        alignItems: 'stretch', // Make all cards stretch to the same height
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+        p: { xs: 0.5, sm: 1.5 },
+      }}
+    >
+      <StatsCard
+        icon={<CheckCircleOutlineIcon color="success" />}
+        label="Correct"
+        value={correct}
+        color="success.main"
+      />
 
-        <StatsCard
-          icon={<CancelOutlinedIcon color="error" />}
-          label="Incorrect"
-          value={incorrect}
-          color="error.main"
-        />
+      <StatsCard
+        icon={<CancelOutlinedIcon color="error" />}
+        label="Incorrect"
+        value={incorrect}
+        color="error.main"
+      />
 
-        <StatsCard
-          icon={<TrendingUpIcon color="primary" />}
-          label="Accuracy"
-          value={`${accuracy}%`}
-          color="primary.main"
-        />
-      </Box>
-    )
-  }
-
-  // Full version (if needed elsewhere)
-  return <div>Full Stats Here</div>
+      <StatsCard
+        icon={<TrendingUpIcon color="primary" />}
+        label="Accuracy"
+        value={`${accuracy}%`}
+        color="primary.main"
+      />
+    </Box>
+  )
 }
 
 export default StatsPanel

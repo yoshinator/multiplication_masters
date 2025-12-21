@@ -57,6 +57,9 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
 
   const logger = useLogger('Firebase Povider')
 
+  const EMULATOR_HOST =
+    location.hostname === 'localhost' ? 'localhost' : location.hostname
+
   const firebaseApp = useMemo<FirebaseApp | null>(() => {
     const cfg = configFromEnv()
     if (!cfg) return null
@@ -80,10 +83,12 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   }, [firebaseApp])
 
   // ONLY connect to the emulator if running locally
-  if (location.hostname === 'localhost' && firestoreDb) {
-    connectFirestoreEmulator(firestoreDb, 'localhost', 8080)
-    logger('Connected to Firestore emulator!')
-  }
+  useEffect(() => {
+    if (!import.meta.env.DEV || !firestoreDb) return
+
+    connectFirestoreEmulator(firestoreDb, EMULATOR_HOST, 8080)
+    logger(`Connected to Firestore emulator at ${EMULATOR_HOST}:8080`)
+  }, [firestoreDb, EMULATOR_HOST, logger])
 
   const subscribeToUserCards = useCallback(
     (username: string) => {

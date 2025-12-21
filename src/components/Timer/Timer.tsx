@@ -3,12 +3,16 @@ import type { FC } from 'react'
 import { useTimerContext } from '../../contexts/timer/timerContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const Timer: FC = () => {
   const { currentCard } = useCardSchedulerContext()
   const { time, isRunning, startTimer, stopTimer, resetTimer } =
     useTimerContext()
   const { isShowingAnswer } = useReviewSession()
+  const isMobile = useIsMobile()
+  const circleSize = isMobile ? 40 : 150
+  const borderSize = isMobile ? 3 : 6
 
   // convert ms → whole seconds
   const seconds = Math.ceil(time / 1000)
@@ -17,21 +21,22 @@ const Timer: FC = () => {
     <Box
       sx={{
         textAlign: 'center',
-        mb: 3,
+        mb: isMobile ? 1.5 : 3,
+        mt: isMobile ? 0.5 : 1,
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: isMobile ? 'row' : 'column',
+        justifyContent: isMobile ? 'center' : 'inherit',
         alignItems: 'center',
-        gap: 2,
-        mt: 1,
+        gap: isMobile ? 1 : 2,
       }}
     >
       {/* BIG CIRCLE + NUMBER */}
       <Box
         sx={{
-          width: 150,
-          height: 150,
+          width: circleSize,
+          height: circleSize,
           borderRadius: '50%',
-          border: '6px solid',
+          border: `${borderSize}px solid`,
           borderColor: isRunning ? 'primary.main' : 'grey.500',
           display: 'flex',
           alignItems: 'center',
@@ -40,11 +45,11 @@ const Timer: FC = () => {
         }}
       >
         <Typography
-          variant="h3"
           sx={{
-            color: isRunning ? 'primary.contrastText' : 'inherit',
+            fontSize: isMobile ? '1.25rem' : '2.2rem',
             fontWeight: 800,
-            letterSpacing: '-1px',
+            color: isRunning ? 'primary.contrastText' : 'inherit',
+            lineHeight: 1,
           }}
         >
           {seconds}
@@ -52,13 +57,17 @@ const Timer: FC = () => {
       </Box>
 
       {/* CONTROLS */}
-      <Box display="flex" gap={1}>
+      <Box display="flex" gap={isMobile ? 0.5 : 1}>
         {!isRunning && !isShowingAnswer && (
           <Button
             variant="contained"
             color="primary"
             onClick={startTimer}
-            sx={{ px: 3 }}
+            sx={{
+              px: isMobile ? 1.5 : 3,
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              minWidth: isMobile ? 64 : 88,
+            }}
           >
             {currentCard ? 'Resume' : 'Start'}
           </Button>
@@ -69,20 +78,30 @@ const Timer: FC = () => {
             variant="outlined"
             color="warning"
             onClick={stopTimer}
-            sx={{ px: 3 }}
+            sx={{
+              px: isMobile ? 1.5 : 3,
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              minWidth: isMobile ? 64 : 88,
+            }}
           >
             Stop
           </Button>
         )}
 
-        <Button
-          variant="outlined"
-          color="error"
-          onClick={resetTimer}
-          sx={{ px: 3 }}
-        >
-          Reset
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={resetTimer}
+            sx={{
+              px: isMobile ? 1.5 : 3,
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              minWidth: isMobile ? 64 : 88,
+            }}
+          >
+            Reset
+          </Button>
+        )}
       </Box>
     </Box>
   )

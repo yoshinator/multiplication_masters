@@ -1,10 +1,12 @@
 import { type FC } from 'react'
-import { Box, Typography, Stack, Tooltip } from '@mui/material'
+import { Box, Typography, Tooltip } from '@mui/material'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const ProfilePage: FC = () => {
   const { sessionLength, setSessionLength } = useSessionStatusContext()
+  const isMobile = useIsMobile()
 
   const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     // Make Enter/Space activate consistently and prevent page scroll on Space.
@@ -17,52 +19,80 @@ const ProfilePage: FC = () => {
   return (
     <Box
       sx={{
-        p: 2,
-        my: 2,
+        p: isMobile ? 1.5 : 2,
+        my: isMobile ? 1 : 2,
         borderRadius: 2,
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          mb: 1,
+          flexDirection: { xs: 'column', sm: 'row' },
+        }}
+      >
         <Typography variant="subtitle2">Cards per Session</Typography>
 
-        <Tooltip
-          arrow
-          placement="right"
-          title={
-            <Typography variant="caption" sx={{ lineHeight: 1.4 }}>
-              You choose a minimum session size (15, 30, or 45).
-              <br />
-              <br />
-              The system may add more questions during the session to reinforce
-              new or difficult cards.
-              <br />
-              <br />
-              For example, choosing 15 can result in about 45 total questions if
-              many cards are new.
-              <br />
-              <br />
-              This is intentional and helps build fast, long-term recall.
-            </Typography>
-          }
-        >
-          <InfoOutlinedIcon
-            sx={{
-              fontSize: 16,
-              color: 'text.secondary',
-              cursor: 'help',
-            }}
-          />
-        </Tooltip>
+        {isMobile ? (
+          <Typography variant="caption" color="text.secondary">
+            You choose a minimum session size (15, 30, or 45).
+            <br />
+            <br />
+            The system may add more questions during the session to reinforce
+            new or difficult cards.
+            <br />
+            <br />
+            For example, choosing 15 can result in about 45 total questions if
+            many cards are new.
+            <br />
+            <br />
+            This is intentional and helps build fast, long-term recall.
+          </Typography>
+        ) : (
+          <Tooltip
+            arrow
+            placement="right"
+            title={
+              <Typography variant="caption" sx={{ lineHeight: 1.4 }}>
+                You choose a minimum session size (15, 30, or 45).
+                <br />
+                <br />
+                The system may add more questions during the session to
+                reinforce new or difficult cards.
+                <br />
+                <br />
+                For example, choosing 15 can result in about 45 total questions
+                if many cards are new.
+                <br />
+                <br />
+                This is intentional and helps build fast, long-term recall.
+              </Typography>
+            }
+          >
+            <InfoOutlinedIcon
+              sx={{
+                fontSize: 16,
+                color: 'text.secondary',
+                cursor: 'help',
+              }}
+            />
+          </Tooltip>
+        )}
       </Box>
 
-      <Stack
-        direction="row"
-        spacing={2}
+      <Box
         role="group"
-        aria-label="Cards per session"
+        arial-label="Cards per session"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+          gap: 1,
+        }}
       >
         {[10, 15, 30, 45].map((num) => {
           const selected = sessionLength === num
@@ -109,7 +139,7 @@ const ProfilePage: FC = () => {
             </Box>
           )
         })}
-      </Stack>
+      </Box>
     </Box>
   )
 }

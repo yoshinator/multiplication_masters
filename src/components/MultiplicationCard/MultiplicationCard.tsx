@@ -17,6 +17,7 @@ import {
 } from '../../constants/appConstants'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import ZoneTimer from './ZoneTimer'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const MultiplicationCard: FC = () => {
   // COMPONENT STATE
@@ -33,6 +34,7 @@ const MultiplicationCard: FC = () => {
   const prevTimeRef = useRef(time)
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
+  const isMobile = useIsMobile()
   const { top, bottom, value } = currentCard ?? {}
   const expectedLength = value != null ? String(value).length : 0
 
@@ -142,23 +144,29 @@ const MultiplicationCard: FC = () => {
       display="flex"
       justifyContent="center"
       alignItems="center"
-      mt={6}
-      px={2}
+      mt={isMobile ? 2 : 6}
+      px={isMobile ? 1 : 2}
     >
       <Card
         sx={{
-          padding: 4,
-          minWidth: 450,
-          maxWidth: 450,
+          p: isMobile ? 2 : 4,
+          width: '100%',
+          maxWidth: isMobile ? 340 : 450,
+          minHeight: isMobile ? 'auto' : 420,
           backgroundColor: cardColor,
           transition: 'background-color 0.35s ease, transform 0.35s ease',
           transform:
-            cardColor !== 'background.paper' ? 'scale(1.03)' : 'scale(1)',
-          backfaceVisibility: 'hidden',
-          minHeight: 420,
+            cardColor !== 'background.paper' ? 'scale(1.02)' : 'scale(1)',
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            mb: isMobile ? 1 : 2,
+            alignItems: 'center',
+          }}
+        >
           <Box
             sx={{
               borderRadius: '50%',
@@ -194,18 +202,20 @@ const MultiplicationCard: FC = () => {
         <Timer />
         <ZoneTimer time={time} maxTime={BOX_REGRESS} />
 
-        <Grid container spacing={3} sx={{ mt: 1 }}>
+        <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mt: 1 }}>
           <Grid size={12}>
             <Typography
-              variant="h2"
               align="center"
-              sx={{ fontSize: '3.4rem', fontWeight: 800 }}
+              sx={{
+                fontSize: isMobile ? '2.4rem' : '3.4rem',
+                fontWeight: 800,
+              }}
             >
               {top} × {bottom}
             </Typography>
           </Grid>
 
-          <Grid size={12} sx={{ minHeight: 150 }}>
+          <Grid size={12} sx={{ minHeight: isMobile ? 90 : 150 }}>
             {isShowingAnswer ? (
               <Box textAlign="center">
                 <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
@@ -220,7 +230,11 @@ const MultiplicationCard: FC = () => {
                   variant="contained"
                   fullWidth
                   onClick={handleResume}
-                  sx={{ mt: 2, py: 1.5, fontSize: '1.2rem' }}
+                  sx={{
+                    mt: 1.5,
+                    py: isMobile ? 1 : 1.5,
+                    fontSize: isMobile ? '1rem' : '1.2rem',
+                  }}
                 >
                   Continue
                 </Button>
@@ -230,7 +244,13 @@ const MultiplicationCard: FC = () => {
                 <TextField
                   value={answer}
                   fullWidth
+                  inputMode="numeric"
                   inputRef={inputRef}
+                  slotProps={{
+                    htmlInput: {
+                      inputMode: 'numeric',
+                    },
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
@@ -251,10 +271,9 @@ const MultiplicationCard: FC = () => {
                       margin: 0,
                     },
                     '& .MuiOutlinedInput-input': {
-                      fontSize: '3.8rem',
+                      fontSize: isMobile ? '2.25rem' : '3.8rem',
+                      paddingY: isMobile ? 1.25 : 2,
                       textAlign: 'center',
-                      paddingY: 2,
-                      caretColor: '#2962ff',
                     },
                   }}
                 />
