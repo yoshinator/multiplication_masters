@@ -16,8 +16,8 @@ export type FirebaseContextValue = {
   auth: Auth | null
   analytics: Analytics | null
   userCards: UserCard[]
-  loadUserCards: (username: string) => Unsubscribe
-  ensureUserCards: (username: string) => Promise<void>
+  loadUserCards: (uid: string) => Unsubscribe
+  ensureUserCards: (uid: string) => Promise<void>
   setUserCards: Dispatch<SetStateAction<UserCard[]>> | null
 }
 
