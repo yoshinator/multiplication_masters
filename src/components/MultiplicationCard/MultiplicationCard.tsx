@@ -244,7 +244,6 @@ const MultiplicationCard: FC = () => {
                 <TextField
                   value={answer}
                   fullWidth
-                  inputMode="numeric"
                   inputRef={inputRef}
                   slotProps={{
                     htmlInput: {

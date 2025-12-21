@@ -87,7 +87,7 @@ const ProfilePage: FC = () => {
 
       <Box
         role="group"
-        arial-label="Cards per session"
+        aria-label="Cards per session"
         sx={{
           display: 'grid',
           gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',

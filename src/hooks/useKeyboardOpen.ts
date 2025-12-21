@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-/**Detects keyboard open state based on viewport height changes
- * usefor mobile devices when layout shifts due to keyboard appearance
- * allows components to adjust UI accordingly.
+/**
+ * Detects keyboard open state based on viewport height changes
+ * used for mobile devices when layout shifts due to the keyboard
+ * appearing allows components to adjust UI accordingly.
  * This wouldn't be necessary if Safari ~didn't suck~ properly supported visualViewport API
  * @param threshold Height difference threshold to consider keyboard open
  * @returns isOpen Boolean indicating if keyboard is open

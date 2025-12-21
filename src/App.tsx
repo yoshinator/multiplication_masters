@@ -22,7 +22,7 @@ const App: FC = () => {
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          minHeight: 'calc(64px - 100dvh)',
+          minHeight: 'calc(100dvh - 64px)',
           overflow: 'hidden',
         }}
       >
