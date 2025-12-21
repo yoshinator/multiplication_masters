@@ -7,8 +7,7 @@ interface ReviewSessionContextValue {
   addUpdatedCardToSession: (card: UserCard, oldBox: number) => void
   finishSession: (
     sessionType: 'multiplication' | 'division' | 'mixed',
-    sessionLength: number,
-    percentageMastered: number
+    sessionLength: number
   ) => Promise<void>
   latestSession: SessionRecord | null
   pendingUserCards: Record<string, UserCard>

@@ -29,6 +29,7 @@ import { omitUndefined } from '../../utilities/firebaseHelpers'
 import type { FieldValueAllowed } from '../../utilities/typeutils'
 import { useLogger } from '../../hooks/useLogger'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
+import { percentMastered } from '../cardScheduler/helpers/srsLogic'
 
 interface Props {
   children: ReactNode
@@ -42,6 +43,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const { app, setUserCards } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
   const { user, updateUser } = useUser()
+  const { userCards } = useFirebaseContext()
   const [percentageMastered, setPercentageMastered] = useState(
     user?.currentLevelProgress ?? 0
   )
@@ -72,6 +74,17 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const pendingUserFieldsRef = useRef<Record<'correct' | 'incorrect', number>>({
     ...defaultPendingUserCard,
   })
+
+  const getLatestMastery = useCallback(() => {
+    if (!user || !userCards) return 0
+
+    // Merge original cards with the ones we just updated in this session
+    const currentSnapshot = userCards.map(
+      (c) => pendingUserCardsRef.current[c.id] || c
+    )
+
+    return percentMastered(currentSnapshot, user.activeGroup, user.table)
+  }, [user, userCards])
 
   useEffect(() => {
     if (user?.currentLevelProgress != null) {
@@ -207,10 +220,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const finishSession = useCallback(
     async (
       sessionType: SessionRecord['sessionType'],
-      sessionLength: number,
-      percentageMastered: number
+      sessionLength: number
     ) => {
       if (!app || !user || !sessionStartRef.current) return
+      const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
       const finalIncorrect = finalTotalAnswers - finalCorrect
@@ -245,14 +258,14 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         totalSessions: increment(1),
         lifetimeCorrect: increment(finalCorrect),
         lifetimeIncorrect: increment(finalIncorrect),
-        currentLevelProgress: percentageMastered,
+        currentLevelProgress: currentPercentage,
       }
       const localUserUpdates: Partial<User> = {
         totalSessions: (user.totalSessions || 0) + 1,
-        currentLevelProgress: percentageMastered,
+        currentLevelProgress: currentPercentage,
       }
 
-      if (percentageMastered >= 80) {
+      if (currentPercentage >= 80) {
         userDBUpdates.activeGroup = user.activeGroup + 1
         userDBUpdates.currentLevelProgress = 0
 
@@ -289,7 +302,14 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       resetSessionState()
     },
-    [app, user, commitSessionUpdates, updateUser, resetSessionState]
+    [
+      app,
+      user,
+      commitSessionUpdates,
+      updateUser,
+      resetSessionState,
+      getLatestMastery,
+    ]
   )
 
   return (
