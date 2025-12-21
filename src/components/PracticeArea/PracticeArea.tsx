@@ -34,7 +34,8 @@ const PracticeArea: FC = () => {
   return (
     <Box
       sx={{
-        p: { xs: 1, sm: 2 },
+        py: { xs: 0, sm: 2 },
+        px: { xs: 0, sm: 2 },
         display: 'flex',
         flexDirection: 'column',
         flex: 1,

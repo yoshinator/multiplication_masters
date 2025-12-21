@@ -38,6 +38,7 @@ export type UserCard = {
 
 export interface User {
   username: string
+  userRole: 'student' | 'teacher' | 'parent'
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   subscriptionStatus: 'free' | 'premium'
