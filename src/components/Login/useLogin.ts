@@ -30,6 +30,7 @@ const initialUser: User = {
   lifetimeCorrect: 0,
   lifetimeIncorrect: 0,
   totalSessions: 0,
+  currentLevelProgress: 0,
   subscriptionStatus: 'free',
 }
 
