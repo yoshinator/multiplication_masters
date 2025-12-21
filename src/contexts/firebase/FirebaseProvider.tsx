@@ -13,6 +13,12 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore'
+import {
+  getAuth,
+  connectAuthEmulator,
+  onAuthStateChanged,
+  type Auth,
+} from 'firebase/auth'
 import { seedCardsData } from '../../utilities/seedFirestore'
 import { useLogger } from '../../hooks/useLogger'
 import { type UserCard } from '../../constants/dataModels'
@@ -56,7 +62,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
   const isEmulatorConnectedRef = useRef(false)
 
-  const logger = useLogger('Firebase Provider')
+  const logger = useLogger('Firebase Provider', true)
 
   const EMULATOR_HOST =
     location.hostname === 'localhost' ? 'localhost' : location.hostname
@@ -66,6 +72,11 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     if (!cfg) return null
     return getApps().length ? getApp() : initializeApp(cfg)
   }, [])
+
+  const firebaseAuth = useMemo<Auth | null>(() => {
+    if (!firebaseApp) return null
+    return getAuth(firebaseApp)
+  }, [firebaseApp])
 
   const firestoreDb = useMemo<Firestore | null>(() => {
     if (!firebaseApp) return null
@@ -92,6 +103,28 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     isEmulatorConnectedRef.current = true
     logger(`Connected to Firestore emulator at ${EMULATOR_HOST}:8080`)
   }, [firestoreDb, EMULATOR_HOST, logger])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !firebaseAuth) return
+
+    connectAuthEmulator(firebaseAuth, `http://${EMULATOR_HOST}:9099`)
+    logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
+  }, [firebaseAuth, EMULATOR_HOST, logger])
+
+  useEffect(() => {
+    if (!firebaseAuth) return
+
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (authUser) => {
+      if (!authUser) {
+        logger('Auth state: signed out')
+        return
+      }
+
+      logger(`Auth state: signed in (uid=${authUser.uid})`)
+    })
+
+    return unsubscribe
+  }, [firebaseAuth, logger])
 
   const subscribeToUserCards = useCallback(
     (username: string) => {
@@ -149,6 +182,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   const value: FirebaseContextValue = {
     app: firebaseApp,
     analytics: firebaseAnalytics,
+    auth: firebaseAuth,
     userCards,
     loadUserCards,
     setUserCards,

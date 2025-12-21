@@ -1,5 +1,6 @@
 import type { FirebaseApp } from 'firebase/app'
 import type { Analytics } from 'firebase/analytics'
+import type { Auth } from 'firebase/auth'
 import {
   createContext,
   useContext,
@@ -12,6 +13,7 @@ import type { UserCard } from '../../constants/dataModels'
 
 export type FirebaseContextValue = {
   app: FirebaseApp | null
+  auth: Auth | null
   analytics: Analytics | null
   userCards: UserCard[]
   loadUserCards: (username: string) => Unsubscribe | void
@@ -27,6 +29,7 @@ export const useFirebaseContext = (): FirebaseContextValue => {
   if (!ctx)
     return {
       app: null,
+      auth: null,
       analytics: null,
       userCards: [],
       loadUserCards: noop,
