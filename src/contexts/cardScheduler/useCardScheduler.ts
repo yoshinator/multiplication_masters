@@ -6,11 +6,7 @@ import { useLogger } from '../../hooks/useLogger'
 import { debugQueue } from '../../utilities/debugQueue'
 import { useReviewSession } from '../reviewSession/reviewSessionContext'
 
-import {
-  computeNewBox,
-  estimateReviewLoad,
-  percentMastered,
-} from './helpers/srsLogic'
+import { computeNewBox, estimateReviewLoad } from './helpers/srsLogic'
 
 import { shuffleOnce, SHUFFLE_THRESHOLDS } from './helpers/shuffleUtils'
 import { buildQueue } from './helpers/queueBuilder'
@@ -19,8 +15,7 @@ import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusCo
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const logger = useLogger('Scheduler')
-  const { addUpdatedCardToSession, finishSession, pendingUserCards } =
-    useReviewSession()
+  const { addUpdatedCardToSession, finishSession } = useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
@@ -128,32 +123,13 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
       const next = getNextCard()
       setCurrentCard(next)
-      //TODO: Think of way of decoupling percentage mastered calculation from here
-      const allUpdatedCards = userCards.map((c) => pendingUserCards[c.id] || c)
       if (!next && (!q || q.size() === 0)) {
-        const percentageMastered =
-          (user &&
-            percentMastered(allUpdatedCards, user.activeGroup, user.table)) ||
-          0
-
-        finishSession(
-          'multiplication',
-          sessionLengthRef.current,
-          percentageMastered
-        )
+        finishSession('multiplication', sessionLengthRef.current)
       }
 
       return updated
     },
-    [
-      getNextCard,
-      logger,
-      addUpdatedCardToSession,
-      finishSession,
-      pendingUserCards,
-      user,
-      userCards,
-    ]
+    [getNextCard, logger, addUpdatedCardToSession, finishSession]
   )
 
   return {

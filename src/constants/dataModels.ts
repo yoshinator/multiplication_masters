@@ -51,6 +51,7 @@ export interface User {
   lifetimeIncorrect: number
   totalSessions: number
   userDefaultSessionLength: number
+  currentLevelProgress: number
 
   unlockedScenes?: SceneTheme[]
   activeScene?: SceneTheme

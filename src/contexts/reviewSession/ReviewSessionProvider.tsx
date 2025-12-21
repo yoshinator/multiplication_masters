@@ -29,6 +29,7 @@ import { omitUndefined } from '../../utilities/firebaseHelpers'
 import type { FieldValueAllowed } from '../../utilities/typeutils'
 import { useLogger } from '../../hooks/useLogger'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
+import { percentMastered } from '../cardScheduler/helpers/srsLogic'
 
 interface Props {
   children: ReactNode
@@ -41,8 +42,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
   const { app, setUserCards } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
-  const [percentageMastered, setPercentageMastered] = useState(0)
   const { user, updateUser } = useUser()
+  const { userCards } = useFirebaseContext()
+  const [percentageMastered, setPercentageMastered] = useState(
+    user?.currentLevelProgress ?? 0
+  )
   const { setIsSessionActive } = useSessionStatusContext()
 
   const [isShowingAnswer, setIsShowingAnswer] = useState(false)
@@ -70,6 +74,23 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const pendingUserFieldsRef = useRef<Record<'correct' | 'incorrect', number>>({
     ...defaultPendingUserCard,
   })
+
+  const getLatestMastery = useCallback(() => {
+    if (!user || !userCards) return 0
+
+    // Merge original cards with the ones we just updated in this session
+    const currentSnapshot = userCards.map(
+      (c) => pendingUserCardsRef.current[c.id] || c
+    )
+
+    return percentMastered(currentSnapshot, user.activeGroup, user.table)
+  }, [user, userCards])
+
+  useEffect(() => {
+    if (user?.currentLevelProgress != null) {
+      setPercentageMastered(user.currentLevelProgress)
+    }
+  }, [user?.currentLevelProgress])
 
   useEffect(() => {
     if (!app || !user) return
@@ -176,10 +197,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         commitSessionUpdates()
       }
     },
-    [setUserCards, commitSessionUpdates]
+    [setUserCards, commitSessionUpdates, setIsSessionActive]
   )
 
-  const resetSessionState = () => {
+  const resetSessionState = useCallback(() => {
     sessionStartRef.current = null
     fastCorrectRef.current = 0
     slowCorrectRef.current = 0
@@ -194,15 +215,15 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     // Clear refs manually just in case
     pendingUserCardsRef.current = {}
     pendingUserFieldsRef.current = { ...defaultPendingUserCard }
-  }
+  }, [setIsSessionActive])
 
   const finishSession = useCallback(
     async (
       sessionType: SessionRecord['sessionType'],
-      sessionLength: number,
-      percentageMastered: number
+      sessionLength: number
     ) => {
       if (!app || !user || !sessionStartRef.current) return
+      const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
       const finalIncorrect = finalTotalAnswers - finalCorrect
@@ -237,16 +258,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         totalSessions: increment(1),
         lifetimeCorrect: increment(finalCorrect),
         lifetimeIncorrect: increment(finalIncorrect),
+        currentLevelProgress: currentPercentage,
       }
       const localUserUpdates: Partial<User> = {
         totalSessions: (user.totalSessions || 0) + 1,
+        currentLevelProgress: currentPercentage,
       }
 
-      if (percentageMastered >= 80) {
+      if (currentPercentage >= 80) {
         userDBUpdates.activeGroup = user.activeGroup + 1
+        userDBUpdates.currentLevelProgress = 0
+
         localUserUpdates.activeGroup = user.activeGroup + 1
+        localUserUpdates.currentLevelProgress = 0
       }
-      setPercentageMastered(percentageMastered)
 
       // Perform the combined database updates
       await updateDoc(userRef, userDBUpdates)
@@ -277,7 +302,14 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       resetSessionState()
     },
-    [app, user, commitSessionUpdates, updateUser]
+    [
+      app,
+      user,
+      commitSessionUpdates,
+      updateUser,
+      resetSessionState,
+      getLatestMastery,
+    ]
   )
 
   return (

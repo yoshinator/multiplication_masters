@@ -173,4 +173,4 @@ This project is licensed under a **Source Available License** (see [LICENSE](LIC
 * **Public Re-hosting:** You may not upload this code (modified or original) to your own public website, GitHub, or app store.
 * **Third-Party Distribution:** You may not give this software to other schools or organizations. Please direct them to this original repository instead.
 
-**For commercial licensing or questions regarding distribution, please contact:** [yoanante@gmail.com]
+**For commercial licensing or questions regarding distribution, please contact:** yoanante@gmail.com
