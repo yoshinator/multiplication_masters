@@ -3,7 +3,7 @@ import { Box, Toolbar } from '@mui/material'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import Header from './components/Header/Header'
-import { useUser } from './contexts/user/useUserContext'
+import { useUser } from './contexts/userContext/useUserContext'
 
 // Pages (you will create these shortly)
 import PracticeArea from './components/PracticeArea/PracticeArea'
@@ -12,6 +12,7 @@ import ProfilePage from './pages/ProfilePage/ProfilePage'
 import PracticePage from './pages/PracticePage/PracticePage'
 import HomePage from './pages/HomePage/HomePage'
 import { ROUTES } from './constants/routeConstants'
+import RequireUser from './components/RequireUser/RequireUser'
 
 const App: FC = () => {
   const { user } = useUser()
@@ -37,16 +38,44 @@ const App: FC = () => {
           {user ? (
             <>
               {/* Your main practice / session logic */}
-              <Route path={ROUTES.TRAIN} element={<PracticeArea />} />
+              <Route
+                path={ROUTES.TRAIN}
+                element={
+                  <RequireUser>
+                    <PracticeArea />
+                  </RequireUser>
+                }
+              />
 
               {/* Scene Builder */}
-              <Route path={ROUTES.BUILDER} element={<SceneBuilderPage />} />
+              <Route
+                path={ROUTES.BUILDER}
+                element={
+                  <RequireUser>
+                    <SceneBuilderPage />
+                  </RequireUser>
+                }
+              />
 
               {/* Profile */}
-              <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+              <Route
+                path={ROUTES.PROFILE}
+                element={
+                  <RequireUser>
+                    <ProfilePage />
+                  </RequireUser>
+                }
+              />
 
               {/* Practice modes */}
-              <Route path={ROUTES.PRACTICE} element={<PracticePage />} />
+              <Route
+                path={ROUTES.PRACTICE}
+                element={
+                  <RequireUser>
+                    <PracticePage />
+                  </RequireUser>
+                }
+              />
 
               {/* Catch-all → redirect to /app */}
               <Route

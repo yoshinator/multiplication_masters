@@ -21,7 +21,7 @@ import {
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import type { User, UserCard } from '../../constants/dataModels'
-import { useUser } from '../user/useUserContext'
+import { useUser } from '../userContext/useUserContext'
 import { ReviewSessionContext } from './reviewSessionContext'
 import type { SessionRecord } from '../../constants/dataModels'
 import { BOX_ADVANCE } from '../../constants/appConstants'
@@ -93,10 +93,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   }, [user?.currentLevelProgress])
 
   useEffect(() => {
-    if (!app || !user) return
+    if (!app || !user?.uid) return
 
     const db = getFirestore(app)
-    const sessionsCol = collection(db, 'users', user.username, 'Sessions')
+    const sessionsCol = collection(db, 'users', user.uid, 'Sessions')
     // Get the last session
     const q = query(sessionsCol, orderBy('endedAt', 'desc'), limit(1))
 
@@ -113,7 +113,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
   // 1. Helper to push pending cards and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
-    if (!app || !user) return
+    if (!app || !user?.uid) return
     const cards = Object.values(pendingUserCardsRef.current)
 
     // If nothing to save, return
@@ -124,7 +124,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     // A. Update Cards
     for (const card of cards) {
-      const cardRef = doc(db, 'users', user.username, 'UserCards', card.id)
+      const cardRef = doc(db, 'users', user.uid, 'UserCards', card.id)
       const cleanCardPayload = omitUndefined(card)
 
       // Only update if there are fields left after cleaning
@@ -222,7 +222,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       sessionType: SessionRecord['sessionType'],
       sessionLength: number
     ) => {
-      if (!app || !user || !sessionStartRef.current) return
+      if (!app || !user?.uid || !sessionStartRef.current) return
       const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
@@ -250,9 +250,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       await commitSessionUpdates()
 
       const db = getFirestore(app)
-      const ref = doc(collection(db, 'users', user.username, 'Sessions'))
+      const ref = doc(collection(db, 'users', user.uid, 'Sessions'))
 
-      const userRef = doc(db, 'users', user.username)
+      const userRef = doc(db, 'users', user.uid)
 
       const userDBUpdates: FieldValueAllowed<User> = {
         totalSessions: increment(1),
@@ -280,7 +280,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       updateUser(localUserUpdates)
 
       const sessionRecord: SessionRecord = {
-        userId: user.username,
+        userId: user.uid,
         sessionType,
         sessionLength,
         startedAt: sessionStartRef.current,

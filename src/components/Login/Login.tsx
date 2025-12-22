@@ -1,9 +1,9 @@
 import type { FC, FormEvent } from 'react'
 import { useState } from 'react'
 import { Box, Button, TextField } from '@mui/material'
-import { useLogin } from './useLogin'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
+import { useAuthActions } from './useAuthActions'
 
 type LoginProps = {
   onSuccess?: () => void
@@ -11,7 +11,10 @@ type LoginProps = {
 
 const Login: FC<LoginProps> = ({ onSuccess }) => {
   const [username, setUsername] = useState('')
-  const { login, loading, error } = useLogin()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const { loginWithUsername } = useAuthActions()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -21,12 +24,17 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
     if (!name) return
 
     try {
-      await login(name)
+      setLoading(true)
+      setError(null)
+
+      await loginWithUsername(name)
 
       onSuccess?.()
       navigate(ROUTES.TRAIN)
-    } catch {
-      // error already handled in useLogin
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -34,30 +42,20 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
     <Box
       component="form"
       onSubmit={handleSubmit}
-      sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
+      sx={{ display: 'flex', gap: 1 }}
     >
       <TextField
         size="small"
         placeholder="username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        sx={{ minWidth: 120 }}
       />
 
-      <Button
-        variant="contained"
-        disabled={loading}
-        type="submit"
-        sx={{ px: 3 }}
-      >
-        {loading ? '...' : 'Login'}
+      <Button type="submit" variant="contained" disabled={loading}>
+        {loading ? '...' : 'Start'}
       </Button>
 
-      {error && (
-        <Box component="span" sx={{ color: 'error.main', ml: 1 }}>
-          {error}
-        </Box>
-      )}
+      {error && <Box sx={{ color: 'error.main' }}>{error}</Box>}
     </Box>
   )
 }

@@ -12,7 +12,16 @@ import {
   Firestore,
   query,
   orderBy,
+  writeBatch,
+  doc,
+  getDocs,
 } from 'firebase/firestore'
+import {
+  getAuth,
+  connectAuthEmulator,
+  type Auth,
+  type Unsubscribe,
+} from 'firebase/auth'
 import { seedCardsData } from '../../utilities/seedFirestore'
 import { useLogger } from '../../hooks/useLogger'
 import { type UserCard } from '../../constants/dataModels'
@@ -56,7 +65,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
   const isEmulatorConnectedRef = useRef(false)
 
-  const logger = useLogger('Firebase Provider')
+  const logger = useLogger('Firebase Provider', true)
 
   const EMULATOR_HOST =
     location.hostname === 'localhost' ? 'localhost' : location.hostname
@@ -66,6 +75,11 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     if (!cfg) return null
     return getApps().length ? getApp() : initializeApp(cfg)
   }, [])
+
+  const firebaseAuth = useMemo<Auth | null>(() => {
+    if (!firebaseApp) return null
+    return getAuth(firebaseApp)
+  }, [firebaseApp])
 
   const firestoreDb = useMemo<Firestore | null>(() => {
     if (!firebaseApp) return null
@@ -93,18 +107,20 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     logger(`Connected to Firestore emulator at ${EMULATOR_HOST}:8080`)
   }, [firestoreDb, EMULATOR_HOST, logger])
 
+  useEffect(() => {
+    if (!import.meta.env.DEV || !firebaseAuth) return
+
+    connectAuthEmulator(firebaseAuth, `http://${EMULATOR_HOST}:9099`)
+    logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
+  }, [firebaseAuth, EMULATOR_HOST, logger])
+
   const subscribeToUserCards = useCallback(
-    (username: string) => {
+    (uid: string) => {
       if (!firestoreDb) return () => {}
 
-      const userCardsCol = collection(
-        firestoreDb,
-        'users',
-        username,
-        'UserCards'
-      )
+      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
 
-      // orderBy to stabilize order
+      // Use orderBy to keep UserCards in a stable order; Firestore does not guarantee implicit ordering.
       const q = query(userCardsCol, orderBy('id'))
 
       return onSnapshot(q, (snapshot) => {
@@ -119,13 +135,59 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   )
 
   const loadUserCards = useCallback(
-    (username: string) => {
+    (uid: string): Unsubscribe => {
       logger('Loading user cards')
-      if (!firestoreDb || !username) return () => {}
-
-      return subscribeToUserCards(username)
+      if (!firestoreDb || !uid) return () => {}
+      return subscribeToUserCards(uid)
     },
     [firestoreDb, subscribeToUserCards, logger]
+  )
+
+  const ensureUserCards = useCallback(
+    async (uid: string) => {
+      if (!firestoreDb || !uid) return
+
+      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
+
+      const snap = await getDocs(userCardsCol)
+      if (!snap.empty) {
+        logger(`UserCards already exist for uid: ${uid}`)
+        return
+      }
+
+      logger(`Seeding UserCards for uid: ${uid}`)
+
+      const cardsCol = collection(firestoreDb, 'cards')
+      const cardsSnap = await getDocs(cardsCol)
+
+      const cards = cardsSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }))
+
+      if (cards.length !== 576) {
+        logger(`⚠️ Expected 576 cards, got ${cards.length}. Check seeding.`)
+      }
+
+      const CHUNK_SIZE = 500
+      try {
+        for (let i = 0; i < cards.length; i += CHUNK_SIZE) {
+          const batch = writeBatch(firestoreDb)
+          for (const card of cards.slice(i, i + CHUNK_SIZE)) {
+            batch.set(doc(userCardsCol, card.id), card)
+          }
+          await batch.commit()
+        }
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : JSON.stringify(error)
+        logger(`❌ Failed to initialize UserCards for uid: ${uid}. Error: ${message}`)
+        throw error
+      }
+
+      logger(`✅ UserCards initialized for uid: ${uid}`)
+    },
+    [firestoreDb, logger]
   )
 
   /**
@@ -149,8 +211,10 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   const value: FirebaseContextValue = {
     app: firebaseApp,
     analytics: firebaseAnalytics,
+    auth: firebaseAuth,
     userCards,
     loadUserCards,
+    ensureUserCards,
     setUserCards,
   }
 

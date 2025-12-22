@@ -1,6 +1,6 @@
 import { AppBar, Toolbar, Typography, Button } from '@mui/material'
 import { useState } from 'react'
-import { useUser } from '../../contexts/user/useUserContext'
+import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import Login from '../Login/Login'
 import LoginModal from '../Login/LoginModal'

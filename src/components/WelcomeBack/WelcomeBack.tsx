@@ -1,7 +1,7 @@
 import { type FC } from 'react'
 import { Box, Button, Card, Stack, Typography } from '@mui/material'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
-import { useUser } from '../../contexts/user/useUserContext'
+import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const WelcomeBack: FC = () => {
