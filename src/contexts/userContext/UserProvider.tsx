@@ -86,13 +86,13 @@ const UserProvider: FC<Props> = ({ children }) => {
 
     const db = getFirestore(app)
     const userRef = doc(db, 'users', user.uid)
-    logger(`User ${pending} updated`)
+    logger(`Updating user ${user.uid} with pending changes`, pending)
 
     try {
       await updateDoc(userRef, pending)
-      logger(`User ${pending} updated`)
+      logger(`User ${user.uid} updated successfully`, pending)
     } catch (error) {
-      logger(`Error updating user ${error}`)
+      logger(`Error updating user ${user.uid}`, error)
     }
   }, [app, user, logger])
 
