@@ -100,7 +100,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const updateUser = useCallback(
     (fields: Partial<User>) => {
       // Updating the UI, null check seems redundant.
-      // It's not. prevUser can be null so keep it null until its not
+      // It's not. prevUser can be null so keep it null until it's not
       setUser((prevUser: User | null) =>
         prevUser ? { ...prevUser, ...fields } : prevUser
       )
