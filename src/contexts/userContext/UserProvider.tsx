@@ -57,7 +57,6 @@ const UserProvider: FC<Props> = ({ children }) => {
    */
   const pendingUpdateRef = useRef<Partial<User>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isMountedRef = useRef<boolean>(true)
 
   useEffect(() => {
     if (!user?.uid) return
@@ -168,11 +167,7 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Clean up effect no implicit return for readability.
   useEffect(() => {
-    isMountedRef.current = true
-
     return () => {
-      isMountedRef.current = false
-
       // Clear any pending debounced timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
