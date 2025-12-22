@@ -17,7 +17,6 @@ export type FirebaseContextValue = {
   analytics: Analytics | null
   userCards: UserCard[]
   loadUserCards: (uid: string) => Unsubscribe
-  ensureUserCards: (uid: string) => Promise<void>
   setUserCards: Dispatch<SetStateAction<UserCard[]>> | null
 }
 
@@ -34,7 +33,6 @@ export const useFirebaseContext = (): FirebaseContextValue => {
       analytics: null,
       userCards: [],
       loadUserCards: () => noop,
-      ensureUserCards: async () => {},
       setUserCards: null,
     }
   return ctx

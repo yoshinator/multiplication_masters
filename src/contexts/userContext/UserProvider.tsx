@@ -48,7 +48,7 @@ const initialUser: User = {
 const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const logger = useLogger('UserProvider', true)
-  const { app, auth, ensureUserCards, loadUserCards } = useFirebaseContext()
+  const { app, auth, loadUserCards } = useFirebaseContext()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -58,23 +58,28 @@ const UserProvider: FC<Props> = ({ children }) => {
   const pendingUpdateRef = useRef<Partial<User>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  /**
+   * Load user cards subscription when user is authenticated.
+   * 
+   * Note: Card initialization (copying 576 cards from master collection to user's 
+   * UserCards subcollection) is now handled server-side by the `initializeUserCards` 
+   * Cloud Function, which is triggered automatically when a new user document is created.
+   * This eliminates the expensive client-side read/write operations that previously 
+   * blocked the UI.
+   */
   useEffect(() => {
     if (!user?.uid) return
 
     let unsubscribe: Unsubscribe = () => {}
-    let cancelled = false
 
-    ;(async () => {
-      await ensureUserCards(user.uid)
-      if (cancelled) return
-      unsubscribe = loadUserCards(user.uid)
-    })()
+    // Load user cards directly - initialization is now handled server-side
+    // by the Cloud Function triggered on user creation
+    unsubscribe = loadUserCards(user.uid)
 
     return () => {
-      cancelled = true
       unsubscribe()
     }
-  }, [user?.uid, ensureUserCards, loadUserCards])
+  }, [user?.uid, loadUserCards])
 
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {

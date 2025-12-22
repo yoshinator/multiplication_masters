@@ -12,9 +12,6 @@ import {
   Firestore,
   query,
   orderBy,
-  writeBatch,
-  doc,
-  getDocs,
 } from 'firebase/firestore'
 import {
   getAuth,
@@ -143,45 +140,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     [firestoreDb, subscribeToUserCards, logger]
   )
 
-  const ensureUserCards = useCallback(
-    async (uid: string) => {
-      if (!firestoreDb || !uid) return
 
-      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
-
-      const snap = await getDocs(userCardsCol)
-      if (!snap.empty) {
-        logger(`UserCards already exist for uid: ${uid}`)
-        return
-      }
-
-      logger(`Seeding UserCards for uid: ${uid}`)
-
-      const cardsCol = collection(firestoreDb, 'cards')
-      const cardsSnap = await getDocs(cardsCol)
-
-      const cards = cardsSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }))
-
-      if (cards.length !== 576) {
-        logger(`⚠️ Expected 576 cards, got ${cards.length}. Check seeding.`)
-      }
-
-      const CHUNK_SIZE = 500
-      for (let i = 0; i < cards.length; i += CHUNK_SIZE) {
-        const batch = writeBatch(firestoreDb)
-        for (const card of cards.slice(i, i + CHUNK_SIZE)) {
-          batch.set(doc(userCardsCol, card.id), card)
-        }
-        await batch.commit()
-      }
-
-      logger(`✅ UserCards initialized for uid: ${uid}`)
-    },
-    [firestoreDb, logger]
-  )
 
   /**
    * Kind of hacky but need to seed the database somehow.
@@ -207,7 +166,6 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     auth: firebaseAuth,
     userCards,
     loadUserCards,
-    ensureUserCards,
     setUserCards,
   }
 
