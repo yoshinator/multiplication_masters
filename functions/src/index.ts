@@ -3,6 +3,11 @@ import * as admin from 'firebase-admin';
 
 admin.initializeApp();
 
+// Default values for card initialization
+const DEFAULT_BOX = 1;
+const DEFAULT_DIFFICULTY = 'basic' as const;
+const DEFAULT_TABLE = 12;
+
 /**
  * Type definition for a card from the master collection.
  * This matches the UserCard type from the client but uses 
@@ -73,10 +78,10 @@ export const initializeUserCards = functions.firestore
           id: doc.id,
           avgResponseTime: data.avgResponseTime ?? null,
           bottom: data.bottom ?? 0,
-          box: data.box ?? 1,
+          box: data.box ?? DEFAULT_BOX,
           correct: data.correct ?? 0,
           correctDivision: data.correctDivision ?? 0,
-          difficulty: data.difficulty ?? 'basic',
+          difficulty: data.difficulty ?? DEFAULT_DIFFICULTY,
           expression: data.expression ?? '',
           group: data.group ?? 1,
           incorrect: data.incorrect ?? 0,
@@ -86,7 +91,7 @@ export const initializeUserCards = functions.firestore
           mirrorOf: data.mirrorOf ?? '',
           nextDueTime: data.nextDueTime ?? 0,
           seen: data.seen ?? 0,
-          table: data.table ?? 12,
+          table: data.table ?? DEFAULT_TABLE,
           top: data.top ?? 0,
           value: data.value ?? 0,
           wasLastReviewCorrect: data.wasLastReviewCorrect ?? false,
