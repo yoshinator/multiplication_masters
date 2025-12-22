@@ -33,7 +33,7 @@ export const useFirebaseContext = (): FirebaseContextValue => {
       auth: null,
       analytics: null,
       userCards: [],
-      loadUserCards: () => noop,
+      loadUserCards: () => noop as Unsubscribe,
       ensureUserCards: async () => {},
       setUserCards: null,
     }
