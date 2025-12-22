@@ -170,12 +170,19 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
       }
 
       const CHUNK_SIZE = 500
-      for (let i = 0; i < cards.length; i += CHUNK_SIZE) {
-        const batch = writeBatch(firestoreDb)
-        for (const card of cards.slice(i, i + CHUNK_SIZE)) {
-          batch.set(doc(userCardsCol, card.id), card)
+      try {
+        for (let i = 0; i < cards.length; i += CHUNK_SIZE) {
+          const batch = writeBatch(firestoreDb)
+          for (const card of cards.slice(i, i + CHUNK_SIZE)) {
+            batch.set(doc(userCardsCol, card.id), card)
+          }
+          await batch.commit()
         }
-        await batch.commit()
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : JSON.stringify(error)
+        logger(`❌ Failed to initialize UserCards for uid: ${uid}. Error: ${message}`)
+        throw error
       }
 
       logger(`✅ UserCards initialized for uid: ${uid}`)
