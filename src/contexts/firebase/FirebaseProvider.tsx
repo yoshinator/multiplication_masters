@@ -120,6 +120,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
 
       const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
 
+      // Use orderBy to keep UserCards in a stable order; Firestore does not guarantee implicit ordering.
       const q = query(userCardsCol, orderBy('id'))
 
       return onSnapshot(q, (snapshot) => {
