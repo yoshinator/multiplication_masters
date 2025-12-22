@@ -28,7 +28,7 @@ type Props = {
 }
 
 const initialUser: User = {
-  uid: '',
+  uid: '', // Will always get overridden on user creation but need empty string because uid is required.
   username: '',
   userRole: 'student',
   createdAt: null,
