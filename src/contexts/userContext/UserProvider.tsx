@@ -57,6 +57,7 @@ const UserProvider: FC<Props> = ({ children }) => {
    */
   const pendingUpdateRef = useRef<Partial<User>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isMountedRef = useRef<boolean>(true)
 
   useEffect(() => {
     if (!user?.uid) return
@@ -83,6 +84,9 @@ const UserProvider: FC<Props> = ({ children }) => {
     // save and clear the buffer
     const pending = omitUndefined(pendingUpdateRef.current)
     pendingUpdateRef.current = {}
+
+    // If there are no pending updates, skip the write
+    if (Object.keys(pending).length === 0) return
 
     const db = getFirestore(app)
     const userRef = doc(db, 'users', user.uid)
@@ -164,11 +168,22 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Clean up effect no implicit return for readability.
   useEffect(() => {
+    isMountedRef.current = true
+
     return () => {
+      isMountedRef.current = false
+
+      // Clear any pending debounced timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
         debounceTimerRef.current = null
-        commitUserUpdates()
+      }
+
+      // Commit any pending updates immediately on unmount
+      // We can't await this in a cleanup function, but we ensure
+      // the promise is created before unmount completes
+      if (Object.keys(pendingUpdateRef.current).length > 0) {
+        void commitUserUpdates()
       }
     }
   }, [commitUserUpdates])
