@@ -16,6 +16,8 @@ export const useAuthActions = () => {
     const userRef = doc(db, 'users', cred.user.uid)
 
     await setDoc(userRef, { username }, { merge: true })
+
+    return cred
   }
 
   return { loginWithUsername }
