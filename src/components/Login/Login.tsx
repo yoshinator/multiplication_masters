@@ -17,7 +17,7 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
   const { loginWithUsername } = useAuthActions()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const name = username.trim()
