@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { User } from '../../constants/dataModels'
-import { UserContext } from './useUserContext'
+import { type AuthStatus, UserContext } from './useUserContext'
 import {
   doc,
   getDoc,
@@ -27,9 +27,7 @@ type Props = {
   children: ReactNode
 }
 
-const initialUser: User = {
-  uid: '', // Will always get overridden on user creation but need empty string because uid is required.
-  username: '',
+const initialUser: Omit<User, 'uid' | 'username'> = {
   userRole: 'student',
   createdAt: null,
   lastLogin: null,
@@ -47,8 +45,9 @@ const initialUser: User = {
 
 const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider', true)
-  const { app, auth, ensureUserCards, loadUserCards } = useFirebaseContext()
+  const { app, auth, loadUserCards } = useFirebaseContext()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -58,23 +57,28 @@ const UserProvider: FC<Props> = ({ children }) => {
   const pendingUpdateRef = useRef<Partial<User>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  /**
+   * Load user cards subscription when user is authenticated.
+   *
+   * Note: Card initialization (copying 576 cards from master collection to user's
+   * UserCards subcollection) is now handled server-side by the `initializeUserCards`
+   * Cloud Function, which is triggered automatically when a new user document is created.
+   * This eliminates the expensive client-side read/write operations that previously
+   * blocked the UI.
+   */
   useEffect(() => {
     if (!user?.uid) return
 
     let unsubscribe: Unsubscribe = () => {}
-    let cancelled = false
 
-    ;(async () => {
-      await ensureUserCards(user.uid)
-      if (cancelled) return
-      unsubscribe = loadUserCards(user.uid)
-    })()
+    // Load user cards directly - initialization is now handled server-side
+    // by the Cloud Function triggered on user creation
+    unsubscribe = loadUserCards(user.uid)
 
     return () => {
-      cancelled = true
       unsubscribe()
     }
-  }, [user?.uid, ensureUserCards, loadUserCards])
+  }, [user?.uid, loadUserCards])
 
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {
@@ -84,15 +88,18 @@ const UserProvider: FC<Props> = ({ children }) => {
     const pending = omitUndefined(pendingUpdateRef.current)
     pendingUpdateRef.current = {}
 
+    // Avoid calling updateDoc({}) which can be a no-op.
+    if (Object.keys(pending).length === 0) return
+
     const db = getFirestore(app)
     const userRef = doc(db, 'users', user.uid)
-    logger(`Updating user ${user.uid} with pending changes`, pending)
+    logger(`User ${pending} updated`)
 
     try {
       await updateDoc(userRef, pending)
-      logger(`User ${user.uid} updated successfully`, pending)
+      logger(`User ${pending} updated`)
     } catch (error) {
-      logger(`Error updating user ${user.uid}`, error)
+      logger(`Error updating user ${error}`)
     }
   }, [app, user, logger])
 
@@ -129,33 +136,54 @@ const UserProvider: FC<Props> = ({ children }) => {
 
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (!authUser) {
+        // Logged out update user state.
         setUser(null)
+        setAuthStatus('signedOut')
         return
       }
+
+      setAuthStatus('loading')
 
       try {
         const uid = authUser.uid
         const userRef = doc(db, 'users', uid)
-        const snap = await getDoc(userRef)
+        const isNewUser =
+          authUser.metadata.creationTime === authUser.metadata.lastSignInTime
 
-        if (!snap.exists()) {
-          await setDoc(userRef, {
-            ...initialUser,
-            uid,
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-          })
+        if (isNewUser) {
+          await setDoc(
+            userRef,
+            {
+              ...initialUser,
+              uid,
+              createdAt: serverTimestamp(),
+              lastLogin: serverTimestamp(),
+            },
+            { merge: true }
+          )
         } else {
-          await updateDoc(userRef, {
-            lastLogin: serverTimestamp(),
-          })
+          // updateDoc throws if the doc doesn't exist; fall back to merge-set
+          try {
+            await updateDoc(userRef, {
+              lastLogin: serverTimestamp(),
+            })
+          } catch {
+            await setDoc(
+              userRef,
+              { uid, lastLogin: serverTimestamp() },
+              { merge: true }
+            )
+          }
         }
 
+        //update user data and set signedIn.
         const fresh = await getDoc(userRef)
         setUser(fresh.data() as User)
+        setAuthStatus('signedIn')
       } catch (error) {
         console.error('Failed to initialize or update user document:', error)
         setUser(null)
+        setAuthStatus('signedOut')
       }
     })
 
@@ -174,7 +202,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   }, [commitUserUpdates])
 
   return (
-    <UserContext.Provider value={{ user, setUser, updateUser }}>
+    <UserContext.Provider value={{ user, setUser, updateUser, authStatus }}>
       {children}
     </UserContext.Provider>
   )

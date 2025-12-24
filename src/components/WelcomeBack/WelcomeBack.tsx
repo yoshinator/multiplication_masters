@@ -48,7 +48,7 @@ const WelcomeBack: FC = () => {
             color="text.secondary"
             sx={{ maxWidth: 440 }}
           >
-            Ready for a quick session? We’ll mix review + new cards to build
+            Ready for a quick session? We'll mix review + new cards to build
             fast, long-term recall.
           </Typography>
 

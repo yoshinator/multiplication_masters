@@ -7,8 +7,18 @@ import {
   Card,
   CardContent,
 } from '@mui/material'
+import { useUser } from '../../contexts/userContext/useUserContext'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routeConstants'
 
 export default function HomePage() {
+  const { authStatus } = useUser()
+  const Navigate = useNavigate()
+
+  useEffect(() => {
+    if (authStatus === 'signedIn') Navigate(ROUTES.TRAIN)
+  }, [authStatus, Navigate])
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', pt: 8 }}>
       <Container maxWidth="lg">

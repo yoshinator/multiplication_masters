@@ -10,15 +10,24 @@ export const useAuthActions = () => {
       throw new Error('Firebase not ready')
     }
 
-    const cred = await signInAnonymously(auth)
+    const credential = await signInAnonymously(auth)
+
+    const authUser = credential.user
 
     const db = getFirestore(app)
-    const userRef = doc(db, 'users', cred.user.uid)
+    const userRef = doc(db, 'users', authUser.uid)
 
-    await setDoc(userRef, { username }, { merge: true })
-
-    return cred
+    // Ensure the user doc always contains uid; other defaults are merged by UserProvider.
+    await setDoc(userRef, { uid: authUser.uid, username }, { merge: true })
+    return credential
   }
 
-  return { loginWithUsername }
+  const signOut = async () => {
+    if (!auth) {
+      throw new Error('Firebase not ready')
+    }
+    await auth.signOut()
+  }
+
+  return { loginWithUsername, signOut }
 }

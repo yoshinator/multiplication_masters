@@ -13,8 +13,8 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const { loginWithUsername } = useAuthActions()
+
   const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -29,8 +29,8 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
 
       await loginWithUsername(name)
 
+      navigate(ROUTES.TRAIN, { replace: true })
       onSuccess?.()
-      navigate(ROUTES.TRAIN)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

@@ -23,6 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
+# Firebase
+.firebase
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Functions build output
+functions/lib
+functions/node_modules
+
 # secrets
 .env
 .env.local

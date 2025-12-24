@@ -14,7 +14,7 @@ import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusCo
 
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(userCards: UserCard[], user: User | null) {
-  const logger = useLogger('Scheduler')
+  const logger = useLogger('Scheduler', true)
   const { addUpdatedCardToSession, finishSession } = useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
@@ -26,15 +26,17 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
   const shuffleCountsRef = useRef(new Set<number>())
 
   const startSession = useCallback(() => {
+    logger('🛠 Initializing new review session')
     sessionLengthRef.current = sessionLength
     shuffleCountsRef.current = new Set<number>()
+    console.log('userCards length:', userCards.length, 'user:', user)
     if (!userCards?.length || !user) return
-    setIsSessionActive(true)
 
     logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
     const built = buildQueue(userCards, user, sessionLength, logger)
 
     if (!built) return
+    setIsSessionActive(true)
 
     queueRef.current = built.queue
 

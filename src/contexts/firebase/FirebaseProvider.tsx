@@ -97,6 +97,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     return analytics
   }, [firebaseApp])
 
+  // #region Emulator Connections
   // ONLY connect to the emulator if running locally
   useEffect(() => {
     if (!import.meta.env.DEV || !firestoreDb || isEmulatorConnectedRef.current)
@@ -121,19 +122,32 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
       const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
 
       // Use orderBy to keep UserCards in a stable order; Firestore does not guarantee implicit ordering.
-      const q = query(userCardsCol, orderBy('id'))
+      const q = query(
+        userCardsCol,
+        orderBy('group'),
+        orderBy('top'),
+        orderBy('bottom')
+      )
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          const data = snapshot.docs.map((d) => {
+            const raw = d.data() as Omit<UserCard, 'id'>
+            return { ...raw, id: d.id } as UserCard
+          })
 
-      return onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as UserCard
-        )
-        logger('🔄 Firestore pushed new userCards:', data)
-        setUserCards(data)
-      })
+          logger('🔄 Firestore pushed userCards count:', data.length)
+          setUserCards(data)
+        },
+        (error) => {
+          logger('❌ UserCards onSnapshot error:', error)
+        }
+      )
     },
     [firestoreDb, logger]
   )
 
+  // #endregion
   const loadUserCards = useCallback(
     (uid: string): Unsubscribe => {
       logger('Loading user cards')
@@ -208,16 +222,17 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     }
   }, [firestoreDb, logger])
 
-  const value: FirebaseContextValue = {
-    app: firebaseApp,
-    analytics: firebaseAnalytics,
-    auth: firebaseAuth,
-    userCards,
-    loadUserCards,
-    ensureUserCards,
-    setUserCards,
-  }
-
+  const value = useMemo<FirebaseContextValue>(
+    () => ({
+      app: firebaseApp,
+      analytics: firebaseAnalytics,
+      auth: firebaseAuth,
+      userCards,
+      loadUserCards,
+      setUserCards,
+    }),
+    [firebaseApp, firebaseAnalytics, firebaseAuth, userCards, loadUserCards]
+  )
   return (
     <FirebaseContext.Provider value={value}>
       {children}
