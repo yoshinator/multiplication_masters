@@ -176,7 +176,7 @@ const UserProvider: FC<Props> = ({ children }) => {
           }
         }
 
-        //update user data and set signedIn.
+        // Update user data and set signedIn.
         const fresh = await getDoc(userRef)
         setUser(fresh.data() as User)
         setAuthStatus('signedIn')
