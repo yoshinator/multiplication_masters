@@ -29,7 +29,6 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     logger('🛠 Initializing new review session')
     sessionLengthRef.current = sessionLength
     shuffleCountsRef.current = new Set<number>()
-    console.log('userCards length:', userCards.length, 'user:', user)
     if (!userCards?.length || !user) return
 
     logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
