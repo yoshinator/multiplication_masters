@@ -14,11 +14,11 @@ import { ROUTES } from '../../constants/routeConstants'
 
 export default function HomePage() {
   const { authStatus } = useUser()
-  const Navigate = useNavigate()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (authStatus === 'signedIn') Navigate(ROUTES.TRAIN)
-  }, [authStatus, Navigate])
+    if (authStatus === 'signedIn') navigate(ROUTES.TRAIN)
+  }, [authStatus, navigate])
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', pt: 8 }}>
       <Container maxWidth="lg">
