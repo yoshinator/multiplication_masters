@@ -62,7 +62,7 @@ export interface User {
 }
 
 export type SessionRecord = {
-  userId: string // Firebase Auth UID (matches User.uid)
+  userId: string // uid
 
   sessionType: 'multiplication' | 'division' | 'mixed'
   sessionLength: number // 10, 15, 30, 45

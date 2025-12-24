@@ -1,9 +1,12 @@
 import { createContext, useContext } from 'react'
 import type { User } from '../../constants/dataModels'
+
+export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
 interface UserContextValue {
   user: User | null
   setUser: (u: User | null) => void
   updateUser: (fields: Partial<User>) => void
+  authStatus: AuthStatus
 }
 
 export const UserContext = createContext<UserContextValue | undefined>(

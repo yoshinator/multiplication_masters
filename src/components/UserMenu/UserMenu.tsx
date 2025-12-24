@@ -10,10 +10,12 @@ import {
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
+import { useAuthActions } from '../Login/useAuthActions'
 
 const UserMenu = () => {
   const { user } = useUser()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const { signOut } = useAuthActions()
   const navigate = useNavigate()
 
   const open = Boolean(anchorEl)
@@ -67,7 +69,13 @@ const UserMenu = () => {
         >
           Train
         </MenuItem>
-        <MenuItem sx={{ color: 'error.main' }} onClick={handleClose}>
+        <MenuItem
+          sx={{ color: 'error.main' }}
+          onClick={() => {
+            handleClose()
+            signOut()
+          }}
+        >
           Logout
         </MenuItem>
       </Menu>
