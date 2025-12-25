@@ -72,7 +72,7 @@ const UserMenu = () => {
           Train
         </MenuItem>
         {/* Don't allow sign out for anonymous user */}
-        {auth?.currentUser?.isAnonymous ? null : (
+        {auth?.currentUser?.isAnonymous === false && (
           <MenuItem
             sx={{ color: 'error.main' }}
             onClick={() => {
