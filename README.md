@@ -77,6 +77,10 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ### Routing
 - Add routes for Profile, Homepage, Training, Scene Builder.
 
+### User Authentication
+- Basic username login flow implemented.
+- Auth state management and routing integration.
+
 
 ---
 
@@ -118,7 +122,6 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Add email/password signup.
 - Add Google sign-in.
 - Add Parent / Teacher - Dashboard
-- Create student profiles with simplified login's 
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
@@ -152,12 +155,12 @@ See firebaseProvider.tsx for implementation details.
 4. Run development server
 5. npm run dev
 
-Build for production but I'm still not there. 
-npm run build
+6. Build for production
+   `npm run build`
 
 Summary
 
-Multiplication Masters combines a speed-adaptive Leitner system with SM-2 scheduling to create a highly effective multiplication fact trainer. The project now includes a complete session scheduler, a session update pipeline with batching, and logic to persist card states to Firestore. Remaining tasks involve UI refinement, improved analytics, enhanced SRS logic, and production hardening.
+Multiplication Masters combines a speed-adaptive Leitner system with SM-2 scheduling to create a highly effective multiplication fact trainer. The project now includes a complete session scheduler, a session update pipeline with batching, logic to persist card states to Firestore, and a basic authentication flow. Remaining tasks involve UI refinement, improved analytics, enhanced SRS logic, and production hardening.
 
 ## License and Terms of Use
 

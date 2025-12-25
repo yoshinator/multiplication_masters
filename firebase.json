@@ -3,6 +3,10 @@
     "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"],
     "source": "functions"
   },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
   "emulators": {
     "auth": {
       "host": "0.0.0.0",
