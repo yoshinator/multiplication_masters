@@ -1,4 +1,3 @@
-// theme.ts
 import { createTheme, type ThemeOptions } from '@mui/material/styles'
 
 const baseThemeOptions: ThemeOptions = {
