@@ -152,10 +152,9 @@ A Firebase instance and seeding utilities attach to the window object in develop
 Run window.seedCards() after configuring Firebase.
 See firebaseProvider.tsx for implementation details.
 
-4. Run development server
-5. npm run dev
+4. Run development server `npm run dev`
 
-6. Build for production
+5. Build for production
    `npm run build`
 
 Summary
