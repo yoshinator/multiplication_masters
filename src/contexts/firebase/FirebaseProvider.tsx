@@ -12,9 +12,6 @@ import {
   Firestore,
   query,
   orderBy,
-  writeBatch,
-  doc,
-  getDocs,
 } from 'firebase/firestore'
 import {
   getAuth,
@@ -22,17 +19,11 @@ import {
   type Auth,
   type Unsubscribe,
 } from 'firebase/auth'
-import { seedCardsData } from '../../utilities/seedFirestore'
 import { useLogger } from '../../hooks/useLogger'
 import { type UserCard } from '../../constants/dataModels'
 
 type Props = {
   children: ReactNode
-}
-
-interface T extends Window {
-  firestoreDb: Firestore
-  seedCards: () => Promise<{ seeded: boolean; reason?: string }>
 }
 
 // Expect Vite env vars prefixed with VITE_FIREBASE_ (see README or .env)
@@ -156,71 +147,6 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     },
     [firestoreDb, subscribeToUserCards, logger]
   )
-
-  const ensureUserCards = useCallback(
-    async (uid: string) => {
-      if (!firestoreDb || !uid) return
-
-      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
-
-      const snap = await getDocs(userCardsCol)
-      if (!snap.empty) {
-        logger(`UserCards already exist for uid: ${uid}`)
-        return
-      }
-
-      logger(`Seeding UserCards for uid: ${uid}`)
-
-      const cardsCol = collection(firestoreDb, 'cards')
-      const cardsSnap = await getDocs(cardsCol)
-
-      const cards = cardsSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }))
-
-      if (cards.length !== 576) {
-        logger(`⚠️ Expected 576 cards, got ${cards.length}. Check seeding.`)
-      }
-
-      const CHUNK_SIZE = 500
-      try {
-        for (let i = 0; i < cards.length; i += CHUNK_SIZE) {
-          const batch = writeBatch(firestoreDb)
-          for (const card of cards.slice(i, i + CHUNK_SIZE)) {
-            batch.set(doc(userCardsCol, card.id), card)
-          }
-          await batch.commit()
-        }
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : JSON.stringify(error)
-        logger(`❌ Failed to initialize UserCards for uid: ${uid}. Error: ${message}`)
-        throw error
-      }
-
-      logger(`✅ UserCards initialized for uid: ${uid}`)
-    },
-    [firestoreDb, logger]
-  )
-
-  /**
-   * Kind of hacky but need to seed the database somehow.
-   * Exposes db and seedCardsData globally in development mode after initialization
-   * this should move to a pre-deployment script at some point.
-   */
-  useEffect(() => {
-    if (import.meta.env.DEV && firestoreDb) {
-      // Make Firestore DB instance available on window
-      ;(window as unknown as T).firestoreDb = firestoreDb
-      // Make seedCardsData function available on window, pre-bound with the db instance
-      ;(window as unknown as T).seedCards = () => seedCardsData(firestoreDb)
-
-      logger(
-        '[DEV-ONLY] Firebase Firestore (window.firestoreDb) and seedCards (window.seedCards()) are available globally.'
-      )
-    }
-  }, [firestoreDb, logger])
 
   const value = useMemo<FirebaseContextValue>(
     () => ({

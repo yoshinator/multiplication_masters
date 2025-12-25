@@ -25,7 +25,7 @@ export type UserCard = {
   incorrectDivision: number
   isPrimary: boolean
   lastReviewed: number | null
-  mirrorOf: string
+  mirrorOf: string | null
   nextDueTime: number
   seen: number
   table: number
