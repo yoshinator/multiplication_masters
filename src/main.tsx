@@ -8,7 +8,6 @@ import ReviewSessionProvider from './contexts/reviewSession/ReviewSessionProvide
 import CardSchedulerProvider from './contexts/cardScheduler/CardSchedulerProvider.tsx'
 import SessionStatusProvider from './contexts/SessionStatusContext/SessionStatusProvider.tsx'
 
-import { CssBaseline } from '@mui/material'
 import { ThemeContextProvider } from './contexts/themeContext/ThemeContextProvider.tsx'
 
 createRoot(document.getElementById('root')!).render(
@@ -19,7 +18,6 @@ createRoot(document.getElementById('root')!).render(
           <ReviewSessionProvider>
             <CardSchedulerProvider>
               <ThemeContextProvider>
-                <CssBaseline />
                 <App />
               </ThemeContextProvider>
             </CardSchedulerProvider>

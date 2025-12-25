@@ -20,7 +20,6 @@ const ProfilePage: FC = () => {
 
   const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMode(event.target.value as 'light' | 'dark' | 'system')
-    localStorage.setItem('mode', event.target.value)
   }
 
   const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
