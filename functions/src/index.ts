@@ -8,11 +8,7 @@ initializeApp()
 const db = getFirestore()
 
 export const initializeUserCards = onDocumentCreated(
-  {
-    document: 'users/{userId}',
-    cpu: 1,
-    memory: '512MiB',
-  },
+  'users/{userId}',
   async (event) => {
     const userId = event.params.userId
     const userCardsRef = db
