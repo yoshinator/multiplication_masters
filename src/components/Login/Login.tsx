@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Box, Button, TextField } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
-import { useAuthActions } from './useAuthActions'
+import { useAuthActions } from '../../hooks/useAuthActions'
 
 type LoginProps = {
   onSuccess?: () => void
