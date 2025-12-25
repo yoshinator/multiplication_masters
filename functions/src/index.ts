@@ -1,5 +1,5 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
-import { logger } from 'firebase-functions' // Import the logger
+import { logger } from 'firebase-functions'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { MASTER_CARDS } from './masterCards'
@@ -47,7 +47,7 @@ export const initializeUserCards = onDocumentCreated(
       await db
         .collection('users')
         .doc(userId)
-        .update({ cardsInitialized: true })
+        .set({ cardsInitialized: true }, { merge: true })
     } catch (error) {
       // Log the full error object for Google Cloud Logging
       logger.error(`Failed to initialize UserCards for user: ${userId}`, {
