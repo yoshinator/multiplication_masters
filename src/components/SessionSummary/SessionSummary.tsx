@@ -7,20 +7,16 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import FlashOnIcon from '@mui/icons-material/FlashOn'
 import SlowMotionVideoIcon from '@mui/icons-material/SlowMotionVideo'
 import ReplayIcon from '@mui/icons-material/Replay'
-import HomeIcon from '@mui/icons-material/Home'
 
 import StatsCard from '../StatsPanel/StatsCard'
 
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
-import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../constants/routeConstants'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const SessionSummary: FC = () => {
   const { correctCount, incorrectCount, latestSession } = useReviewSession()
-  const navigate = useNavigate()
   const isMobile = useIsMobile()
 
   const { startSession } = useCardSchedulerContext()
@@ -44,11 +40,6 @@ const SessionSummary: FC = () => {
   const restart = () => {
     setIsSessionActive(true)
     startSession()
-  }
-
-  const goHome = () => {
-    setIsSessionActive(false)
-    navigate(ROUTES.HOME)
   }
 
   return (
@@ -132,16 +123,7 @@ const SessionSummary: FC = () => {
           startIcon={<ReplayIcon />}
           onClick={restart}
         >
-          Restart Session
-        </Button>
-
-        <Button
-          variant="outlined"
-          size="large"
-          startIcon={<HomeIcon />}
-          onClick={goHome}
-        >
-          Back to Home
+          Play Again
         </Button>
       </Stack>
     </Card>

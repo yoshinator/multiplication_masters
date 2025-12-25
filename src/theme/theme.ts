@@ -1,26 +1,14 @@
-// theme.ts
-import { createTheme } from '@mui/material/styles'
+import { createTheme, type ThemeOptions } from '@mui/material/styles'
+import {
+  amber,
+  deepPurple,
+  green,
+  orange,
+  pink,
+  red,
+} from '@mui/material/colors'
 
-export const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2962ff', // clean bright blue
-    },
-    success: {
-      main: '#00c853',
-    },
-    warning: {
-      main: '#ffab00',
-      light: '#ffd740',
-    },
-    error: {
-      main: '#d50000',
-    },
-    background: {
-      default: '#f5f7fb',
-      paper: '#ffffff',
-    },
-  },
+const baseThemeOptions: ThemeOptions = {
   shape: {
     borderRadius: 16,
   },
@@ -33,6 +21,10 @@ export const theme = createTheme({
     },
     h5: {
       opacity: 0.7,
+    },
+    button: {
+      textTransform: 'none', // More friendly/playful
+      fontWeight: 700,
     },
   },
   components: {
@@ -64,6 +56,59 @@ export const theme = createTheme({
           },
         },
       },
+    },
+  },
+}
+
+export const theme = createTheme({
+  ...baseThemeOptions,
+  palette: {
+    mode: 'light',
+    primary: {
+      main: deepPurple['A200'], // Playful purple
+    },
+    secondary: {
+      main: pink['A200'], // Pink accent
+    },
+    success: {
+      main: green['A700'],
+    },
+    warning: {
+      main: amber['A700'],
+      light: amber['A200'],
+    },
+    error: {
+      main: red['A700'],
+    },
+    background: {
+      default: '#f4f1fa', // Light purple tint
+      paper: '#ffffff',
+    },
+  },
+})
+
+export const darkTheme = createTheme({
+  ...baseThemeOptions,
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: deepPurple['A100'], // Lighter purple for dark mode
+    },
+    secondary: {
+      main: pink['A100'],
+    },
+    success: {
+      main: green[400], // Green 400 - Good contrast on dark
+    },
+    warning: {
+      main: orange[400], // Orange 400
+    },
+    error: {
+      main: red[500], // Red 500
+    },
+    background: {
+      default: '#120e26', // Deep purple dark
+      paper: '#1d1933',
     },
   },
 })

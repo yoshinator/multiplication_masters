@@ -1,15 +1,12 @@
 import { Box, Button, Typography } from '@mui/material'
 import type { FC } from 'react'
 import { useTimerContext } from '../../contexts/timerContext/timerContext'
-import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const Timer: FC = () => {
-  const { currentCard } = useCardSchedulerContext()
-  const { time, isRunning, startTimer, stopTimer, resetTimer } =
-    useTimerContext()
-  const { isShowingAnswer } = useReviewSession()
+  const { time, isRunning } = useTimerContext()
+  const { finishSession } = useReviewSession()
   const isMobile = useIsMobile()
   const circleSize = isMobile ? 40 : 150
   const borderSize = isMobile ? 3 : 6
@@ -57,52 +54,20 @@ const Timer: FC = () => {
       </Box>
 
       {/* CONTROLS */}
-      <Box display="flex" gap={isMobile ? 0.5 : 1}>
-        {!isRunning && !isShowingAnswer && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={startTimer}
-            sx={{
-              px: isMobile ? 1.5 : 3,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              minWidth: isMobile ? 64 : 88,
-            }}
-          >
-            {currentCard ? 'Resume' : 'Start'}
-          </Button>
-        )}
-
-        {isRunning && (
-          <Button
-            variant="outlined"
-            color="warning"
-            onClick={stopTimer}
-            sx={{
-              px: isMobile ? 1.5 : 3,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              minWidth: isMobile ? 64 : 88,
-            }}
-          >
-            Stop
-          </Button>
-        )}
-
-        {!isMobile && (
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={resetTimer}
-            sx={{
-              px: isMobile ? 1.5 : 3,
-              fontSize: isMobile ? '0.75rem' : '0.875rem',
-              minWidth: isMobile ? 64 : 88,
-            }}
-          >
-            Reset
-          </Button>
-        )}
-      </Box>
+      {isRunning && (
+        <Button
+          variant="contained"
+          color="error"
+          onClick={() => finishSession(0)}
+          sx={{
+            px: isMobile ? 1.5 : 3,
+            fontSize: isMobile ? '0.75rem' : '0.875rem',
+            minWidth: isMobile ? 64 : 88,
+          }}
+        >
+          End Session
+        </Button>
+      )}
     </Box>
   )
 }

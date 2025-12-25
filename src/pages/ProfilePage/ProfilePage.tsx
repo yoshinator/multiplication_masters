@@ -1,12 +1,26 @@
 import { type FC } from 'react'
-import { Box, Typography, Tooltip } from '@mui/material'
+import {
+  Box,
+  Typography,
+  Tooltip,
+  FormControl,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+} from '@mui/material'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useThemeContext } from '../../contexts/themeContext/themeContext'
 
 const ProfilePage: FC = () => {
   const { sessionLength, setSessionLength } = useSessionStatusContext()
   const isMobile = useIsMobile()
+  const { mode, setMode } = useThemeContext()
+
+  const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setMode(event.target.value as 'light' | 'dark' | 'system')
+  }
 
   const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -144,6 +158,30 @@ const ProfilePage: FC = () => {
             </Box>
           )
         })}
+      </Box>
+
+      {/* Theme Preference */}
+      <Box sx={{ mt: 4 }}>
+        <Typography id="appearance-label" variant="subtitle2" sx={{ mb: 1 }}>
+          Appearance
+        </Typography>
+        <FormControl>
+          <RadioGroup
+            row
+            aria-labelledby="appearance-label"
+            name="theme-preference"
+            value={mode}
+            onChange={handleThemeChange}
+          >
+            <FormControlLabel value="light" control={<Radio />} label="Light" />
+            <FormControlLabel value="dark" control={<Radio />} label="Dark" />
+            <FormControlLabel
+              value="system"
+              control={<Radio />}
+              label="System"
+            />
+          </RadioGroup>
+        </FormControl>
       </Box>
     </Box>
   )
