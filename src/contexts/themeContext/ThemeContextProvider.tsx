@@ -4,9 +4,12 @@ import { ThemeProvider, useMediaQuery, CssBaseline } from '@mui/material'
 import { theme, darkTheme } from '../../theme/theme'
 
 export const ThemeContextProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<ColorMode>(
-    (localStorage.getItem('mode') as ColorMode) || 'system'
-  )
+  const storedMode = localStorage.getItem('mode')
+  const initialMode: ColorMode =
+    storedMode === 'light' || storedMode === 'dark' || storedMode === 'system'
+      ? storedMode
+      : 'system'
+  const [mode, setMode] = useState<ColorMode>(initialMode)
 
   useEffect(() => {
     localStorage.setItem('mode', mode)

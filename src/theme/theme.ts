@@ -1,4 +1,12 @@
 import { createTheme, type ThemeOptions } from '@mui/material/styles'
+import {
+  amber,
+  deepPurple,
+  green,
+  orange,
+  pink,
+  red,
+} from '@mui/material/colors'
 
 const baseThemeOptions: ThemeOptions = {
   shape: {
@@ -57,20 +65,20 @@ export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#7c4dff', // Playful purple
+      main: deepPurple['A200'], // Playful purple
     },
     secondary: {
-      main: '#ff4081', // Pink accent
+      main: pink['A200'], // Pink accent
     },
     success: {
-      main: '#00c853',
+      main: green['A700'],
     },
     warning: {
-      main: '#ffab00',
-      light: '#ffd740',
+      main: amber['A700'],
+      light: amber['A200'],
     },
     error: {
-      main: '#d50000',
+      main: red['A700'],
     },
     background: {
       default: '#f4f1fa', // Light purple tint
@@ -84,10 +92,19 @@ export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#b388ff', // Lighter purple for dark mode
+      main: deepPurple['A100'], // Lighter purple for dark mode
     },
     secondary: {
-      main: '#ff80ab',
+      main: pink['A100'],
+    },
+    success: {
+      main: green[400], // Green 400 - Good contrast on dark
+    },
+    warning: {
+      main: orange[400], // Orange 400
+    },
+    error: {
+      main: red[500], // Red 500
     },
     background: {
       default: '#120e26', // Deep purple dark

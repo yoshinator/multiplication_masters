@@ -7,9 +7,13 @@ interface ThemeContextType {
   setMode: (mode: ColorMode) => void
 }
 
-export const ThemeContext = createContext<ThemeContextType>({
-  mode: 'system',
-  setMode: () => {},
-} as ThemeContextType)
+export const ThemeContext = createContext<ThemeContextType | undefined>(
+  undefined
+)
 
-export const useThemeContext = () => useContext(ThemeContext)
+export function useThemeContext() {
+  const ctx = useContext(ThemeContext)
+  if (!ctx)
+    throw new Error('useThemeContext() must be inside ThemeContextProvider')
+  return ctx
+}

@@ -162,13 +162,13 @@ const ProfilePage: FC = () => {
 
       {/* Theme Preference */}
       <Box sx={{ mt: 4 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        <Typography id="appearance-label" variant="subtitle2" sx={{ mb: 1 }}>
           Appearance
         </Typography>
         <FormControl>
           <RadioGroup
             row
-            aria-label="Appearance"
+            aria-labelledby="appearance-label"
             name="theme-preference"
             value={mode}
             onChange={handleThemeChange}
