@@ -1,26 +1,7 @@
 // theme.ts
-import { createTheme } from '@mui/material/styles'
+import { createTheme, type ThemeOptions } from '@mui/material/styles'
 
-export const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2962ff', // clean bright blue
-    },
-    success: {
-      main: '#00c853',
-    },
-    warning: {
-      main: '#ffab00',
-      light: '#ffd740',
-    },
-    error: {
-      main: '#d50000',
-    },
-    background: {
-      default: '#f5f7fb',
-      paper: '#ffffff',
-    },
-  },
+const baseThemeOptions: ThemeOptions = {
   shape: {
     borderRadius: 16,
   },
@@ -33,6 +14,10 @@ export const theme = createTheme({
     },
     h5: {
       opacity: 0.7,
+    },
+    button: {
+      textTransform: 'none', // More friendly/playful
+      fontWeight: 700,
     },
   },
   components: {
@@ -64,6 +49,50 @@ export const theme = createTheme({
           },
         },
       },
+    },
+  },
+}
+
+export const theme = createTheme({
+  ...baseThemeOptions,
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#7c4dff', // Playful purple
+    },
+    secondary: {
+      main: '#ff4081', // Pink accent
+    },
+    success: {
+      main: '#00c853',
+    },
+    warning: {
+      main: '#ffab00',
+      light: '#ffd740',
+    },
+    error: {
+      main: '#d50000',
+    },
+    background: {
+      default: '#f4f1fa', // Light purple tint
+      paper: '#ffffff',
+    },
+  },
+})
+
+export const darkTheme = createTheme({
+  ...baseThemeOptions,
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#b388ff', // Lighter purple for dark mode
+    },
+    secondary: {
+      main: '#ff80ab',
+    },
+    background: {
+      default: '#120e26', // Deep purple dark
+      paper: '#1d1933',
     },
   },
 })

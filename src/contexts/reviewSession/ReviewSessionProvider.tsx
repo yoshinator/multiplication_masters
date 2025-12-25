@@ -219,8 +219,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
   const finishSession = useCallback(
     async (
-      sessionType: SessionRecord['sessionType'],
-      sessionLength: number
+      sessionLength: number,
+      sessionType: SessionRecord['sessionType'] = 'multiplication'
     ) => {
       if (!app || !user?.uid || !sessionStartRef.current) return
       const currentPercentage = getLatestMastery()

@@ -28,6 +28,7 @@ const MultiplicationCard: FC = () => {
   // REFS
   const timeoutRef = useRef<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   // HOOKS
   const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
@@ -38,7 +39,7 @@ const MultiplicationCard: FC = () => {
   const { top, bottom, value } = currentCard ?? {}
   const expectedLength = value != null ? String(value).length : 0
 
-  const getElapsed = () => BOX_REGRESS - time
+  const getElapsed = useCallback(() => BOX_REGRESS - time, [time])
 
   useEffect(() => {
     if (currentCard && !isShowingAnswer) {
@@ -55,6 +56,8 @@ const MultiplicationCard: FC = () => {
   useEffect(() => {
     if (!isShowingAnswer && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 50)
+    } else if (isShowingAnswer && buttonRef.current) {
+      setTimeout(() => buttonRef.current?.focus(), 50)
     }
   }, [currentCard, isShowingAnswer])
 
@@ -146,6 +149,7 @@ const MultiplicationCard: FC = () => {
       alignItems="center"
       mt={isMobile ? 2 : 6}
       px={isMobile ? 1 : 2}
+      flexDirection="column"
     >
       <Card
         sx={{
@@ -172,7 +176,7 @@ const MultiplicationCard: FC = () => {
               borderRadius: '50%',
               width: 24,
               height: 24,
-              backgroundColor: 'black',
+              backgroundColor: 'text.primary',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -187,7 +191,7 @@ const MultiplicationCard: FC = () => {
               borderRadius: '50%',
               width: 24,
               height: 24,
-              backgroundColor: 'black',
+              backgroundColor: 'text.primary',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -227,6 +231,7 @@ const MultiplicationCard: FC = () => {
                 </Typography>
 
                 <Button
+                  ref={buttonRef}
                   variant="contained"
                   fullWidth
                   onClick={handleResume}

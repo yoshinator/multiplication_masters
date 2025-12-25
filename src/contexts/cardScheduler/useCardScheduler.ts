@@ -125,7 +125,7 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
       const next = getNextCard()
       setCurrentCard(next)
       if (!next && (!q || q.size() === 0)) {
-        finishSession('multiplication', sessionLengthRef.current)
+        finishSession(sessionLengthRef.current)
       }
 
       return updated
