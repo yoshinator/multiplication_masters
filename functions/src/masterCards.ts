@@ -1,29 +1,26 @@
-export interface UserCard {
-  // Static fields
-  id: string
-  expression: string
-  top: number
-  bottom: number
-  value: number
-  table: 12 | 24
-  group: number
-  difficulty: 'basic' | 'advanced' | 'elite'
-  mirrorOf: string | null
-  isPrimary: boolean
-
-  // Progress/Tracking fields (initialized to defaults)
-  nextDueTime: number
-  lastReviewed: number | null
+export type UserCard = {
   avgResponseTime: number | null
-  seen: number
+  bottom: number
+  box: number
   correct: number
   correctDivision: number
+  difficulty: 'basic' | 'advanced' | 'elite'
+  expression: string
+  group: number
+  id: string
   incorrect: number
   incorrectDivision: number
+  isPrimary: boolean
+  lastReviewed: number | null
+  mirrorOf: string | null
+  nextDueTime: number
+  seen: number
+  table: number
+  top: number
+  value: number
   wasLastReviewCorrect: boolean
   wasLastDivisionReviewCorrect: boolean
   lastElapsedTime: number
-  box: number
 }
 
 const generateMasterCards = (): UserCard[] => {
