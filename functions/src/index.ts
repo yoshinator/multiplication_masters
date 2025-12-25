@@ -11,10 +11,17 @@ export const initializeUserCards = onDocumentCreated(
   'users/{userId}',
   async (event) => {
     const userId = event.params.userId
-    const userCardsRef = db
-      .collection('users')
-      .doc(userId)
-      .collection('UserCards')
+    const userRef = db.collection('users').doc(userId)
+    const userCardsRef = userRef.collection('UserCards')
+
+    // 1. Fetch the user document to check initialization status
+    const userSnap = await userRef.get()
+    const userData = userSnap.data()
+
+    if (userData?.cardsInitialized === true) {
+      logger.info(`Cards already initialized for user: ${userId}. Skipping.`)
+      return // Exit early
+    }
 
     logger.info(`Starting UserCards initialization for user: ${userId}`, {
       cardCount: MASTER_CARDS.length,
@@ -43,20 +50,13 @@ export const initializeUserCards = onDocumentCreated(
 
       logger.info(`Successfully finished all batches for user: ${userId}`)
 
-      // Helpful to troubleshoot users with missing cards
-      await db
-        .collection('users')
-        .doc(userId)
-        .set({ cardsInitialized: true }, { merge: true })
+      // 2. Set the flag so this doesn't run again
+      await userRef.set({ cardsInitialized: true }, { merge: true })
     } catch (error) {
-      // Log the full error object for Google Cloud Logging
       logger.error(`Failed to initialize UserCards for user: ${userId}`, {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
       })
-
-      // Rethrow so function retries automatically.
-      // (Note: Requires retry-on-failure to be enabled in Google Cloud Console)
       throw error
     }
   }
