@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
+import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 
 const UserMenu = () => {
   const { user } = useUser()
@@ -30,7 +31,9 @@ const UserMenu = () => {
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography sx={{ fontWeight: 600 }}>{user?.username}</Typography>
+        <Typography sx={{ fontWeight: 600 }}>
+          {capitalizeFirstLetter(user?.username ?? 'anonymous user')}
+        </Typography>
 
         <IconButton onClick={handleOpen} size="small">
           <Avatar
@@ -58,10 +61,10 @@ const UserMenu = () => {
         <MenuItem
           onClick={() => {
             handleClose()
-            navigate(ROUTES.BUILDER)
+            navigate(ROUTES.STATS)
           }}
         >
-          My World
+          My Stats
         </MenuItem>
         <MenuItem
           onClick={() => {

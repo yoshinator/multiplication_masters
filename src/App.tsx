@@ -2,14 +2,14 @@ import { type FC } from 'react'
 import { Box, Toolbar } from '@mui/material'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-import Header from './components/Header/Header'
-import PracticeArea from './components/PracticeArea/PracticeArea'
-import SceneBuilderPage from './pages/SceneBuilderPage/SceneBuilderPage'
+import { ROUTES } from './constants/routeConstants'
+
 import ProfilePage from './pages/ProfilePage/ProfilePage'
 import PracticePage from './pages/PracticePage/PracticePage'
 import HomePage from './pages/HomePage/HomePage'
-import { ROUTES } from './constants/routeConstants'
+import Header from './components/Header/Header'
 import RequireUser from './components/RequireUser/RequireUser'
+import StatsPage from './pages/StatsPage/StatsPage'
 
 const App: FC = () => {
   return (
@@ -32,16 +32,16 @@ const App: FC = () => {
             path={ROUTES.TRAIN}
             element={
               <RequireUser>
-                <PracticeArea />
+                <PracticePage />
               </RequireUser>
             }
           />
 
           <Route
-            path={ROUTES.BUILDER}
+            path={ROUTES.STATS}
             element={
               <RequireUser>
-                <SceneBuilderPage />
+                <StatsPage />
               </RequireUser>
             }
           />
@@ -51,15 +51,6 @@ const App: FC = () => {
             element={
               <RequireUser>
                 <ProfilePage />
-              </RequireUser>
-            }
-          />
-
-          <Route
-            path={ROUTES.PRACTICE}
-            element={
-              <RequireUser>
-                <PracticePage />
               </RequireUser>
             }
           />

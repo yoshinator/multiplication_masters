@@ -102,17 +102,22 @@ const SessionSummary: FC = () => {
           value={avgTime ? `${(avgTime / 1000).toFixed(2)} seconds` : '--'}
         />
 
-        <SecondaryStatRow
-          icon={<FlashOnIcon />}
-          label="Fast Correct"
-          value={fastCorrect}
-        />
-
-        <SecondaryStatRow
-          icon={<SlowMotionVideoIcon />}
-          label="Slow Correct"
-          value={slowCorrect}
-        />
+        <Stack direction={isMobile ? 'row' : 'column'} spacing={1.5}>
+          <Box sx={{ flex: 1 }}>
+            <SecondaryStatRow
+              icon={<FlashOnIcon />}
+              label="Fast Correct"
+              value={fastCorrect}
+            />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <SecondaryStatRow
+              icon={<SlowMotionVideoIcon />}
+              label="Slow Correct"
+              value={slowCorrect}
+            />
+          </Box>
+        </Stack>
       </Stack>
 
       {/* Actions */}

@@ -7,7 +7,6 @@ interface Props {
   children?: ReactElement
 }
 
-// TODO: See about moving percentageMastered here.
 const SessionStatusProvider: FC<Props> = ({ children }) => {
   const { user, updateUser } = useUser()
   const [isSessionActive, setIsSessionActive] = useState(false)
@@ -24,7 +23,7 @@ const SessionStatusProvider: FC<Props> = ({ children }) => {
       value={{
         isSessionActive,
         setIsSessionActive,
-        sessionLength: user?.userDefaultSessionLength ?? 15,
+        sessionLength: user?.userDefaultSessionLength ?? 30,
         setSessionLength,
       }}
     >

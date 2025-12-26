@@ -3,5 +3,5 @@ export const ROUTES = {
   TRAIN: '/train',
   BUILDER: '/builder',
   PROFILE: '/profile',
-  PRACTICE: '/practice',
+  STATS: '/stats',
 }

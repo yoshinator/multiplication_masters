@@ -1,8 +1,8 @@
-import { AppBar, Toolbar, Typography, Button } from '@mui/material'
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { useState } from 'react'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import Login from '../Login/Login'
 import LoginModal from '../Login/LoginModal'
 import UserMenu from '../UserMenu/UserMenu'
 
@@ -19,22 +19,42 @@ const Header = () => {
         elevation={1}
         sx={{
           backdropFilter: 'blur(6px)',
-          backgroundColor: 'rgba(255,255,255,0.8)',
+          backgroundColor: (theme) =>
+            alpha(theme.palette.background.paper, 0.8),
         }}
       >
         <Toolbar sx={{ minWidth: 0 }}>
-          <Typography variant="h6" noWrap sx={{ fontWeight: 800, flexGrow: 1 }}>
-            Math Builders
+          <Box
+            component="img"
+            src="/mathbuilders.png"
+            alt="Math Builders"
+            sx={{ height: 50, mr: 1 }}
+          />
+          <Typography
+            variant="h6"
+            noWrap
+            sx={{
+              fontWeight: 800,
+              flexGrow: 1,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Box component="span" sx={{ color: 'text.primary' }}>
+              Math
+            </Box>
+            <Box component="span" sx={{ color: 'primary.main' }}>
+              Builders
+            </Box>
           </Typography>
 
           {!user ? (
-            isMobile ? (
-              <Button size="small" onClick={() => setLoginOpen(true)}>
-                Login
-              </Button>
-            ) : (
-              <Login />
-            )
+            <Button
+              size={isMobile ? 'small' : 'medium'}
+              onClick={() => setLoginOpen(true)}
+            >
+              Login
+            </Button>
           ) : (
             <UserMenu />
           )}
