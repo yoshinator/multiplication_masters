@@ -94,7 +94,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<History color="primary" />}
             label="Total Sessions"
-            value={user.totalSessions}
+            value={user.totalSessions ?? 0}
             color="primary.main"
           />
         </Grid>
@@ -102,7 +102,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<Functions color="secondary" />}
             label="Total Questions"
-            value={totalQuestions}
+            value={totalQuestions ?? 0}
             color="secondary.main"
           />
         </Grid>
@@ -110,7 +110,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<Speed color="info" />}
             label="Avg Accuracy"
-            value={`${accuracy}%`}
+            value={`${accuracy ?? 0}%`}
             color="info.main"
           />
         </Grid>
@@ -118,7 +118,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<DoneAll color="success" />}
             label="Lifetime Correct"
-            value={user.lifetimeCorrect}
+            value={user.lifetimeCorrect ?? 0}
             color="success.main"
           />
         </Grid>
@@ -126,7 +126,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<ErrorOutline color="error" />}
             label="Lifetime Incorrect"
-            value={user.lifetimeIncorrect}
+            value={user.lifetimeIncorrect ?? 0}
             color="error.main"
           />
         </Grid>
@@ -134,7 +134,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<Timeline sx={{ color: 'warning.main' }} />}
             label="Current Level"
-            value={user.activeGroup}
+            value={user.activeGroup ?? 0}
             color="warning.main"
           />
         </Grid>
