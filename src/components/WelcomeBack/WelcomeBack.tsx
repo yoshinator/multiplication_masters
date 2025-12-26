@@ -3,6 +3,7 @@ import { Box, Button, Card, Stack, Typography } from '@mui/material'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 
 const WelcomeBack: FC = () => {
   const { startSession } = useCardSchedulerContext()
@@ -40,7 +41,8 @@ const WelcomeBack: FC = () => {
             variant="h4"
             sx={{ fontWeight: 900, letterSpacing: -0.3 }}
           >
-            Welcome back{user?.username ? `, ${user.username}` : ''}.
+            Welcome back
+            {user?.username ? `, ${capitalizeFirstLetter(user.username)}` : ''}.
           </Typography>
 
           <Typography

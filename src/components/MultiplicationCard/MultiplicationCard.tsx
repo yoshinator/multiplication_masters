@@ -6,7 +6,16 @@ import {
   type FC,
   type FormEvent,
 } from 'react'
-import { Box, Button, Card, Grid, TextField, Typography } from '@mui/material'
+import {
+  Box,
+  Button,
+  Card,
+  Grid,
+  TextField,
+  Typography,
+  Chip,
+  Tooltip,
+} from '@mui/material'
 import { useTimerContext } from '../../contexts/timerContext/timerContext'
 import Timer from '../Timer/Timer'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
@@ -18,6 +27,8 @@ import {
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import ZoneTimer from './ZoneTimer'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import LayersIcon from '@mui/icons-material/Layers'
+import RepeatIcon from '@mui/icons-material/Repeat'
 
 const MultiplicationCard: FC = () => {
   // COMPONENT STATE
@@ -38,6 +49,7 @@ const MultiplicationCard: FC = () => {
   const isMobile = useIsMobile()
   const { top, bottom, value } = currentCard ?? {}
   const expectedLength = value != null ? String(value).length : 0
+  const reviewsLeftForCard = Math.max(1, 4 - (currentCard?.box ?? 1))
 
   const getElapsed = useCallback(() => BOX_REGRESS - time, [time])
 
@@ -171,36 +183,44 @@ const MultiplicationCard: FC = () => {
             alignItems: 'center',
           }}
         >
-          <Box
-            sx={{
-              borderRadius: '50%',
-              width: 24,
-              height: 24,
-              backgroundColor: 'text.primary',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+          <Tooltip
+            title="Estimated total reviews remaining in this session"
+            arrow
           >
-            <Typography variant="caption" color="background.paper">
-              {currentCard.box}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              borderRadius: '50%',
-              width: 24,
-              height: 24,
-              backgroundColor: 'text.primary',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            <Chip
+              icon={<LayersIcon />}
+              label={
+                isMobile
+                  ? `${estimatedReviews} left`
+                  : `Session: ${estimatedReviews}`
+              }
+              size="small"
+              variant="outlined"
+              sx={{ bgcolor: 'background.paper', borderColor: 'divider' }}
+            />
+          </Tooltip>
+
+          <Tooltip
+            title="Times you must answer this card correctly to finish it today"
+            arrow
           >
-            <Typography variant="caption" color="background.paper">
-              {estimatedReviews}
-            </Typography>
-          </Box>
+            <Chip
+              icon={<RepeatIcon />}
+              label={
+                isMobile
+                  ? `${reviewsLeftForCard}x card`
+                  : `Card: ${reviewsLeftForCard}x left`
+              }
+              size="small"
+              variant="outlined"
+              color={reviewsLeftForCard === 1 ? 'success' : 'default'}
+              sx={{
+                bgcolor: 'background.paper',
+                borderColor:
+                  reviewsLeftForCard === 1 ? 'success.main' : 'divider',
+              }}
+            />
+          </Tooltip>
         </Box>
 
         <Timer />

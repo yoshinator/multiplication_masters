@@ -52,22 +52,18 @@ const ProfilePage: FC = () => {
           flexDirection: { xs: 'column', sm: 'row' },
         }}
       >
-        <Typography variant="subtitle2">Cards per Session</Typography>
+        <Typography variant="subtitle2">Session Intensity</Typography>
 
         {isMobile ? (
           <Typography variant="caption" color="text.secondary">
-            You choose a minimum session size (15, 30, or 45).
+            Choose a session size. <strong>Daily</strong> is recommended.
             <br />
             <br />
-            The system may add more questions during the session to reinforce
-            new or difficult cards.
+            For difficult tables (like 4s, 6s, 7s), choose{' '}
+            <strong>Light</strong> or <strong>Quick</strong> to limit new cards.
             <br />
             <br />
-            For example, choosing 15 can result in about 45 total questions if
-            many cards are new.
-            <br />
-            <br />
-            This is intentional and helps build fast, long-term recall.
+            (1 new card ≈ 3 reviews)
           </Typography>
         ) : (
           <Tooltip
@@ -75,18 +71,15 @@ const ProfilePage: FC = () => {
             placement="right"
             title={
               <Typography variant="caption" sx={{ lineHeight: 1.4 }}>
-                You choose a minimum session size (15, 30, or 45).
+                Choose a session size. <strong>Daily</strong> is recommended.
                 <br />
                 <br />
-                The system may add more questions during the session to
-                reinforce new or difficult cards.
+                For difficult tables (like 4s, 6s, 7s), choose{' '}
+                <strong>Light</strong> or <strong>Quick</strong> to limit new
+                cards.
                 <br />
                 <br />
-                For example, choosing 15 can result in about 45 total questions
-                if many cards are new.
-                <br />
-                <br />
-                This is intentional and helps build fast, long-term recall.
+                (1 new card ≈ 3 reviews)
               </Typography>
             }
           >
@@ -104,7 +97,7 @@ const ProfilePage: FC = () => {
       {/* Choices */}
       <Box
         role="group"
-        aria-label="Cards per session"
+        aria-label="Session Intensity"
         sx={{
           display: 'grid',
           gridTemplateColumns: {
@@ -114,22 +107,27 @@ const ProfilePage: FC = () => {
           gap: 1,
         }}
       >
-        {[10, 15, 30, 45].map((num) => {
-          const selected = sessionLength === num
+        {[
+          { value: 10, label: 'Quick', reviews: 'about 30' },
+          { value: 20, label: 'Light', reviews: 'about 60' },
+          { value: 30, label: 'Daily', reviews: 'about 90' },
+          { value: 45, label: 'Intense', reviews: 'about 135' },
+        ].map((option) => {
+          const selected = sessionLength === option.value
 
           return (
             <Box
               component="button"
               type="button"
-              key={num}
-              onClick={() => setSessionLength(num)}
+              key={option.value}
+              onClick={() => setSessionLength(option.value)}
               onKeyDown={handleChoiceKeyDown}
-              aria-label={`Set cards per session to ${num}`}
+              aria-label={`Set session to ${option.label}`}
               aria-pressed={selected}
               sx={{
                 all: 'unset',
-                px: 2,
-                py: 1,
+                px: 1,
+                py: 1.5,
                 borderRadius: 2,
                 border: '1px solid',
                 borderColor: selected ? 'primary.main' : 'divider',
@@ -139,7 +137,8 @@ const ProfilePage: FC = () => {
                 transition: '0.2s',
                 fontWeight: 600,
                 textAlign: 'center',
-                display: 'inline-flex',
+                display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 minWidth: 56,
@@ -154,7 +153,18 @@ const ProfilePage: FC = () => {
                 },
               }}
             >
-              {num}
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, lineHeight: 1.2 }}
+              >
+                {option.label}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ opacity: 0.8, fontSize: '0.7rem' }}
+              >
+                {option.reviews} reviews
+              </Typography>
             </Box>
           )
         })}

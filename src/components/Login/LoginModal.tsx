@@ -9,7 +9,7 @@ type LoginModalProps = {
 
 const LoginModal: FC<LoginModalProps> = ({ open, onClose }) => {
   return (
-    <AppModal open={open} onClose={onClose} title="Sign In">
+    <AppModal open={open} onClose={onClose} title="Sign In" maxWidth="xs">
       <Login onSuccess={onClose} />
     </AppModal>
   )
