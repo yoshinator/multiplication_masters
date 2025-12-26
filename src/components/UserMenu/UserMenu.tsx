@@ -11,12 +11,10 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useAuthActions } from '../../hooks/useAuthActions'
-import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 
 const UserMenu = () => {
   const { user } = useUser()
-  const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { signOut } = useAuthActions()
   const navigate = useNavigate()
@@ -74,18 +72,16 @@ const UserMenu = () => {
         >
           Train
         </MenuItem>
-        {/* Don't allow sign out for anonymous user */}
-        {auth?.currentUser?.isAnonymous === false && (
-          <MenuItem
-            sx={{ color: 'error.main' }}
-            onClick={() => {
-              handleClose()
-              signOut()
-            }}
-          >
-            Logout
-          </MenuItem>
-        )}
+        <MenuItem
+          sx={{ color: 'error.main' }}
+          onClick={async () => {
+            handleClose()
+            await signOut()
+            navigate('/')
+          }}
+        >
+          Sign Out
+        </MenuItem>
       </Menu>
     </>
   )
