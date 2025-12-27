@@ -33,7 +33,7 @@ const animals = [
   'Otter',
   'Hawk',
   'Zebra',
-  'Eagle',
+  'Whale',
   'Sloth',
 ]
 

@@ -4,6 +4,7 @@ import {
   type SyntheticEvent,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -14,12 +15,13 @@ import {
   type SnackbarCloseReason,
 } from '@mui/material'
 
-import { NotificationContext, type Notification } from './NotificationContext'
+import { NotificationContext, type Notification } from './notificationContext'
 
 interface Props {
   children: ReactNode
 }
 export const NotificationProvider: FC<Props> = ({ children }) => {
+  const notificationCounterRef = useRef<number>(0)
   const [snackPack, setSnackPack] = useState<readonly Notification[]>([])
   const [open, setOpen] = useState(false)
   const [messageInfo, setMessageInfo] = useState<Notification | undefined>(
@@ -40,9 +42,14 @@ export const NotificationProvider: FC<Props> = ({ children }) => {
 
   const showNotification = useCallback(
     (message: string, severity: AlertColor = 'info') => {
+      notificationCounterRef.current += 1
       setSnackPack((prev) => [
         ...prev,
-        { id: new Date().getTime() + Math.random(), message, severity },
+        {
+          id: new Date().getTime() + notificationCounterRef.current,
+          message,
+          severity,
+        },
       ])
     },
     []

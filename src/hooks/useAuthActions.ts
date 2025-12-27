@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../contexts/firebase/firebaseContext'
 import { useLogger } from './useLogger'
-import { useNotification } from '../contexts/notificationContext/NotificationContext'
+import { useNotification } from '../contexts/notificationContext/notificationContext'
 import { extractErrorMessage } from '../utilities/typeutils'
 import { generateRandomUsername } from '../utilities/accountHelpers'
 
@@ -21,6 +21,7 @@ export const useAuthActions = () => {
 
   // #region Actions
   const loginAnonymously = async () => {
+    //Consider moving username generation to cloud function
     try {
       if (!auth || !app) {
         throw new Error('Firebase not ready')
@@ -32,25 +33,22 @@ export const useAuthActions = () => {
 
       const db = getFirestore(app)
 
-      let username = generateRandomUsername()
-      let isUnique = false
-      let attempts = 0
+      const candidates = Array.from({ length: 5 }, () =>
+        generateRandomUsername()
+      )
 
-      while (!isUnique && attempts < 5) {
-        attempts++
-        const q = query(
-          collection(db, 'users'),
-          where('username', '==', username)
-        )
-        const querySnapshot = await getDocs(q)
-        if (querySnapshot.empty) {
-          isUnique = true
-        } else {
-          username = generateRandomUsername()
-        }
-      }
+      const q = query(
+        collection(db, 'users'),
+        where('username', 'in', candidates)
+      )
+      const querySnapshot = await getDocs(q)
+      const takenUsernames = new Set(
+        querySnapshot.docs.map((doc) => doc.data().username)
+      )
 
-      if (!isUnique) {
+      const username = candidates.find((c) => !takenUsernames.has(c))
+
+      if (!username) {
         throw new Error(
           'Unable to generate a unique username. Please try again.'
         )
