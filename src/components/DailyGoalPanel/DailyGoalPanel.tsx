@@ -67,46 +67,60 @@ export const DailyGoalPanel: FC = () => {
           textAlign: 'left',
         }}
       >
-        {!isMobile && (
-          <Box display="flex" alignItems="center" gap={1}>
-            <TrackChanges
-              sx={{ fontSize: 32, color: isGoalMet ? '#4CAF50' : '#2196F3' }}
-            />
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              Daily Goal
-            </Typography>
-          </Box>
-        )}
+        {(() => {
+          const roundedProgressPercentage = Math.round(progressPercentage)
 
-        <Typography
-          variant="caption"
-          sx={{
-            opacity: 0.7,
-            mb: { xs: 0.5, sm: 1 },
-            fontWeight: { xs: 600, sm: 400 },
-          }}
-        >
-          {isGoalMet ? 'Goal Reached!' : 'Daily Progress'}{' '}
-          {isMobile && `· ${Math.round(progressPercentage)}%`}
-        </Typography>
+          return (
+            <>
+              {!isMobile && (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TrackChanges
+                    sx={{
+                      fontSize: 32,
+                      color: isGoalMet ? '#4CAF50' : '#2196F3',
+                    }}
+                  />
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    Daily Goal
+                  </Typography>
+                </Box>
+              )}
 
-        <LinearProgress
-          variant="determinate"
-          value={progressPercentage}
-          sx={{
-            width: '100%',
-            height: 8,
-            borderRadius: 10,
-            bgcolor: 'grey.300',
-            '& .MuiLinearProgress-bar': {
-              bgcolor: isGoalMet ? 'success.main' : 'primary.main',
-            },
-          }}
-        />
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.7,
+                  mb: { xs: 0.5, sm: 1 },
+                  fontWeight: { xs: 600, sm: 400 },
+                }}
+              >
+                {isGoalMet ? 'Goal Reached!' : 'Daily Progress'}{' '}
+                {isMobile && `· ${roundedProgressPercentage}%`}
+              </Typography>
 
-        <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
-          {Math.round(progressPercentage)}%
-        </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={progressPercentage}
+                sx={{
+                  width: '100%',
+                  height: 8,
+                  borderRadius: 10,
+                  bgcolor: 'grey.300',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: isGoalMet ? 'success.main' : 'primary.main',
+                  },
+                }}
+              />
+
+              <Typography
+                variant="caption"
+                sx={{ mt: 0.5, fontWeight: 600 }}
+              >
+                {roundedProgressPercentage}%
+              </Typography>
+            </>
+          )
+        })()}
       </Card>
 
       {/* GOAL MET ANIMATION */}
