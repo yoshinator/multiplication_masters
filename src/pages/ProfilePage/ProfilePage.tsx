@@ -12,6 +12,7 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useThemeContext } from '../../contexts/themeContext/themeContext'
+import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
 const ProfilePage: FC = () => {
   const { sessionLength, setSessionLength } = useSessionStatusContext()
@@ -109,7 +110,11 @@ const ProfilePage: FC = () => {
       >
         {[
           { value: 10, label: 'Quick', reviews: 'about 30' },
-          { value: 20, label: 'Light', reviews: 'about 60' },
+          {
+            value: DEFAULT_SESSION_LENGTH,
+            label: 'Light',
+            reviews: 'about 60',
+          },
           { value: 30, label: 'Daily', reviews: 'about 90' },
           { value: 45, label: 'Intense', reviews: 'about 135' },
         ].map((option) => {

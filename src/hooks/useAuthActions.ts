@@ -1,13 +1,5 @@
 import { signInAnonymously, signInWithEmailAndPassword } from 'firebase/auth'
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore'
+import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useFirebaseContext } from '../contexts/firebase/firebaseContext'
 import { useLogger } from './useLogger'
 import { useNotification } from '../contexts/notificationContext/notificationContext'
@@ -33,26 +25,7 @@ export const useAuthActions = () => {
 
       const db = getFirestore(app)
 
-      const candidates = Array.from({ length: 10 }, () =>
-        generateRandomUsername()
-      )
-
-      const q = query(
-        collection(db, 'users'),
-        where('username', 'in', candidates)
-      )
-      const querySnapshot = await getDocs(q)
-      const takenUsernames = new Set(
-        querySnapshot.docs.map((doc) => doc.data().username)
-      )
-
-      const username = candidates.find((c) => !takenUsernames.has(c))
-
-      if (!username) {
-        throw new Error(
-          'Unable to generate a unique username. Please try again.'
-        )
-      }
+      const username = generateRandomUsername()
 
       const userRef = doc(db, 'users', authUser.uid)
 
