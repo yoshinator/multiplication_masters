@@ -37,6 +37,8 @@ interface Props {
 
 const defaultPendingUserCard = { correct: 0, incorrect: 0 }
 const SAVE_THRESHOLD = 5 // <--- Auto-save every 5 cards
+const MASTERY_THRESHOLD = 80
+const MAX_GROUPS = 8
 
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
@@ -265,7 +267,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         currentLevelProgress: currentPercentage,
       }
 
-      if (currentPercentage >= 80) {
+      if (
+        currentPercentage >= MASTERY_THRESHOLD &&
+        user.activeGroup < MAX_GROUPS
+      ) {
         userDBUpdates.activeGroup = user.activeGroup + 1
         userDBUpdates.currentLevelProgress = 0
 
