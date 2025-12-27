@@ -47,6 +47,7 @@ const MultiplicationCard: FC = () => {
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
   const isMobile = useIsMobile()
+
   const { top, bottom, value } = currentCard ?? {}
   const expectedLength = value != null ? String(value).length : 0
   const reviewsLeftForCard = Math.max(1, 4 - (currentCard?.box ?? 1))

@@ -9,6 +9,7 @@ import CardSchedulerProvider from './contexts/cardScheduler/CardSchedulerProvide
 import SessionStatusProvider from './contexts/SessionStatusContext/SessionStatusProvider.tsx'
 
 import { ThemeContextProvider } from './contexts/themeContext/ThemeContextProvider.tsx'
+import { NotificationProvider } from './contexts/notificationContext/NotificationProvider.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,7 +19,9 @@ createRoot(document.getElementById('root')!).render(
           <ReviewSessionProvider>
             <CardSchedulerProvider>
               <ThemeContextProvider>
-                <App />
+                <NotificationProvider>
+                  <App />
+                </NotificationProvider>
               </ThemeContextProvider>
             </CardSchedulerProvider>
           </ReviewSessionProvider>
