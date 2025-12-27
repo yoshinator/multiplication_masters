@@ -29,18 +29,15 @@ const Header = () => {
         }}
       >
         <Toolbar sx={{ minWidth: 0 }}>
-          <Typography
+          <Box
             onClick={() =>
               user ? navigate(ROUTES.TRAIN) : navigate(ROUTES.HOME)
             }
-            variant="h6"
-            noWrap
             sx={{
-              fontWeight: 800,
-              flexGrow: 1,
               display: 'flex',
               alignItems: 'center',
               cursor: 'pointer',
+              userSelect: 'none',
             }}
           >
             <Box
@@ -50,13 +47,17 @@ const Header = () => {
               sx={{ height: 50, mr: 1 }}
             />
 
-            <Box component="span" sx={{ color: 'text.primary' }}>
-              Math
-            </Box>
-            <Box component="span" sx={{ color: 'primary.main' }}>
-              Builders
-            </Box>
-          </Typography>
+            <Typography variant="h6" noWrap sx={{ fontWeight: 800 }}>
+              <Box component="span" sx={{ color: 'text.primary' }}>
+                Math
+              </Box>
+              <Box component="span" sx={{ color: 'primary.main' }}>
+                Builders
+              </Box>
+            </Typography>
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }} />
 
           {!user ? (
             <Box sx={{ display: 'flex', gap: 1 }}>

@@ -4,7 +4,8 @@ import { useThresholdAnimation } from './useThresholdAnimation'
 export const useLevelUp = (
   percentageMastered: number,
   threshold: number = 80,
-  initialLevel: number = 1
+  initialLevel: number = 1,
+  animationLength: number = 4500
 ) => {
   const [localLevel, setLocalLevel] = useState(initialLevel)
 
@@ -16,7 +17,7 @@ export const useLevelUp = (
     percentageMastered,
     threshold,
     handleLevelUp,
-    4500
+    animationLength
   )
 
   return { showAnimation, localLevel }

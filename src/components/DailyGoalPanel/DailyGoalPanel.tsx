@@ -28,7 +28,10 @@ export const DailyGoalPanel: FC = () => {
   const progressPercentage = Math.min(100, (reviewsToday / dailyGoal) * 100)
   const isGoalMet = reviewsToday >= dailyGoal
 
-  const showAnimation = useThresholdAnimation(reviewsToday, dailyGoal)
+  // If reviewsToday is 0 (or loading), we pass dailyGoal to the animation hook
+  // to prevent it from triggering when the value jumps from 0 to the actual value.
+  const animationValue = !reviewsToday ? dailyGoal : reviewsToday
+  const showAnimation = useThresholdAnimation(animationValue, dailyGoal)
 
   return (
     <Box
