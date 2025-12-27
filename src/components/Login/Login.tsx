@@ -38,31 +38,29 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
       sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 1 }}
     >
       <Typography variant="body1" color="text.secondary">
-        'Sign in to your account.'
+        Sign in to your account.
       </Typography>
 
-      <>
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          fullWidth
-          autoFocus
-          required
-          error={!!error}
-        />
-        <TextField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          fullWidth
-          required
-          error={!!error}
-          helperText={error}
-        />
-      </>
+      <TextField
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        fullWidth
+        autoFocus
+        required
+        error={!!error}
+      />
+      <TextField
+        label="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        fullWidth
+        required
+        error={!!error}
+        helperText={error}
+      />
 
       <Button
         type="submit"
