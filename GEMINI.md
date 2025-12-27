@@ -81,7 +81,7 @@ This document provides context for the Multiplication Masters UI repository, inc
 
 ## General coding style
 - Do not use emojis
-- prefer functions and if statements wrapped in {} no explicit return, 
+- prefer functions and if statements wrapped in {}, avoiding explicit returns
 - alphabetize imports with react imports first followed by package (library) imports followed by project imports
 - alphabetize arguments, props, and variables unless we can't because of optional arguments or avoiding overriding props
 
