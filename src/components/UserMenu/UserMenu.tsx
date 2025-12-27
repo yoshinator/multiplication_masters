@@ -31,6 +31,7 @@ const UserMenu = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {
           <Typography
+            onClick={handleOpen}
             sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
           >
             {capitalizeFirstLetter(user?.username ?? 'anonymous user')}

@@ -1,10 +1,11 @@
-import { type FC, useMemo, useState, useEffect, useRef } from 'react'
+import { type FC, useMemo } from 'react'
 import { Box, Typography, LinearProgress, Card } from '@mui/material'
 import { TrackChanges } from '@mui/icons-material'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useDailyReviews } from '../../hooks/useDailyReviews'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import LevelUpAnimation from '../LevelUpAnimation/LevelUpAnimation'
+import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
 
 const GOAL_CONFIG = {
   BEGINNER: 150, // Group 1
@@ -15,8 +16,6 @@ export const DailyGoalPanel: FC = () => {
   const { user } = useUser()
   const reviewsToday = useDailyReviews(user?.uid)
   const isMobile = useIsMobile()
-  const [showAnimation, setShowAnimation] = useState(false)
-  const prevReviewsRef = useRef(reviewsToday)
 
   const dailyGoal = useMemo(() => {
     if (!user) return GOAL_CONFIG.BEGINNER
@@ -29,16 +28,7 @@ export const DailyGoalPanel: FC = () => {
   const progressPercentage = Math.min(100, (reviewsToday / dailyGoal) * 100)
   const isGoalMet = reviewsToday >= dailyGoal
 
-  useEffect(() => {
-    const prevReviews = prevReviewsRef.current
-    // Trigger animation if we just crossed the goal
-    if (prevReviews < dailyGoal && reviewsToday >= dailyGoal) {
-      setShowAnimation(true)
-      const timer = setTimeout(() => setShowAnimation(false), 3000)
-      return () => clearTimeout(timer)
-    }
-    prevReviewsRef.current = reviewsToday
-  }, [reviewsToday, dailyGoal])
+  const showAnimation = useThresholdAnimation(reviewsToday, dailyGoal)
 
   return (
     <Box
@@ -112,10 +102,7 @@ export const DailyGoalPanel: FC = () => {
                 }}
               />
 
-              <Typography
-                variant="caption"
-                sx={{ mt: 0.5, fontWeight: 600 }}
-              >
+              <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
                 {roundedProgressPercentage}%
               </Typography>
             </>
@@ -124,37 +111,11 @@ export const DailyGoalPanel: FC = () => {
       </Card>
 
       {/* GOAL MET ANIMATION */}
-      <AnimatePresence>
-        {showAnimation && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.1, y: -30 }}
-            animate={{ opacity: 1, scale: 0.4, y: -45 }}
-            exit={{ opacity: 0, scale: 0.2, y: -20 }}
-            transition={{ type: 'spring', stiffness: 180, damping: 12 }}
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: 0,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
-              zIndex: 20,
-              width: 'max-content',
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{
-                color: '#4CAF50',
-                textShadow: '0 0 8px rgba(76, 175, 80, 0.8)',
-                fontWeight: 800,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              🎯 GOAL MET! 🎯
-            </Typography>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <LevelUpAnimation
+        isVisible={showAnimation}
+        title="🎯 DAILY GOAL REACHED! 🎯"
+        color="#4CAF50"
+      />
     </Box>
   )
 }

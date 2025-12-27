@@ -1,38 +1,22 @@
-import { type FC, useEffect, useRef, useState } from 'react'
+import { type FC } from 'react'
 import { Box, Typography, LinearProgress, Card } from '@mui/material'
 import { EmojiEvents } from '@mui/icons-material'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-
-const THRESHOLD = 80
+import { useLevelUp } from '../../hooks/useLevelUp'
+import LevelUpAnimation from '../LevelUpAnimation/LevelUpAnimation'
 
 const LevelPanel: FC = () => {
   const { percentageMastered } = useReviewSession()
   const { user } = useUser()
   const isMobile = useIsMobile()
 
-  const [showAnimation, setShowAnimation] = useState(false)
-  const [localLevel, setLocalLevel] = useState(user?.activeGroup ?? 1)
-  const prevPercentRef = useRef<number>(percentageMastered)
-
-  // Trigger “Level Up!” animation once when threshold is crossed
-  useEffect(() => {
-    const prevPercentage = prevPercentRef.current
-    const crossedThresholdOnce =
-      prevPercentage < THRESHOLD && percentageMastered >= THRESHOLD
-
-    prevPercentRef.current = percentageMastered
-
-    if (!crossedThresholdOnce) return
-
-    setLocalLevel((prev) => prev + 1)
-    setShowAnimation(true)
-
-    const timer = setTimeout(() => setShowAnimation(false), 2400)
-    return () => clearTimeout(timer)
-  }, [percentageMastered])
+  const { showAnimation, localLevel } = useLevelUp(
+    percentageMastered,
+    80,
+    user?.activeGroup ?? 1
+  )
 
   return (
     <Box
@@ -103,35 +87,11 @@ const LevelPanel: FC = () => {
       </Card>
 
       {/* LEVEL UP ANIMATION */}
-      <AnimatePresence>
-        {showAnimation && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.1, y: -30 }}
-            animate={{ opacity: 1, scale: 0.4, y: -45 }}
-            exit={{ opacity: 0, scale: 0.2, y: -20 }}
-            transition={{ type: 'spring', stiffness: 180, damping: 12 }}
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: 0,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
-              zIndex: 20,
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{
-                color: '#FFD700',
-                textShadow: '0 0 8px rgba(255,210,0,0.8)',
-                fontWeight: 800,
-              }}
-            >
-              ⭐ LEVEL UP! ⭐
-            </Typography>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <LevelUpAnimation
+        isVisible={showAnimation}
+        title="⭐ LEVEL UP! ⭐"
+        color="#FFD700"
+      />
     </Box>
   )
 }

@@ -6,12 +6,15 @@ import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LoginModal from '../Login/LoginModal'
 import UserMenu from '../UserMenu/UserMenu'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routeConstants'
 
 const Header = () => {
   const { user } = useUser()
   const isMobile = useIsMobile()
   const [loginOpen, setLoginOpen] = useState(false)
   const { loginAnonymously } = useAuthActions()
+  const navigate = useNavigate()
 
   return (
     <>
@@ -26,13 +29,10 @@ const Header = () => {
         }}
       >
         <Toolbar sx={{ minWidth: 0 }}>
-          <Box
-            component="img"
-            src="/mathbuilders.png"
-            alt="Math Builders"
-            sx={{ height: 50, mr: 1 }}
-          />
           <Typography
+            onClick={() =>
+              user ? navigate(ROUTES.TRAIN) : navigate(ROUTES.HOME)
+            }
             variant="h6"
             noWrap
             sx={{
@@ -40,8 +40,16 @@ const Header = () => {
               flexGrow: 1,
               display: 'flex',
               alignItems: 'center',
+              cursor: 'pointer',
             }}
           >
+            <Box
+              component="img"
+              src="/mathbuilders.png"
+              alt="Math Builders"
+              sx={{ height: 50, mr: 1 }}
+            />
+
             <Box component="span" sx={{ color: 'text.primary' }}>
               Math
             </Box>
