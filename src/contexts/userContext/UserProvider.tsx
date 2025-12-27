@@ -23,6 +23,7 @@ import { useLogger } from '../../hooks/useLogger'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import { generateRandomUsername } from '../../utilities/accountHelpers'
 
 type Props = {
   children: ReactNode
@@ -171,11 +172,13 @@ const UserProvider: FC<Props> = ({ children }) => {
         // Check if the user document exists and has been initialized.
         // We check for 'createdAt' to ensure we don't overwrite an existing valid user.
         if (!userSnap.exists() || !userData?.createdAt) {
+          const username = userData?.username || generateRandomUsername()
           await setDoc(
             userRef,
             {
               ...initialUser,
               uid,
+              username,
               createdAt: serverTimestamp(),
               lastLogin: serverTimestamp(),
             },

@@ -1,10 +1,8 @@
 import { signInAnonymously, signInWithEmailAndPassword } from 'firebase/auth'
-import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useFirebaseContext } from '../contexts/firebase/firebaseContext'
 import { useLogger } from './useLogger'
 import { useNotification } from '../contexts/notificationContext/notificationContext'
 import { extractErrorMessage } from '../utilities/typeutils'
-import { generateRandomUsername } from '../utilities/accountHelpers'
 
 export const useAuthActions = () => {
   const { auth, app } = useFirebaseContext()
@@ -21,16 +19,6 @@ export const useAuthActions = () => {
 
       const credential = await signInAnonymously(auth)
 
-      const authUser = credential.user
-
-      const db = getFirestore(app)
-
-      const username = generateRandomUsername()
-
-      const userRef = doc(db, 'users', authUser.uid)
-
-      // Ensure the user doc always contains uid; other defaults are merged by UserProvider.
-      await setDoc(userRef, { uid: authUser.uid, username }, { merge: true })
       return credential
     } catch (error: unknown) {
       logger('Error logging in anonymously', error)
