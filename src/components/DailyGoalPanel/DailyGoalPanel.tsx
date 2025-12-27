@@ -21,7 +21,7 @@ export const DailyGoalPanel: FC = () => {
   const dailyGoal = useMemo(() => {
     if (!user) return GOAL_CONFIG.BEGINNER
 
-    const group = user?.activeGroup ?? 1
+    const group = user.activeGroup ?? 1
 
     return group <= 2 ? GOAL_CONFIG.BEGINNER : GOAL_CONFIG.ADVANCED
   }, [user])
