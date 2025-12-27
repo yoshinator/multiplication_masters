@@ -33,7 +33,7 @@ export const useAuthActions = () => {
 
       const db = getFirestore(app)
 
-      const candidates = Array.from({ length: 5 }, () =>
+      const candidates = Array.from({ length: 10 }, () =>
         generateRandomUsername()
       )
 
@@ -73,7 +73,6 @@ export const useAuthActions = () => {
     } catch (error: unknown) {
       logger('Error logging in with email', error)
       showNotification(extractErrorMessage(error), 'error')
-      throw error
     }
   }
 

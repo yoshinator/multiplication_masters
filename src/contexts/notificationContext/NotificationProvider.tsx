@@ -46,7 +46,7 @@ export const NotificationProvider: FC<Props> = ({ children }) => {
       setSnackPack((prev) => [
         ...prev,
         {
-          id: new Date().getTime() + notificationCounterRef.current,
+          id: notificationCounterRef.current,
           message,
           severity,
         },
