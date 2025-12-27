@@ -13,11 +13,13 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useThemeContext } from '../../contexts/themeContext/themeContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import { useUser } from '../../contexts/userContext/useUserContext'
 
 const ProfilePage: FC = () => {
   const { sessionLength, setSessionLength } = useSessionStatusContext()
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
+  const { user } = useUser()
 
   const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMode(event.target.value as 'light' | 'dark' | 'system')
@@ -43,6 +45,18 @@ const ProfilePage: FC = () => {
         bgcolor: { xs: 'transparent', sm: 'background.paper' },
       }}
     >
+      {/* Profile Title */}
+      <Typography
+        variant="h2"
+        sx={{
+          mb: 3,
+          fontSize: { xs: '1.5rem', sm: '2rem' },
+          textAlign: { xs: 'center', sm: 'left' },
+        }}
+      >
+        {user?.username ?? 'Student Profile'}
+      </Typography>
+
       {/* Header */}
       <Box
         sx={{

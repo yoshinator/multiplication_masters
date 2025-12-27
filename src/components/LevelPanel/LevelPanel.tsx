@@ -38,15 +38,16 @@ const LevelPanel: FC = () => {
     <Box
       sx={{
         position: 'relative',
-        width: '100%',
-        maxWidth: { xs: '100%', sm: 220 },
+        width: { xs: '100%', sm: 340 },
         mx: { xs: 0, sm: 'auto' },
+        height: '100%',
       }}
     >
       <Card
         component={isMobile ? Box : Card}
         elevation={0}
         sx={{
+          height: '100%',
           p: { xs: 2, sm: 2.5 },
           pb: { xs: 0, sm: 2 },
 
@@ -101,7 +102,7 @@ const LevelPanel: FC = () => {
         </Typography>
       </Card>
 
-      {/* 🎉 LEVEL UP ANIMATION */}
+      {/* LEVEL UP ANIMATION */}
       <AnimatePresence>
         {showAnimation && (
           <motion.div

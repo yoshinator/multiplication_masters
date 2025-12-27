@@ -29,9 +29,13 @@ const UserMenu = () => {
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography sx={{ fontWeight: 600 }}>
-          {capitalizeFirstLetter(user?.username ?? 'anonymous user')}
-        </Typography>
+        {
+          <Typography
+            sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
+          >
+            {capitalizeFirstLetter(user?.username ?? 'anonymous user')}
+          </Typography>
+        }
 
         <IconButton onClick={handleOpen} size="small">
           <Avatar
