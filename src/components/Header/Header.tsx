@@ -6,12 +6,15 @@ import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LoginModal from '../Login/LoginModal'
 import UserMenu from '../UserMenu/UserMenu'
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../constants/routeConstants'
 
 const Header = () => {
   const { user } = useUser()
   const isMobile = useIsMobile()
   const [loginOpen, setLoginOpen] = useState(false)
   const { loginAnonymously } = useAuthActions()
+  const navigate = useNavigate()
 
   return (
     <>
@@ -27,28 +30,34 @@ const Header = () => {
       >
         <Toolbar sx={{ minWidth: 0 }}>
           <Box
-            component="img"
-            src="/mathbuilders.png"
-            alt="Math Builders"
-            sx={{ height: 50, mr: 1 }}
-          />
-          <Typography
-            variant="h6"
-            noWrap
+            onClick={() =>
+              user ? navigate(ROUTES.TRAIN) : navigate(ROUTES.HOME)
+            }
             sx={{
-              fontWeight: 800,
-              flexGrow: 1,
               display: 'flex',
               alignItems: 'center',
+              cursor: 'pointer',
+              userSelect: 'none',
             }}
           >
-            <Box component="span" sx={{ color: 'text.primary' }}>
-              Math
-            </Box>
-            <Box component="span" sx={{ color: 'primary.main' }}>
-              Builders
-            </Box>
-          </Typography>
+            <Box
+              component="img"
+              src="/mathbuilders.png"
+              alt="Math Builders"
+              sx={{ height: 50, mr: 1 }}
+            />
+
+            <Typography variant="h6" noWrap sx={{ fontWeight: 800 }}>
+              <Box component="span" sx={{ color: 'text.primary' }}>
+                Math
+              </Box>
+              <Box component="span" sx={{ color: 'primary.main' }}>
+                Builders
+              </Box>
+            </Typography>
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }} />
 
           {!user ? (
             <Box sx={{ display: 'flex', gap: 1 }}>

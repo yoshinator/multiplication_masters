@@ -1,12 +1,5 @@
-import { useState } from 'react'
-import {
-  Avatar,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-  Typography,
-} from '@mui/material'
+import { useState, useRef } from 'react'
+import { Avatar, Button, Menu, MenuItem, Typography } from '@mui/material'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
@@ -18,38 +11,39 @@ const UserMenu = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { signOut } = useAuthActions()
   const navigate = useNavigate()
+  const avatarRef = useRef<HTMLDivElement>(null)
 
   const open = Boolean(anchorEl)
-  const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) =>
-    setAnchorEl(e.currentTarget)
+  const handleOpen = () => setAnchorEl(avatarRef.current)
   const handleClose = () => setAnchorEl(null)
 
   const firstLetter = user?.username?.charAt(0)?.toUpperCase() ?? '?'
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        {
-          <Typography
-            sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
-          >
-            {capitalizeFirstLetter(user?.username ?? 'anonymous user')}
-          </Typography>
-        }
+      <Button
+        onClick={handleOpen}
+        color="inherit"
+        sx={{ textTransform: 'none', gap: 1 }}
+      >
+        <Typography
+          sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
+        >
+          {capitalizeFirstLetter(user?.username ?? 'anonymous user')}
+        </Typography>
 
-        <IconButton onClick={handleOpen} size="small">
-          <Avatar
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: 'primary.main',
-              fontWeight: 700,
-            }}
-          >
-            {firstLetter}
-          </Avatar>
-        </IconButton>
-      </Box>
+        <Avatar
+          ref={avatarRef}
+          sx={{
+            width: 36,
+            height: 36,
+            bgcolor: 'primary.main',
+            fontWeight: 700,
+          }}
+        >
+          {firstLetter}
+        </Avatar>
+      </Button>
 
       <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
         <MenuItem
