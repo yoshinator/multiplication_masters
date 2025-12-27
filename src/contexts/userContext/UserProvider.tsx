@@ -57,6 +57,11 @@ const UserProvider: FC<Props> = ({ children }) => {
    */
   const pendingUpdateRef = useRef<Partial<User>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const uidRef = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    uidRef.current = user?.uid
+  }, [user?.uid])
 
   /**
    * Load user cards subscription when user is authenticated.
@@ -83,7 +88,8 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {
-    if (!app || !user?.uid) return
+    const uid = uidRef.current
+    if (!app || !uid) return
 
     // save and clear the buffer
     const pending = omitUndefined(pendingUpdateRef.current)
@@ -93,16 +99,16 @@ const UserProvider: FC<Props> = ({ children }) => {
     if (Object.keys(pending).length === 0) return
 
     const db = getFirestore(app)
-    const userRef = doc(db, 'users', user.uid)
-    logger(`User ${pending} updated`)
+    const userRef = doc(db, 'users', uid)
+    logger('User updated', pending)
 
     try {
       await updateDoc(userRef, pending)
-      logger(`User ${pending} updated`)
+      logger('User updated success', pending)
     } catch (error) {
       logger(`Error updating user ${error}`)
     }
-  }, [app, user, logger])
+  }, [app, logger])
 
   // Used in context to update user in a debounced way.
   const updateUser = useCallback(
@@ -176,9 +182,22 @@ const UserProvider: FC<Props> = ({ children }) => {
             { merge: true }
           )
         } else {
-          await updateDoc(userRef, {
-            lastLogin: serverTimestamp(),
-          })
+          try {
+            await updateDoc(userRef, {
+              lastLogin: serverTimestamp(),
+            })
+          } catch {
+            // If the document was deleted between the existence check and update,
+            // fall back to setDoc with merge to recreate/update it without
+            // treating this as a fatal auth error.
+            await setDoc(
+              userRef,
+              {
+                lastLogin: serverTimestamp(),
+              },
+              { merge: true }
+            )
+          }
         }
 
         if (isCancelled) return
@@ -191,6 +210,9 @@ const UserProvider: FC<Props> = ({ children }) => {
             if (userData) {
               setUser(userData)
               setAuthStatus('signedIn')
+            } else {
+              setUser(null)
+              setAuthStatus('signedOut')
             }
           },
           (error) => {
@@ -198,7 +220,7 @@ const UserProvider: FC<Props> = ({ children }) => {
           }
         )
       } catch (error) {
-        console.error('Failed to initialize or update user document:', error)
+        logger('Failed to initialize or update user document:', error)
         setUser(null)
         setAuthStatus('signedOut')
       }
