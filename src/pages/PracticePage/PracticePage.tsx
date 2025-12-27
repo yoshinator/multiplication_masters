@@ -12,6 +12,7 @@ import { useReviewSession } from '../../contexts/reviewSession/reviewSessionCont
 import WelcomeBack from '../../components/WelcomeBack/WelcomeBack'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
+import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
 
 const PracticePage: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
@@ -50,7 +51,19 @@ const PracticePage: FC = () => {
           alignItems: 'center',
         }}
       >
-        {isSessionActive ? !isMobile && <StatsPanel /> : <LevelPanel />}
+        {isSessionActive ? (
+          !isMobile && <StatsPanel />
+        ) : (
+          <Box
+            display="flex"
+            gap={2}
+            flexDirection={isMobile ? 'column' : 'row'}
+            sx={{ width: { xs: '100%', sm: 'auto' }, px: { xs: 2, sm: 0 } }}
+          >
+            <LevelPanel />
+            <DailyGoalPanel />
+          </Box>
+        )}
       </Box>
 
       {/* MAIN GAME */}
