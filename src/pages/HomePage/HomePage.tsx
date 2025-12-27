@@ -11,10 +11,12 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
+import { useAuthActions } from '../../hooks/useAuthActions'
 
 export default function HomePage() {
   const { authStatus } = useUser()
   const navigate = useNavigate()
+  const { loginAnonymously } = useAuthActions()
 
   useEffect(() => {
     if (authStatus === 'signedIn') navigate(ROUTES.TRAIN)
@@ -73,6 +75,7 @@ export default function HomePage() {
                   variant="contained"
                   size="large"
                   sx={{ px: 4, py: 1.6, borderRadius: 3 }}
+                  onClick={loginAnonymously}
                 >
                   Start Free
                 </Button>
@@ -82,6 +85,7 @@ export default function HomePage() {
                   variant="outlined"
                   size="large"
                   sx={{ px: 4, py: 1.6, borderRadius: 3 }}
+                  onClick={loginAnonymously}
                 >
                   See How It Works
                 </Button>
@@ -565,6 +569,7 @@ export default function HomePage() {
               fontSize: '1.1rem',
               borderRadius: 3,
             }}
+            onClick={loginAnonymously}
           >
             Get Started Free
           </Button>

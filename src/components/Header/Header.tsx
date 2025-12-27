@@ -2,6 +2,7 @@ import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useState } from 'react'
 import { useUser } from '../../contexts/userContext/useUserContext'
+import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LoginModal from '../Login/LoginModal'
 import UserMenu from '../UserMenu/UserMenu'
@@ -10,6 +11,7 @@ const Header = () => {
   const { user } = useUser()
   const isMobile = useIsMobile()
   const [loginOpen, setLoginOpen] = useState(false)
+  const { loginAnonymously } = useAuthActions()
 
   return (
     <>
@@ -49,12 +51,21 @@ const Header = () => {
           </Typography>
 
           {!user ? (
-            <Button
-              size={isMobile ? 'small' : 'medium'}
-              onClick={() => setLoginOpen(true)}
-            >
-              Login
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="contained"
+                size={isMobile ? 'small' : 'medium'}
+                onClick={loginAnonymously}
+              >
+                Try
+              </Button>
+              <Button
+                size={isMobile ? 'small' : 'medium'}
+                onClick={() => setLoginOpen(true)}
+              >
+                Login
+              </Button>
+            </Box>
           ) : (
             <UserMenu />
           )}

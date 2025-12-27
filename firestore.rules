@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+   match /users/{userId}/{document=**} {
+      // Allow read/write only for authenticated users accessing their own user-scoped documents
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

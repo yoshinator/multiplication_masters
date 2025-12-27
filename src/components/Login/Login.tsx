@@ -1,15 +1,6 @@
 import type { FC, FormEvent } from 'react'
 import { useState } from 'react'
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  InputAdornment,
-} from '@mui/material'
-import AccountCircle from '@mui/icons-material/AccountCircle'
-import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '../../constants/routeConstants'
+import { Box, Button, TextField, Typography } from '@mui/material'
 import { useAuthActions } from '../../hooks/useAuthActions'
 
 type LoginProps = {
@@ -17,26 +8,21 @@ type LoginProps = {
 }
 
 const Login: FC<LoginProps> = ({ onSuccess }) => {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { loginWithUsername } = useAuthActions()
-
-  const navigate = useNavigate()
+  const { loginWithEmail } = useAuthActions()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-
-    const name = username.trim()
-    if (!name) return
 
     try {
       setLoading(true)
       setError(null)
 
-      await loginWithUsername(name)
+      await loginWithEmail(email, password)
 
-      navigate(ROUTES.TRAIN, { replace: true })
       onSuccess?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -52,26 +38,28 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
       sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 1 }}
     >
       <Typography variant="body1" color="text.secondary">
-        Enter your username to continue your progress.
+        Sign in to your account.
       </Typography>
 
       <TextField
-        label="Username"
-        placeholder="e.g. MathWizard"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         fullWidth
         autoFocus
         required
         error={!!error}
+      />
+      <TextField
+        label="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        fullWidth
+        required
+        error={!!error}
         helperText={error}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <AccountCircle color="action" />
-            </InputAdornment>
-          ),
-        }}
       />
 
       <Button
@@ -82,7 +70,7 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
         disabled={loading}
         sx={{ py: 1.5, borderRadius: 2, fontWeight: 'bold' }}
       >
-        {loading ? 'Signing in...' : 'Start Learning'}
+        {loading ? 'Please wait...' : 'Sign In'}
       </Button>
     </Box>
   )
