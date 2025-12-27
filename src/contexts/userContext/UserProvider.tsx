@@ -12,6 +12,7 @@ import {
   doc,
   getDoc,
   getFirestore,
+  onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -133,8 +134,17 @@ const UserProvider: FC<Props> = ({ children }) => {
     if (!auth || !app) return
 
     const db = getFirestore(app)
+    let userUnsubscribe: Unsubscribe | null = null
+    let isCancelled = false
 
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (userUnsubscribe) {
+        userUnsubscribe()
+        userUnsubscribe = null
+      }
+
+      if (isCancelled) return
+
       if (!authUser) {
         // Logged out update user state.
         setUser(null)
@@ -147,10 +157,14 @@ const UserProvider: FC<Props> = ({ children }) => {
       try {
         const uid = authUser.uid
         const userRef = doc(db, 'users', uid)
-        const isNewUser =
-          authUser.metadata.creationTime === authUser.metadata.lastSignInTime
+        const userSnap = await getDoc(userRef)
 
-        if (isNewUser) {
+        if (isCancelled) return
+
+        const userData = userSnap.data()
+        // Check if the user document exists and has been initialized.
+        // We check for 'createdAt' to ensure we don't overwrite an existing valid user.
+        if (!userSnap.exists() || !userData?.createdAt) {
           await setDoc(
             userRef,
             {
@@ -162,24 +176,27 @@ const UserProvider: FC<Props> = ({ children }) => {
             { merge: true }
           )
         } else {
-          // updateDoc throws if the doc doesn't exist; fall back to merge-set
-          try {
-            await updateDoc(userRef, {
-              lastLogin: serverTimestamp(),
-            })
-          } catch {
-            await setDoc(
-              userRef,
-              { uid, lastLogin: serverTimestamp() },
-              { merge: true }
-            )
-          }
+          await updateDoc(userRef, {
+            lastLogin: serverTimestamp(),
+          })
         }
 
+        if (isCancelled) return
+
         // Update user data and set signedIn.
-        const fresh = await getDoc(userRef)
-        setUser(fresh.data() as User)
-        setAuthStatus('signedIn')
+        userUnsubscribe = onSnapshot(
+          userRef,
+          (docSnap) => {
+            const userData = docSnap.data() as User
+            if (userData) {
+              setUser(userData)
+              setAuthStatus('signedIn')
+            }
+          },
+          (error) => {
+            logger('Error listening to user document:', error)
+          }
+        )
       } catch (error) {
         console.error('Failed to initialize or update user document:', error)
         setUser(null)
@@ -187,8 +204,14 @@ const UserProvider: FC<Props> = ({ children }) => {
       }
     })
 
-    return unsubscribe
-  }, [auth, app])
+    return () => {
+      isCancelled = true
+      unsubscribe()
+      if (userUnsubscribe) {
+        userUnsubscribe()
+      }
+    }
+  }, [auth, app, logger])
 
   // Clean up effect no implicit return for readability.
   useEffect(() => {
@@ -207,5 +230,4 @@ const UserProvider: FC<Props> = ({ children }) => {
     </UserContext.Provider>
   )
 }
-
 export default UserProvider

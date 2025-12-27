@@ -89,6 +89,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   }, [firebaseApp])
 
   // #region Emulator Connections
+
   // ONLY connect to the emulator if running locally
   useEffect(() => {
     if (!import.meta.env.DEV || !firestoreDb || isEmulatorConnectedRef.current)
