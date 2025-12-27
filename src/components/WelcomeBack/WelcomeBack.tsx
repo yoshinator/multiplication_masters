@@ -41,8 +41,8 @@ const WelcomeBack: FC = () => {
             variant="h4"
             sx={{ fontWeight: 900, letterSpacing: -0.3 }}
           >
-            Welcome {(user?.totalSessions ?? 0) > 0 ? 'back ,' : ''}
-            {user?.username ? `${capitalizeFirstLetter(user.username)}` : ''}
+            Welcome {(user?.totalSessions ?? 0) > 0 ? 'back ' : ''}
+            {user?.username ? `${capitalizeFirstLetter(user.username)},` : ''}
           </Typography>
 
           <Typography
