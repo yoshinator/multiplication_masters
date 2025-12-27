@@ -45,7 +45,6 @@ const animals = [
   'Sloth',
   'Koala',
   'Rabbit',
-  'Otter',
   'Falcon',
   'Dragon',
 ]
