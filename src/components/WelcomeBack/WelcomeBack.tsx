@@ -55,6 +55,7 @@ const WelcomeBack: FC = () => {
           </Typography>
 
           <Button
+            id="start-session-btn"
             onClick={startSession}
             variant="contained"
             size="large"

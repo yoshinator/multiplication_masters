@@ -30,6 +30,7 @@ const Header = () => {
       >
         <Toolbar sx={{ minWidth: 0 }}>
           <Box
+            id="header-logo"
             onClick={() =>
               user ? navigate(ROUTES.TRAIN) : navigate(ROUTES.HOME)
             }
@@ -76,7 +77,9 @@ const Header = () => {
               </Button>
             </Box>
           ) : (
-            <UserMenu />
+            <Box id="header-user-menu">
+              <UserMenu />
+            </Box>
           )}
         </Toolbar>
       </AppBar>

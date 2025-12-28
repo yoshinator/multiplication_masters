@@ -33,6 +33,7 @@ This document provides context for the Multiplication Masters UI repository, inc
     "@mui/material": "^7.3.4",
     "datastructures-js": "^13.0.0",
     "firebase": "^12.5.0",
+    "driver.js": "^1.4.0",
     "framer-motion": "^12.23.24",
     "konva": "^10.0.12",
     "react": "^19.1.1",

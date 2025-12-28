@@ -44,6 +44,7 @@ const SessionSummary: FC = () => {
 
   return (
     <Card
+      id="session-summary-card"
       component={Box}
       elevation={0}
       sx={{
@@ -123,6 +124,7 @@ const SessionSummary: FC = () => {
       {/* Actions */}
       <Stack spacing={2} sx={{ mt: { xs: 1, sm: 3 } }}>
         <Button
+          id="play-again-btn"
           variant="contained"
           size="large"
           startIcon={<ReplayIcon />}

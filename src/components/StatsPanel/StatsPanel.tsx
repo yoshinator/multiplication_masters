@@ -23,6 +23,7 @@ const StatsPanel: FC = () => {
 
   return (
     <Box
+      id="stats-panel"
       sx={{
         display: 'flex',
         gap: 1.5, // Reduced gap slightly for compact layout

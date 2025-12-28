@@ -1,7 +1,8 @@
-import { useEffect, type FC } from 'react'
+import { useEffect, type FC, useRef } from 'react'
 import { Box } from '@mui/material'
+import { driver, type Driver } from 'driver.js'
+import 'driver.js/dist/driver.css'
 
-import TimerContextProvider from '../../contexts/timerContext/TimerProvider'
 import MultiplicationCard from '../../components/MultiplicationCard/MultiplicationCard'
 import StatsPanel from '../../components/StatsPanel/StatsPanel'
 import LevelPanel from '../../components/LevelPanel/LevelPanel'
@@ -13,16 +14,150 @@ import WelcomeBack from '../../components/WelcomeBack/WelcomeBack'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
+import { useTimerContext } from '../../contexts/timerContext/timerContext'
 
 const PracticePage: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
   const { latestSession } = useReviewSession()
-  const { user } = useUser()
+  const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
+  const tourState = useRef({ welcome: false, session: false, summary: false })
+  const { stopTimer, startTimer } = useTimerContext()
+  const driverRef = useRef<Driver | null>(null)
+  const userRef = useRef(user)
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
+
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+
+  useEffect(() => {
+    if (!user?.showTour) return
+
+    if (!driverRef.current) {
+      driverRef.current = driver({
+        showProgress: true,
+        animate: true,
+        allowClose: false,
+        nextBtnText: 'Next',
+        prevBtnText: 'Previous',
+        doneBtnText: 'Done',
+      })
+    }
+    const driverObj = driverRef.current
+
+    if (!isSessionActive && !isPlayedSession && !tourState.current.welcome) {
+      driverObj.setSteps([
+        {
+          element: '#header-logo',
+          popover: {
+            title: 'Home',
+            description: 'Click here to go back home anytime.',
+          },
+        },
+        {
+          element: '#header-user-menu',
+          popover: {
+            title: 'Profile',
+            description:
+              'Manage your account and settings here. From your profile you can adjust the difficulty level and session length',
+          },
+        },
+        {
+          element: '#level-panel',
+          popover: {
+            title: 'Level Up!',
+            description:
+              "You are currently working through 8 skill groups. Start by mastering the basics (1–12) in Groups 1–4, then prove you're a true Multiplication Master in Groups 5–8 (up to 24)! Every correct answer helps fill your progress bar. Can you reach the top?",
+          },
+        },
+        {
+          element: '#daily-goal-panel',
+          popover: {
+            title: 'Perfect Practice',
+            description:
+              'This is where you start your daily practice. Finish this goal daily to get the most out of your sessions. If you completed your daily goal and want to continue you can always do more.',
+          },
+        },
+        {
+          element: '#start-session-btn',
+          popover: {
+            title: 'Start',
+            description: 'Click here to begin your practice session.',
+          },
+        },
+      ])
+      driverObj.drive()
+      tourState.current.welcome = true
+    } else if (isSessionActive && !tourState.current.session) {
+      driverObj.destroy()
+      setTimeout(() => {
+        stopTimer()
+        driverObj.setSteps([
+          {
+            element: '#game-card',
+            popover: {
+              title: 'Flashcard',
+              description: 'Solve the multiplication problem.',
+            },
+          },
+          {
+            element: '#game-timer',
+            popover: {
+              title: 'Timer',
+              description: 'Answer quickly to earn more points.',
+            },
+          },
+          {
+            element: '#game-input',
+            popover: { title: 'Answer', description: 'Type your answer here.' },
+          },
+        ])
+        driverObj.setConfig({
+          onDestroyed: () => {
+            startTimer()
+          },
+        })
+        driverObj.drive()
+        tourState.current.session = true
+      }, 500)
+    } else if (
+      isPlayedSession &&
+      !isSessionActive &&
+      !tourState.current.summary
+    ) {
+      setTimeout(() => {
+        driverObj.setSteps([
+          {
+            element: '#session-summary-card',
+            popover: {
+              title: 'Summary',
+              description: 'Review your performance.',
+            },
+          },
+          {
+            element: '#play-again-btn',
+            popover: {
+              title: 'Continue',
+              description: 'Start another session.',
+            },
+          },
+        ])
+        driverObj.setConfig({
+          onDestroyed: () => {
+            if (updateUser && userRef.current) {
+              updateUser({ ...userRef.current, showTour: false })
+            }
+          },
+        })
+        driverObj.drive()
+        tourState.current.summary = true
+      }, 500)
+    }
+  }, [user?.showTour, isSessionActive, isPlayedSession, updateUser])
 
   useEffect(() => {
     if (isKeyboardOpen) {
@@ -80,9 +215,7 @@ const PracticePage: FC = () => {
         happened after the last login display the summary if you just logged in and 
         have not played a session display the welcome back component*/}
         {isSessionActive ? (
-          <TimerContextProvider>
-            <MultiplicationCard />
-          </TimerContextProvider>
+          <MultiplicationCard />
         ) : isPlayedSession ? (
           <SessionSummary />
         ) : (
