@@ -4,12 +4,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import { ROUTES } from './constants/routeConstants'
 
-import ProfilePage from './pages/ProfilePage/ProfilePage'
-import PracticePage from './pages/PracticePage/PracticePage'
 import HomePage from './pages/HomePage/HomePage'
+import PracticePage from './pages/PracticePage/PracticePage'
+import ProfilePage from './pages/ProfilePage/ProfilePage'
+import SceneBuilderPage from './pages/SceneBuilderPage/SceneBuilderPage'
+import StatsPage from './pages/StatsPage/StatsPage'
 import Header from './components/Header/Header'
 import RequireUser from './components/RequireUser/RequireUser'
-import StatsPage from './pages/StatsPage/StatsPage'
 
 const App: FC = () => {
   return (
@@ -50,6 +51,15 @@ const App: FC = () => {
             element={
               <RequireUser>
                 <ProfilePage />
+              </RequireUser>
+            }
+          />
+
+          <Route
+            path={ROUTES.BUILDER}
+            element={
+              <RequireUser>
+                <SceneBuilderPage />
               </RequireUser>
             }
           />

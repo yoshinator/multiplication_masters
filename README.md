@@ -46,13 +46,13 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - Speed-Adaptive Leitner + SM-2 hybrid logic defined.
 - Reaction-time based card movement:
   - 3 seconds or less: promote one box.
-  - between 3–5 seconds: remain in current box.
-  - Over 5 seconds: demote two boxes.
+  - between 3–9 seconds: remain in current box.
+  - Over 9 seconds: demote two boxes.
   - Incorrect answer: reset to box 1.
 - Timestamp-based scheduling via nextDueTime.
 - Priority queue implemented to surface the correct next card.
 - Full session scheduler implemented:
-  - Sessions can have 15, 30 or 45 cards.
+  - Sessions can have 10, 20, 30, or 45 cards.
   - Session built from all due cards first, then active learning cards (box ≤ 3), then unseen cards (seen = 0).
   - Only cards with box ≤ 3 are requeued during the session.
   - Cards moved to box ≥ 4 are removed from the active queue for the rest of the session.
@@ -63,7 +63,7 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - ReviewSessionContext created to accumulate all updated cards during a session.
 - Tracks correct and incorrect counts per session and totals.
 - Updated cards stored in memory until flush.
-- Auto flush when session reaches 5 cards
+- Auto-save every 5 cards during a session
 - Batched write implemented using Firestore writeBatch.
 - flushUpdates persists:
   - All updated UserCards
@@ -71,11 +71,22 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 - clearUpdates resets session state after persistence.
 - Add session-level statistics (session length, cards reviewed, accuracy).
 
+### Division Support
+- Division practice mode implemented alongside multiplication.
+- UserCard model tracks division-specific statistics (correctDivision, incorrectDivision, wasLastDivisionReviewCorrect).
+- Session types support 'multiplication', 'division', and 'mixed' modes.
+
 ### Gamification
-- Add a scene builder so users can customize a scene with unlocked items.
+- Scene builder implemented allowing users to customize scenes with unlocked items.
+- Garden theme scene objects available for placement.
 
 ### Routing
-- Add routes for Profile, Homepage, Training, Scene Builder.
+- Routes implemented for Profile, Homepage, Training, Scene Builder, and Stats pages.
+
+### User Interface
+- Professional homepage with marketing copy, features, testimonials, and CTAs.
+- Statistics page showing lifetime performance metrics, accuracy, and level progress.
+- Responsive design for mobile and desktop.
 
 ### User Authentication
 - Basic username login flow implemented.
@@ -87,15 +98,15 @@ This project builds reflex-level recall using a custom spaced-repetition engine 
 ## Work Remaining
 
 ### Frontend and User Experience
--(show locked/unlocked tables).
+- Show locked/unlocked tables in UI.
 - Add unlocking mechanisms for Scene items. (Currently hard coded for garden theme)
-- Build performance dashboard (accuracy, response times, weakest facts).
-  - Show total accuracy across all cards.
-  - Show group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
-  - Reset all stats if user wants to start fresh.
+- Enhance performance dashboard:
+  - Add response time tracking and visualization.
+  - Show weakest facts/tables.
+  - Add group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
+  - Add reset all stats feature if user wants to start fresh.
 - Add practice modes (timed drill, review-only, mixed tables).
 - Make Scene Builder item picker display item images instead of labels.
-- Replace temporary Home Page with proper copy and CTAs.
 
 - Implement offline-first caching with IndexedDB or localStorage.
 
@@ -163,7 +174,7 @@ Multiplication Masters combines a speed-adaptive Leitner system with SM-2 schedu
 
 ## License and Terms of Use
 
-This project is licensed under a **Source Available License** (see [LICENSE](LICENSE) for full details).
+This project is licensed under a **Source Available License** (see [LICENSE.md](LICENSE.md) for full details).
 
 ### What you CAN do:
 * **Personal Use:** Download, run, and play with the software for yourself.
