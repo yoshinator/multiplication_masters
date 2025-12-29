@@ -136,16 +136,30 @@ const PracticePage: FC = () => {
           },
           {
             element: '#game-input',
+
             popover: {
               title: 'Your Answer',
               description:
                 'Type the answer here. I paused the timer for you this time!',
             },
+            onHighlighted: (_el, _step, { driver }) => {
+              const input = document.querySelector(
+                '#game-input'
+              ) as HTMLInputElement | null
+              if (!input) return
+
+              const closeTour = () => {
+                driver.destroy() // close the tour UI
+              }
+
+              // Use pointerdown so it only closes on a real user click/tap,
+              input.addEventListener('pointerdown', closeTour, { once: true })
+            },
           },
         ])
         driverObj.drive()
         tourState.current.session = true
-      }, 500)
+      }, 0)
     } else if (
       isPlayedSession &&
       !isSessionActive &&
