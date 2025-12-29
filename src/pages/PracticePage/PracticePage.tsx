@@ -57,16 +57,16 @@ const PracticePage: FC = () => {
         {
           element: '#header-logo',
           popover: {
-            title: 'Home',
-            description: 'Click here to go back home anytime.',
+            title: 'Go Home',
+            description: 'Click here anytime to go back to the main screen.',
           },
         },
         {
           element: '#header-user-menu',
           popover: {
-            title: 'Profile',
+            title: 'Your Profile',
             description:
-              'Manage your account and settings here. From your profile you can adjust the difficulty level and session length',
+              'Change your settings here. You can make the game easier or harder, or change how many cards you play.',
           },
         },
         {
@@ -74,22 +74,22 @@ const PracticePage: FC = () => {
           popover: {
             title: 'Level Up!',
             description:
-              "You are currently working through 8 skill groups. Start by mastering the basics (1–12) in Groups 1–4, then prove you're a true Multiplication Master in Groups 5–8 (up to 24)! Every correct answer helps fill your progress bar. Can you reach the top?",
+              'Watch your progress bar grow! Every correct answer helps you reach the next level.',
           },
         },
         {
           element: '#daily-goal-panel',
           popover: {
-            title: 'Perfect Practice',
+            title: 'Daily Goal',
             description:
-              'This is where you start your daily practice. Finish this goal daily to get the most out of your sessions. If you completed your daily goal and want to continue you can always do more.',
+              'Try to finish this goal every day. It helps you learn faster!',
           },
         },
         {
           element: '#start-session-btn',
           popover: {
-            title: 'Start',
-            description: 'Click here to begin your practice session.',
+            title: 'Start Playing',
+            description: 'Ready? Click here to start answering questions.',
           },
         },
       ])
@@ -103,40 +103,42 @@ const PracticePage: FC = () => {
           {
             element: '#game-card',
             popover: {
-              title: 'Flashcard',
-              description: 'Solve the multiplication problem.',
+              title: 'The Question',
+              description:
+                'Here is your math problem. Multiply the top number by the bottom number.',
               onPopoverRender: stopTimer,
             },
           },
           {
             element: '#game-timer',
             popover: {
-              title: 'Timer',
-              description: 'Answer quickly to earn more points.',
+              title: 'Beat the Clock',
+              description:
+                'Answer while the bar is green to level up this card! If you take too long, you will have to practice it again.',
             },
           },
           {
             element: '#estimated-reviews',
             popover: {
-              title: 'Estimated Reviews',
+              title: 'Cards Left',
               description:
-                'This tells you about how many reviews you have left in the current session.',
+                'This counts down how many cards are left in this game session.',
             },
           },
           {
             element: '#reviews-left',
             popover: {
-              title: 'Card Reviews Left',
+              title: 'Practice Count',
               description:
-                'Times you must answer this card correctly to finish it in this session',
+                'This shows how many times you need to answer *this* card correctly today.',
             },
           },
           {
             element: '#game-input',
             popover: {
-              title: 'Answer',
+              title: 'Your Answer',
               description:
-                "Type your answer here. I'll leave the timer stopped this one time to let you get started.",
+                'Type the answer here. I paused the timer for you this time!',
             },
           },
         ])
@@ -162,13 +164,16 @@ const PracticePage: FC = () => {
         {
           element: '#session-summary-card',
           popover: {
-            title: 'Summary',
-            description: 'Review your performance.',
+            title: 'Session Complete!',
+            description: 'Great work! Check out your stats to see how you did.',
           },
         },
         {
           element: '#play-again-btn',
-          popover: { title: 'Continue', description: 'Start another session.' },
+          popover: {
+            title: 'Keep Going',
+            description: 'Want to play more? Click here to start another game.',
+          },
         },
       ])
 
