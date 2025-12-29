@@ -15,6 +15,7 @@ import { useIsMobile } from '../../hooks/useIsMobile'
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
 import { useTimerContext } from '../../contexts/timerContext/timerContext'
+import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
 const PracticePage: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
@@ -23,7 +24,7 @@ const PracticePage: FC = () => {
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef({ welcome: false, session: false, summary: false })
-  const { stopTimer, startTimer } = useTimerContext()
+  const { stopTimer } = useTimerContext()
   const driverRef = useRef<Driver | null>(null)
   const userRef = useRef(user)
 
@@ -155,7 +156,11 @@ const PracticePage: FC = () => {
       driverObj.setConfig({
         onDestroyed: () => {
           if (updateUser && userRef.current) {
-            updateUser({ ...userRef.current, showTour: false })
+            updateUser({
+              ...userRef.current,
+              showTour: false,
+              userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
+            })
           }
         },
       })
