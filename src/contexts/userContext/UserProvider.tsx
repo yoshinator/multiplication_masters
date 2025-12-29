@@ -37,6 +37,7 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   table: 12,
   totalAccuracy: 100,
   userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
+  showTour: true,
 
   lifetimeCorrect: 0,
   lifetimeIncorrect: 0,

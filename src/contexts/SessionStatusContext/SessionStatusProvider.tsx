@@ -2,7 +2,10 @@ import { type FC, type ReactElement, useCallback, useState } from 'react'
 import { SessionStatusContext } from './sessionStatusContext'
 
 import { useUser } from '../userContext/useUserContext'
-import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import {
+  DEFAULT_SESSION_LENGTH,
+  FIRST_SESSION_LENGTH,
+} from '../../constants/appConstants'
 
 interface Props {
   children?: ReactElement
@@ -19,12 +22,17 @@ const SessionStatusProvider: FC<Props> = ({ children }) => {
     [updateUser]
   )
 
+  let sessionLength = user?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH
+  if (user?.showTour) {
+    sessionLength = FIRST_SESSION_LENGTH
+  }
+
   return (
     <SessionStatusContext.Provider
       value={{
         isSessionActive,
         setIsSessionActive,
-        sessionLength: user?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH,
+        sessionLength,
         setSessionLength,
       }}
     >

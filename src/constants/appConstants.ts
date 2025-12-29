@@ -26,3 +26,4 @@ export const BOX_STAY = 5000
 export const BOX_REGRESS = 9000
 
 export const DEFAULT_SESSION_LENGTH = 20
+export const FIRST_SESSION_LENGTH = 4
