@@ -27,6 +27,16 @@ const PracticePage: FC = () => {
   const driverRef = useRef<Driver | null>(null)
   const userRef = useRef(user)
 
+  const makeDriver = () =>
+    driver({
+      showProgress: true,
+      animate: true,
+      allowClose: false,
+      nextBtnText: 'Next',
+      prevBtnText: 'Previous',
+      doneBtnText: 'Done',
+    })
+
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
 
@@ -38,17 +48,10 @@ const PracticePage: FC = () => {
     if (!user?.showTour) return
 
     if (!driverRef.current) {
-      driverRef.current = driver({
-        showProgress: true,
-        animate: true,
-        allowClose: false,
-        nextBtnText: 'Next',
-        prevBtnText: 'Previous',
-        doneBtnText: 'Done',
-      })
+      driverRef.current = makeDriver()
     }
-    const driverObj = driverRef.current
 
+    const driverObj = driverRef.current
     if (!isSessionActive && !isPlayedSession && !tourState.current.welcome) {
       driverObj.setSteps([
         {
@@ -94,14 +97,15 @@ const PracticePage: FC = () => {
       tourState.current.welcome = true
     } else if (isSessionActive && !tourState.current.session) {
       driverObj.destroy()
+
       setTimeout(() => {
-        stopTimer()
         driverObj.setSteps([
           {
             element: '#game-card',
             popover: {
               title: 'Flashcard',
               description: 'Solve the multiplication problem.',
+              onPopoverRender: stopTimer,
             },
           },
           {
@@ -112,15 +116,30 @@ const PracticePage: FC = () => {
             },
           },
           {
+            element: '#estimated-reviews',
+            popover: {
+              title: 'Estimated Reviews',
+              description:
+                'This tells you about how many reviews you have left in the current session.',
+            },
+          },
+          {
+            element: '#reviews-left',
+            popover: {
+              title: 'Card Reviews Left',
+              description:
+                'Times you must answer this card correctly to finish it in this session',
+            },
+          },
+          {
             element: '#game-input',
-            popover: { title: 'Answer', description: 'Type your answer here.' },
+            popover: {
+              title: 'Answer',
+              description:
+                "Type your answer here. I'll leave the timer stopped this one time to let you get started.",
+            },
           },
         ])
-        driverObj.setConfig({
-          onDestroyed: () => {
-            startTimer()
-          },
-        })
         driverObj.drive()
         tourState.current.session = true
       }, 500)
@@ -129,35 +148,33 @@ const PracticePage: FC = () => {
       !isSessionActive &&
       !tourState.current.summary
     ) {
-      setTimeout(() => {
-        driverObj.setSteps([
-          {
-            element: '#session-summary-card',
-            popover: {
-              title: 'Summary',
-              description: 'Review your performance.',
-            },
+      tourState.current.summary = true
+
+      driverObj.setConfig({
+        onDestroyed: () => {
+          if (updateUser && userRef.current) {
+            updateUser({ ...userRef.current, showTour: false })
+          }
+        },
+      })
+
+      driverObj.setSteps([
+        {
+          element: '#session-summary-card',
+          popover: {
+            title: 'Summary',
+            description: 'Review your performance.',
           },
-          {
-            element: '#play-again-btn',
-            popover: {
-              title: 'Continue',
-              description: 'Start another session.',
-            },
-          },
-        ])
-        driverObj.setConfig({
-          onDestroyed: () => {
-            if (updateUser && userRef.current) {
-              updateUser({ ...userRef.current, showTour: false })
-            }
-          },
-        })
-        driverObj.drive()
-        tourState.current.summary = true
-      }, 500)
+        },
+        {
+          element: '#play-again-btn',
+          popover: { title: 'Continue', description: 'Start another session.' },
+        },
+      ])
+
+      driverObj.drive()
     }
-  }, [user?.showTour, isSessionActive, isPlayedSession, updateUser])
+  }, [user?.showTour, isSessionActive, isPlayedSession, updateUser, stopTimer])
 
   useEffect(() => {
     if (isKeyboardOpen) {

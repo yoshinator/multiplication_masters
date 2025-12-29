@@ -14,6 +14,7 @@ export function buildQueue(
   sessionLength: number,
   logger: (...args: unknown[]) => void
 ) {
+  sessionLength = 3
   if (!user) return null
 
   const now = Date.now()

@@ -190,6 +190,7 @@ const MultiplicationCard: FC = () => {
             arrow
           >
             <Chip
+              id="estimated-reviews"
               icon={<LayersIcon />}
               label={
                 isMobile
@@ -207,6 +208,7 @@ const MultiplicationCard: FC = () => {
             arrow
           >
             <Chip
+              id="reviews-left"
               icon={<RepeatIcon />}
               label={
                 isMobile
