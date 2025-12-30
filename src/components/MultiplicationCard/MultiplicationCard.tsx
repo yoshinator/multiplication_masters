@@ -227,12 +227,8 @@ const MultiplicationCard: FC = () => {
           </Tooltip>
         </Box>
         <Box id="game-timer">
-          <Box>
-            <Timer />
-          </Box>
-          <Box id="zone-timer-container">
-            <ZoneTimer time={time} maxTime={BOX_REGRESS} />
-          </Box>
+          <Timer />
+          <ZoneTimer time={time} maxTime={BOX_REGRESS} />
         </Box>
 
         <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mt: 1 }}>
