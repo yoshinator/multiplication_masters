@@ -98,10 +98,10 @@ const MultiplicationCard: FC = () => {
     if (!answer || !currentCard) return
 
     const correct = Number(answer) === value
+    const elapsed = getElapsed()
     let color: string = 'background.paper'
 
     if (correct) {
-      const elapsed = getElapsed()
       if (elapsed <= BOX_ADVANCE) color = 'success.main'
       else if (elapsed <= BOX_STAY) color = 'warning.light'
       else color = 'warning.main'
@@ -115,7 +115,7 @@ const MultiplicationCard: FC = () => {
     setCardColor(color)
 
     resetTimer()
-    submitAnswer(currentCard, true, getElapsed())
+    submitAnswer(currentCard, true, elapsed)
     setAnswer('')
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current)

@@ -72,7 +72,13 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
     setTimeValue(BOX_REGRESS)
   }, [stopTimer])
 
-  const getTime = useCallback(() => timeValueRef.current, [])
+  const getTime = useCallback(() => {
+    let elapsed = elapsedRef.current
+    if (startTimeRef.current) {
+      elapsed += performance.now() - startTimeRef.current
+    }
+    return Math.max(BOX_REGRESS - elapsed, 0)
+  }, [])
 
   useEffect(() => {
     if (!isSessionActive) {
