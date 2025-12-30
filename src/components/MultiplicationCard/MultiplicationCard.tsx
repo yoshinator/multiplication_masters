@@ -226,7 +226,6 @@ const MultiplicationCard: FC = () => {
         <Box id="game-timer">
           <Timer />
           <ZoneTimer maxTime={BOX_REGRESS} />
-          <ZoneTimer maxTime={BOX_REGRESS} />
         </Box>
 
         <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mt: 1 }}>
