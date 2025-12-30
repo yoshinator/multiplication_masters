@@ -20,6 +20,7 @@ const LevelPanel: FC = () => {
 
   return (
     <Box
+      id="level-panel"
       sx={{
         position: 'relative',
         width: { xs: '100%', sm: 340 },

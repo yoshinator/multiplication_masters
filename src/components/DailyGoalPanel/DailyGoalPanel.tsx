@@ -35,6 +35,7 @@ export const DailyGoalPanel: FC = () => {
 
   return (
     <Box
+      id="daily-goal-panel"
       sx={{
         position: 'relative',
         width: { xs: '100%', sm: 340 },

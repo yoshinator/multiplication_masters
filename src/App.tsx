@@ -10,6 +10,7 @@ import HomePage from './pages/HomePage/HomePage'
 import Header from './components/Header/Header'
 import RequireUser from './components/RequireUser/RequireUser'
 import StatsPage from './pages/StatsPage/StatsPage'
+import TimerContextProvider from './contexts/timerContext/TimerProvider'
 
 const App: FC = () => {
   return (
@@ -31,7 +32,9 @@ const App: FC = () => {
             path={ROUTES.TRAIN}
             element={
               <RequireUser>
-                <PracticePage />
+                <TimerContextProvider>
+                  <PracticePage />
+                </TimerContextProvider>
               </RequireUser>
             }
           />

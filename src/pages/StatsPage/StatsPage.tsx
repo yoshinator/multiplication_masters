@@ -1,4 +1,6 @@
 import { type FC } from 'react'
+import { driver } from 'driver.js'
+import 'driver.js/dist/driver.css'
 import {
   Box,
   Container,
@@ -6,6 +8,7 @@ import {
   Typography,
   Card,
   LinearProgress,
+  IconButton,
 } from '@mui/material'
 import {
   History,
@@ -15,6 +18,7 @@ import {
   ErrorOutline,
   EmojiEvents,
   Timeline,
+  HelpOutline,
 } from '@mui/icons-material'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import StatsCard from '../../components/StatsPanel/StatsCard'
@@ -31,19 +35,67 @@ const StatsPage: FC = () => {
       ? Math.round((user.lifetimeCorrect / totalQuestions) * 100)
       : 0
 
+  const startTour = () => {
+    const driverObj = driver({
+      showProgress: true,
+      steps: [
+        {
+          element: '#stats-title',
+          popover: {
+            title: 'Statistics',
+            description: 'Track your progress and lifetime achievements here.',
+          },
+        },
+        {
+          element: '#level-progress',
+          popover: {
+            title: 'Level Progress',
+            description:
+              'See how close you are to mastering the current level.',
+          },
+        },
+        {
+          element: '#lifetime-stats',
+          popover: {
+            title: 'Performance Metrics',
+            description:
+              'View detailed stats about your accuracy and sessions.',
+          },
+        },
+      ],
+    })
+    driverObj.drive()
+  }
+
   return (
     <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
-      <Box mb={4}>
-        <Typography variant="h4" fontWeight="800" gutterBottom>
-          Statistics
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Track your progress and lifetime achievements.
-        </Typography>
+      <Box
+        mb={4}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="flex-start"
+      >
+        <Box>
+          <Typography
+            id="stats-title"
+            variant="h4"
+            fontWeight="800"
+            gutterBottom
+          >
+            Statistics
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Track your progress and lifetime achievements.
+          </Typography>
+        </Box>
+        <IconButton onClick={startTour} color="primary" aria-label="start tour">
+          <HelpOutline />
+        </IconButton>
       </Box>
 
       {/* Level Progress Section */}
       <Card
+        id="level-progress"
         elevation={0}
         sx={{
           p: 3,
@@ -89,7 +141,7 @@ const StatsPage: FC = () => {
         Lifetime Performance
       </Typography>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2} id="lifetime-stats">
         <Grid size={{ xs: 6, sm: 4 }}>
           <StatsCard
             icon={<History color="primary" />}

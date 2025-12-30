@@ -165,6 +165,7 @@ const MultiplicationCard: FC = () => {
       flexDirection="column"
     >
       <Card
+        id="game-card"
         sx={{
           p: isMobile ? 2 : 4,
           width: '100%',
@@ -189,6 +190,7 @@ const MultiplicationCard: FC = () => {
             arrow
           >
             <Chip
+              id="estimated-reviews"
               icon={<LayersIcon />}
               label={
                 isMobile
@@ -206,6 +208,7 @@ const MultiplicationCard: FC = () => {
             arrow
           >
             <Chip
+              id="reviews-left"
               icon={<RepeatIcon />}
               label={
                 isMobile
@@ -223,9 +226,10 @@ const MultiplicationCard: FC = () => {
             />
           </Tooltip>
         </Box>
-
-        <Timer />
-        <ZoneTimer time={time} maxTime={BOX_REGRESS} />
+        <Box id="game-timer">
+          <Timer />
+          <ZoneTimer time={time} maxTime={BOX_REGRESS} />
+        </Box>
 
         <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mt: 1 }}>
           <Grid size={12}>
@@ -268,6 +272,7 @@ const MultiplicationCard: FC = () => {
             ) : (
               <form onSubmit={handleSubmit}>
                 <TextField
+                  id="game-input"
                   value={answer}
                   fullWidth
                   inputRef={inputRef}

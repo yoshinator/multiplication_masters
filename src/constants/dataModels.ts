@@ -43,6 +43,7 @@ export interface User {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   subscriptionStatus: 'free' | 'premium'
+  showTour: boolean
 
   activeGroup: number
   table: number
