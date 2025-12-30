@@ -1,11 +1,15 @@
 import { Box, Button, Typography } from '@mui/material'
 import type { FC } from 'react'
-import { useTimerContext } from '../../contexts/timerContext/timerContext'
+import {
+  useTimerActions,
+  useTimerValue,
+} from '../../contexts/timerContext/timerContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const Timer: FC = () => {
-  const { time, isRunning } = useTimerContext()
+  const time = useTimerValue()
+  const { isRunning } = useTimerActions()
   const { finishSession } = useReviewSession()
   const isMobile = useIsMobile()
   const circleSize = isMobile ? 40 : 150
