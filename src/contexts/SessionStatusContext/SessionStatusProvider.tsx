@@ -32,7 +32,7 @@ const SessionStatusProvider: FC<Props> = ({ children }) => {
     if (user?.showTour) return FIRST_SESSION_LENGTH
     return user?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH
   }, [user?.showTour, user?.userDefaultSessionLength])
-  console.log({ sessionLength })
+
   return (
     <SessionStatusContext.Provider
       value={{
