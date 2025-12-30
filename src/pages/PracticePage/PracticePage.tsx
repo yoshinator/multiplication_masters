@@ -18,7 +18,7 @@ import { useTimerContext } from '../../contexts/timerContext/timerContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
 const PracticePage: FC = () => {
-  const { isSessionActive } = useSessionStatusContext()
+  const { isSessionActive, setSessionLength } = useSessionStatusContext()
   const { latestSession } = useReviewSession()
   const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
@@ -26,33 +26,37 @@ const PracticePage: FC = () => {
   const tourState = useRef({ welcome: false, session: false, summary: false })
   const { stopTimer } = useTimerContext()
   const driverRef = useRef<Driver | null>(null)
-  const userRef = useRef(user)
-
-  const makeDriver = () =>
-    driver({
-      showProgress: true,
-      animate: true,
-      allowClose: false,
-      nextBtnText: 'Next',
-      prevBtnText: 'Previous',
-      doneBtnText: 'Done',
-    })
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
 
   useEffect(() => {
-    userRef.current = user
-  }, [user])
-
-  useEffect(() => {
     if (!user?.showTour) return
 
     if (!driverRef.current) {
-      driverRef.current = makeDriver()
+      driverRef.current = driver({
+        showProgress: true,
+        animate: true,
+        allowClose: false,
+        nextBtnText: 'Next',
+        prevBtnText: 'Previous',
+        doneBtnText: 'Done',
+      })
     }
 
     const driverObj = driverRef.current
+
+    const attachCloseListener = (selector: string, driverInstance: Driver) => {
+      const element = document.querySelector(selector) as HTMLElement | null
+      if (!element) return
+
+      const closeTour = () => {
+        driverInstance.destroy()
+      }
+
+      element.addEventListener('pointerdown', closeTour, { once: true })
+    }
+
     if (!isSessionActive && !isPlayedSession && !tourState.current.welcome) {
       driverObj.setSteps([
         {
@@ -136,24 +140,13 @@ const PracticePage: FC = () => {
           },
           {
             element: '#game-input',
-
             popover: {
               title: 'Your Answer',
               description:
                 'Type the answer here. I paused the timer for you this time!',
             },
             onHighlighted: (_el, _step, { driver }) => {
-              const input = document.querySelector(
-                '#game-input'
-              ) as HTMLInputElement | null
-              if (!input) return
-
-              const closeTour = () => {
-                driver.destroy() // close the tour UI
-              }
-
-              // Use pointerdown so it only closes on a real user click/tap,
-              input.addEventListener('pointerdown', closeTour, { once: true })
+              attachCloseListener('#game-input', driver)
             },
           },
         ])
@@ -169,13 +162,8 @@ const PracticePage: FC = () => {
 
       driverObj.setConfig({
         onDestroyed: () => {
-          if (updateUser && userRef.current) {
-            updateUser({
-              ...userRef.current,
-              showTour: false,
-              userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
-            })
-          }
+          // Also sets user.showTour false
+          setSessionLength(DEFAULT_SESSION_LENGTH)
         },
       })
 
@@ -186,12 +174,18 @@ const PracticePage: FC = () => {
             title: 'Session Complete!',
             description: 'Great work! Check out your stats to see how you did.',
           },
+          onHighlighted: (_el, _step, { driver }) => {
+            attachCloseListener('#session-summary-card', driver)
+          },
         },
         {
           element: '#play-again-btn',
           popover: {
             title: 'Keep Going',
             description: 'Want to play more? Click here to start another game.',
+          },
+          onHighlighted: (_el, _step, { driver }) => {
+            attachCloseListener('#play-again-btn', driver)
           },
         },
       ])

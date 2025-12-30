@@ -1,4 +1,10 @@
-import { type FC, type ReactElement, useCallback, useState } from 'react'
+import {
+  type FC,
+  type ReactElement,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react'
 import { SessionStatusContext } from './sessionStatusContext'
 
 import { useUser } from '../userContext/useUserContext'
@@ -17,16 +23,16 @@ const SessionStatusProvider: FC<Props> = ({ children }) => {
 
   const setSessionLength = useCallback(
     (next: number) => {
-      updateUser({ userDefaultSessionLength: next })
+      updateUser({ userDefaultSessionLength: next, showTour: false })
     },
     [updateUser]
   )
 
-  let sessionLength = user?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH
-  if (user?.showTour) {
-    sessionLength = FIRST_SESSION_LENGTH
-  }
-
+  const sessionLength = useMemo(() => {
+    if (user?.showTour) return FIRST_SESSION_LENGTH
+    return user?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH
+  }, [user?.showTour, user?.userDefaultSessionLength])
+  console.log({ sessionLength })
   return (
     <SessionStatusContext.Provider
       value={{
