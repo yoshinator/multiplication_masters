@@ -14,7 +14,7 @@ import WelcomeBack from '../../components/WelcomeBack/WelcomeBack'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
-import { useTimerContext } from '../../contexts/timerContext/timerContext'
+import { useTimerActions } from '../../contexts/timerContext/timerContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
 const INITIAL_TOUR_STATE = {
@@ -30,7 +30,7 @@ const PracticePage: FC = () => {
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef(INITIAL_TOUR_STATE)
-  const { stopTimer } = useTimerContext()
+  const { stopTimer } = useTimerActions()
   const driverRef = useRef<Driver | null>(null)
   const tourListenersRef = useRef<Array<() => void>>([])
 

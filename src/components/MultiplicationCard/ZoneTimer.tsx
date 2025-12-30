@@ -5,9 +5,9 @@ import {
   BOX_REGRESS,
   BOX_STAY,
 } from '../../constants/appConstants'
+import { useTimerValue } from '../../contexts/timerContext/timerContext'
 
 interface Props {
-  time: number
   maxTime: number
 }
 
@@ -28,7 +28,8 @@ const ADVANCE_WIDTH =
 const STAY_WIDTH = (DURATION_STAY_MS / TOTAL_THRESHOLD_MS) * AVAILABLE_PERCENT
 const REGRESS_WIDTH =
   (DURATION_REGRESS_MS / TOTAL_THRESHOLD_MS) * AVAILABLE_PERCENT
-const ZoneTimer: FC<Props> = ({ time, maxTime }) => {
+const ZoneTimer: FC<Props> = ({ maxTime }) => {
+  const time = useTimerValue()
   const progressPercent = Math.min(Math.max((time / maxTime) * 100, 0), 100)
 
   //   The transition is disabled only when the bar is visually full

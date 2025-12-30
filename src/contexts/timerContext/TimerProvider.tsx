@@ -5,8 +5,9 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
 } from 'react'
-import { TimerContext, type TimerContextValue } from './timerContext'
+import { TimerActionsContext, TimerValueContext } from './timerContext'
 import { BOX_REGRESS } from '../../constants/appConstants'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 
@@ -18,6 +19,7 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number | null>(null)
   const elapsedRef = useRef(0)
+  const timeValueRef = useRef(BOX_REGRESS)
   const [timeValue, setTimeValue] = useState<number>(BOX_REGRESS)
   const [isRunning, setIsRunning] = useState(false)
   const { isSessionActive } = useSessionStatusContext()
@@ -49,6 +51,7 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
         elapsedRef.current + (performance.now() - startTimeRef.current)
 
       const remaining = Math.max(BOX_REGRESS - elapsed, 0)
+      timeValueRef.current = remaining
       setTimeValue(remaining)
 
       if (remaining === 0) {
@@ -65,8 +68,11 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
   const resetTimer = useCallback(() => {
     stopTimer()
     elapsedRef.current = 0
+    timeValueRef.current = BOX_REGRESS
     setTimeValue(BOX_REGRESS)
   }, [stopTimer])
+
+  const getTime = useCallback(() => timeValueRef.current, [])
 
   useEffect(() => {
     if (!isSessionActive) {
@@ -74,18 +80,23 @@ const TimerContextProvider: FC<Props> = ({ children }) => {
     }
   }, [isSessionActive, resetTimer, stopTimer])
 
-  const timerContextValues: TimerContextValue = {
-    time: timeValue,
-    isRunning,
-    startTimer,
-    stopTimer,
-    resetTimer,
-  }
+  const actions = useMemo(
+    () => ({
+      isRunning,
+      startTimer,
+      stopTimer,
+      resetTimer,
+      getTime,
+    }),
+    [isRunning, startTimer, stopTimer, resetTimer, getTime]
+  )
 
   return (
-    <TimerContext.Provider value={timerContextValues}>
-      {children}
-    </TimerContext.Provider>
+    <TimerActionsContext.Provider value={actions}>
+      <TimerValueContext.Provider value={timeValue}>
+        {children}
+      </TimerValueContext.Provider>
+    </TimerActionsContext.Provider>
   )
 }
 

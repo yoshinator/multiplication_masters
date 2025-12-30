@@ -16,7 +16,7 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material'
-import { useTimerContext } from '../../contexts/timerContext/timerContext'
+import { useTimerActions } from '../../contexts/timerContext/timerContext'
 import Timer from '../Timer/Timer'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import {
@@ -42,8 +42,8 @@ const MultiplicationCard: FC = () => {
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   // HOOKS
-  const { time, startTimer, resetTimer, stopTimer } = useTimerContext()
-  const prevTimeRef = useRef(time)
+  const { startTimer, resetTimer, stopTimer, getTime, isRunning } =
+    useTimerActions()
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
   const isMobile = useIsMobile()
@@ -52,7 +52,7 @@ const MultiplicationCard: FC = () => {
   const expectedLength = value != null ? String(value).length : 0
   const reviewsLeftForCard = Math.max(1, 4 - (currentCard?.box ?? 1))
 
-  const getElapsed = useCallback(() => BOX_REGRESS - time, [time])
+  const getElapsed = useCallback(() => BOX_REGRESS - getTime(), [getTime])
 
   useEffect(() => {
     if (currentCard && !isShowingAnswer) {
@@ -76,15 +76,12 @@ const MultiplicationCard: FC = () => {
 
   useEffect(() => {
     if (isShowingAnswer) return
-    const expired = prevTimeRef.current > 0 && time <= 0
-    prevTimeRef.current = time
-
-    if (expired && currentCard) {
-      stopTimer()
+    // If timer stopped and time is 0, it expired
+    if (!isRunning && currentCard && getTime() <= 0) {
       showAnswer()
       setCardColor('error.main')
     }
-  }, [time, showAnswer, currentCard, stopTimer, isShowingAnswer])
+  }, [isRunning, showAnswer, currentCard, getTime, isShowingAnswer])
 
   const handleResume = () => {
     hideAnswer()
@@ -228,7 +225,7 @@ const MultiplicationCard: FC = () => {
         </Box>
         <Box id="game-timer">
           <Timer />
-          <ZoneTimer time={time} maxTime={BOX_REGRESS} />
+          <ZoneTimer maxTime={BOX_REGRESS} />
         </Box>
 
         <Grid container spacing={isMobile ? 1.5 : 3} sx={{ mt: 1 }}>
