@@ -224,7 +224,13 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       sessionLength: number,
       sessionType: SessionRecord['sessionType'] = 'multiplication'
     ) => {
-      if (!app || !user?.uid || !sessionStartRef.current) return
+      if (!app || !user?.uid) return
+
+      if (!sessionStartRef.current) {
+        resetSessionState()
+        return
+      }
+
       const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
