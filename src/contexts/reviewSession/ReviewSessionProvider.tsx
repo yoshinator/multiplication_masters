@@ -10,14 +10,12 @@ import {
   getFirestore,
   doc,
   writeBatch,
-  setDoc,
   collection,
   query,
   orderBy,
   limit,
   onSnapshot,
   increment,
-  updateDoc, // <--- IMPORTANT: Needed for atomic updates
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import type { User, UserCard } from '../../constants/dataModels'
@@ -224,7 +222,13 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       sessionLength: number,
       sessionType: SessionRecord['sessionType'] = 'multiplication'
     ) => {
-      if (!app || !user?.uid || !sessionStartRef.current) return
+      if (!app || !user?.uid) return
+
+      if (!sessionStartRef.current) {
+        resetSessionState()
+        return
+      }
+
       const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
@@ -248,14 +252,47 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       const accuracy =
         finalTotalAnswers > 0 ? finalCorrect / finalTotalAnswers : 0
 
-      // Final Flush (Save any remaining cards pending in the buffer)
-      await commitSessionUpdates()
+      const sessionRecord: SessionRecord = {
+        userId: user.uid,
+        sessionType,
+        sessionLength,
+        startedAt: sessionStartRef.current,
+        endedAt,
+        durationMs: endedAt - sessionStartRef.current,
+        correct: finalCorrect,
+        incorrect: finalIncorrect,
+        accuracy,
+        avgResponseTime,
+        fastCorrect,
+        slowCorrect,
+        timeouts,
+        boxesAdvanced,
+        boxesRegressed,
+        statsByTable: statsByTableSnapshot,
+      }
 
+      // Capture pending cards before reset
+      const pendingCards = Object.values(pendingUserCardsRef.current)
+
+      // Optimistic UI Updates
+      setLatestSession(sessionRecord)
+      resetSessionState()
+
+      // Background Database Updates
       const db = getFirestore(app)
-      const ref = doc(collection(db, 'users', user.uid, 'Sessions'))
+      const batch = writeBatch(db)
 
+      // A. Pending Cards
+      for (const card of pendingCards) {
+        const cardRef = doc(db, 'users', user.uid, 'UserCards', card.id)
+        const cleanCardPayload = omitUndefined(card)
+        if (Object.keys(cleanCardPayload).length > 0) {
+          batch.update(cardRef, cleanCardPayload)
+        }
+      }
+
+      // B. User Stats
       const userRef = doc(db, 'users', user.uid)
-
       const userDBUpdates: FieldValueAllowed<User> = {
         totalSessions: increment(1),
         lifetimeCorrect: increment(finalCorrect),
@@ -278,43 +315,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         localUserUpdates.currentLevelProgress = 0
       }
 
-      // Perform the combined database updates
-      await updateDoc(userRef, userDBUpdates)
-
-      // Update local state instantly for UX
+      batch.update(userRef, userDBUpdates)
       updateUser(localUserUpdates)
 
-      const sessionRecord: SessionRecord = {
-        userId: user.uid,
-        sessionType,
-        sessionLength,
-        startedAt: sessionStartRef.current,
-        endedAt,
-        durationMs: endedAt - sessionStartRef.current,
-        correct: finalCorrect,
-        incorrect: finalIncorrect,
-        accuracy,
-        avgResponseTime,
-        fastCorrect,
-        slowCorrect,
-        timeouts,
-        boxesAdvanced,
-        boxesRegressed,
-        statsByTable: statsByTableSnapshot,
+      // C. Session Record
+      const sessionRef = doc(collection(db, 'users', user.uid, 'Sessions'))
+      batch.set(sessionRef, omitUndefined(sessionRecord))
+
+      try {
+        await batch.commit()
+      } catch (e) {
+        logger('Failed to save session in background:', e)
       }
-
-      await setDoc(ref, omitUndefined(sessionRecord))
-
-      resetSessionState()
     },
-    [
-      app,
-      user,
-      commitSessionUpdates,
-      updateUser,
-      resetSessionState,
-      getLatestMastery,
-    ]
+    [app, user, updateUser, resetSessionState, getLatestMastery, logger]
   )
 
   return (
