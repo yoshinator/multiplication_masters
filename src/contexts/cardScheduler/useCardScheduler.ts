@@ -30,7 +30,6 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
     sessionLengthRef.current = sessionLength
     shuffleCountsRef.current = new Set<number>()
     if (!userCards?.length || !user) return
-    logger({ sessionLength })
     logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
     const built = buildQueue(userCards, user, sessionLength, logger)
 

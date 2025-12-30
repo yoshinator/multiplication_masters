@@ -17,18 +17,46 @@ import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
 import { useTimerContext } from '../../contexts/timerContext/timerContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
 
+const INITIAL_TOUR_STATE = {
+  welcome: false,
+  session: false,
+  summary: false,
+}
+
 const PracticePage: FC = () => {
   const { isSessionActive, setSessionLength } = useSessionStatusContext()
   const { latestSession } = useReviewSession()
-  const { user, updateUser } = useUser()
+  const { user } = useUser()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
-  const tourState = useRef({ welcome: false, session: false, summary: false })
+  const tourState = useRef(INITIAL_TOUR_STATE)
   const { stopTimer } = useTimerContext()
   const driverRef = useRef<Driver | null>(null)
+  const tourListenersRef = useRef<Array<() => void>>([])
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
+
+  /**
+   * We don't really have a good way to cleanup in the useEffect
+   * that handles the tour because destroying there wipes out the
+   * driver object on every render since it lives outside React.
+   *  */
+  useEffect(() => {
+    const cleanup = () => {
+      if (driverRef.current) {
+        driverRef.current.destroy()
+      }
+      // Execute all stored cleanup functions for event listeners
+      tourListenersRef.current.forEach((fn) => fn())
+      tourListenersRef.current = []
+    }
+
+    if (!user?.showTour) {
+      cleanup()
+      tourState.current = INITIAL_TOUR_STATE
+    }
+  }, [user?.showTour])
 
   useEffect(() => {
     if (!user?.showTour) return
@@ -55,6 +83,9 @@ const PracticePage: FC = () => {
       }
 
       element.addEventListener('pointerdown', closeTour, { once: true })
+      tourListenersRef.current.push(() => {
+        element.removeEventListener('pointerdown', closeTour)
+      })
     }
 
     if (!isSessionActive && !isPlayedSession && !tourState.current.welcome) {
@@ -164,6 +195,7 @@ const PracticePage: FC = () => {
         onDestroyed: () => {
           // Also sets user.showTour false
           setSessionLength(DEFAULT_SESSION_LENGTH)
+          tourState.current = INITIAL_TOUR_STATE
         },
       })
 
@@ -192,7 +224,13 @@ const PracticePage: FC = () => {
 
       driverObj.drive()
     }
-  }, [user?.showTour, isSessionActive, isPlayedSession, updateUser, stopTimer])
+  }, [
+    user?.showTour,
+    isSessionActive,
+    isPlayedSession,
+    stopTimer,
+    setSessionLength,
+  ])
 
   useEffect(() => {
     if (isKeyboardOpen) {
