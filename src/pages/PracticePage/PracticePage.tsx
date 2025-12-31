@@ -17,7 +17,6 @@ import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
 import { useTimerActions } from '../../contexts/timerContext/timerContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
-import { extractErrorMessage } from '../../utilities/typeutils'
 
 const INITIAL_TOUR_STATE = {
   welcome: false,
@@ -39,7 +38,7 @@ const PracticePage: FC = () => {
 
   useEffect(() => {
     if (error) {
-      showNotification(extractErrorMessage(error), 'error')
+      showNotification(error, 'error')
     }
   }, [error, showNotification])
 

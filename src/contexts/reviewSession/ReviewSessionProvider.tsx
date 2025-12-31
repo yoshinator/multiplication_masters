@@ -105,6 +105,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     }
 
     setIsLoading(true)
+    setError(null)
     const db = getFirestore(app)
     const sessionsCol = collection(db, 'users', user.uid, 'Sessions')
     // Get the last session
@@ -166,12 +167,15 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         delete pendingUserCardsRef.current[id]
       }
       pendingUserFieldsRef.current = { ...defaultPendingUserCard }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Unknown error'
+    } catch (error) {
+      const message = extractErrorMessage(error)
       // Log the failure, but don't re-throw.
       // We intentionally DO NOT clear pendingUserCardsRef here so they are retried later.
-      logger('Auto-save failed, keeping local pending state for retry:', e)
-      setError(`Auto-save failed: ${msg}`)
+      logger(
+        'Auto-save failed, keeping local pending state for retry:',
+        message
+      )
+      setError(`Auto-save failed: ${message}`)
     } finally {
       setIsSaving(false)
     }
@@ -357,10 +361,10 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       try {
         await batch.commit()
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Unknown error'
-        logger('Failed to save session in background:', e)
-        setError(`Failed to save session: ${msg}`)
+      } catch (error) {
+        const message = extractErrorMessage(error)
+        logger('Failed to save session in background:', message)
+        setError(`Failed to save session: ${message}`)
       } finally {
         setIsSaving(false)
       }
