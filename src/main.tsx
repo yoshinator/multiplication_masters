@@ -14,19 +14,19 @@ import { NotificationProvider } from './contexts/notificationContext/Notificatio
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <FirebaseProvider>
-      <UserProvider>
-        <SessionStatusProvider>
-          <ReviewSessionProvider>
-            <CardSchedulerProvider>
-              <ThemeContextProvider>
-                <NotificationProvider>
+      <NotificationProvider>
+        <UserProvider>
+          <SessionStatusProvider>
+            <ReviewSessionProvider>
+              <CardSchedulerProvider>
+                <ThemeContextProvider>
                   <App />
-                </NotificationProvider>
-              </ThemeContextProvider>
-            </CardSchedulerProvider>
-          </ReviewSessionProvider>
-        </SessionStatusProvider>
-      </UserProvider>
+                </ThemeContextProvider>
+              </CardSchedulerProvider>
+            </ReviewSessionProvider>
+          </SessionStatusProvider>
+        </UserProvider>
+      </NotificationProvider>
     </FirebaseProvider>
   </StrictMode>
 )
