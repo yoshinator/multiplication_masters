@@ -24,7 +24,10 @@ import { ReviewSessionContext } from './reviewSessionContext'
 import type { SessionRecord } from '../../constants/dataModels'
 import { BOX_ADVANCE } from '../../constants/appConstants'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
-import type { FieldValueAllowed } from '../../utilities/typeutils'
+import {
+  extractErrorMessage,
+  type FieldValueAllowed,
+} from '../../utilities/typeutils'
 import { useLogger } from '../../hooks/useLogger'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 import { percentMastered } from '../cardScheduler/helpers/srsLogic'
@@ -47,6 +50,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const [percentageMastered, setPercentageMastered] = useState(
     user?.currentLevelProgress ?? 0
   )
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { setIsSessionActive } = useSessionStatusContext()
 
   const [isShowingAnswer, setIsShowingAnswer] = useState(false)
@@ -93,37 +99,55 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   }, [user?.currentLevelProgress])
 
   useEffect(() => {
-    if (!app || !user?.uid) return
+    if (!app || !user?.uid) {
+      setIsLoading(false)
+      return
+    }
 
+    setIsLoading(true)
     const db = getFirestore(app)
     const sessionsCol = collection(db, 'users', user.uid, 'Sessions')
     // Get the last session
     const q = query(sessionsCol, orderBy('endedAt', 'desc'), limit(1))
 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      if (snap.empty) {
-        setLatestSession(null)
-        return
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        setIsLoading(false)
+        if (snap.empty) {
+          setLatestSession(null)
+          return
+        }
+        setLatestSession(snap.docs[0].data() as SessionRecord)
+      },
+      (error) => {
+        setIsLoading(false)
+        setError(extractErrorMessage(error))
+        logger('Error loading session', error)
       }
-      setLatestSession(snap.docs[0].data() as SessionRecord)
-    })
+    )
 
     return () => unsubscribe()
-  }, [app, user])
+  }, [app, user, logger])
 
   // 1. Helper to push pending cards and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
     if (!app || !user?.uid) return
-    const cards = Object.values(pendingUserCardsRef.current)
+    // Snapshot pending cards to handle concurrency and partial retries
+    const cardsToSave = { ...pendingUserCardsRef.current }
+    const cardIds = Object.keys(cardsToSave)
 
     // If nothing to save, return
-    if (cards.length === 0) return
+    if (cardIds.length === 0) return
+
+    setIsSaving(true)
+    setError(null)
 
     const db = getFirestore(app)
     const batch = writeBatch(db)
 
     // A. Update Cards
-    for (const card of cards) {
+    for (const card of Object.values(cardsToSave)) {
       const cardRef = doc(db, 'users', user.uid, 'UserCards', card.id)
       const cleanCardPayload = omitUndefined(card)
 
@@ -136,14 +160,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     // C. Commit and Clear Pending
     try {
       await batch.commit()
-    } catch (e) {
-      // Log the failure, but don't re-throw.
-      logger('Auto-save failed, clearing local pending state:', e)
-    } finally {
-      // This block executes regardless of success or failure.
-      // We must clear the local refs to prevent resending failed data.
-      pendingUserCardsRef.current = {}
+      // On success, remove ONLY the cards we successfully saved.
+      // This prevents race conditions if new cards were added during the await.
+      for (const id of cardIds) {
+        delete pendingUserCardsRef.current[id]
+      }
       pendingUserFieldsRef.current = { ...defaultPendingUserCard }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      // Log the failure, but don't re-throw.
+      // We intentionally DO NOT clear pendingUserCardsRef here so they are retried later.
+      logger('Auto-save failed, keeping local pending state for retry:', e)
+      setError(`Auto-save failed: ${msg}`)
+    } finally {
+      setIsSaving(false)
     }
 
     // Note: We do NOT reset sessionCorrectCount state here,
@@ -278,6 +308,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       setLatestSession(sessionRecord)
       resetSessionState()
 
+      setIsSaving(true)
+      setError(null)
+
       // Background Database Updates
       const db = getFirestore(app)
       const batch = writeBatch(db)
@@ -325,7 +358,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       try {
         await batch.commit()
       } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Unknown error'
         logger('Failed to save session in background:', e)
+        setError(`Failed to save session: ${msg}`)
+      } finally {
+        setIsSaving(false)
       }
     },
     [app, user, updateUser, resetSessionState, getLatestMastery, logger]
@@ -347,6 +384,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         showAnswer,
         finishSession,
         hideAnswer,
+        isLoading,
+        isSaving,
+        error,
       }}
     >
       {children}

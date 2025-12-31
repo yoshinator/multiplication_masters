@@ -1,5 +1,5 @@
 import { useEffect, type FC, useRef } from 'react'
-import { Box } from '@mui/material'
+import { Box, LinearProgress } from '@mui/material'
 import { driver, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 
@@ -11,11 +11,13 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import WelcomeBack from '../../components/WelcomeBack/WelcomeBack'
+import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
 import { useTimerActions } from '../../contexts/timerContext/timerContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import { extractErrorMessage } from '../../utilities/typeutils'
 
 const INITIAL_TOUR_STATE = {
   welcome: false,
@@ -25,14 +27,21 @@ const INITIAL_TOUR_STATE = {
 
 const PracticePage: FC = () => {
   const { isSessionActive, setSessionLength } = useSessionStatusContext()
-  const { latestSession } = useReviewSession()
+  const { latestSession, isSaving, isLoading, error } = useReviewSession()
   const { user } = useUser()
+  const { showNotification } = useNotification()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef(INITIAL_TOUR_STATE)
   const { stopTimer } = useTimerActions()
   const driverRef = useRef<Driver | null>(null)
   const tourListenersRef = useRef<Array<() => void>>([])
+
+  useEffect(() => {
+    if (error) {
+      showNotification(extractErrorMessage(error), 'error')
+    }
+  }, [error, showNotification])
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
@@ -252,6 +261,19 @@ const PracticePage: FC = () => {
         WebkitOverflowScrolling: 'touch',
       }}
     >
+      {(isLoading || isSaving) && (
+        <LinearProgress
+          color={isLoading ? 'primary' : 'secondary'}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1300,
+          }}
+        />
+      )}
+
       <Box
         sx={{
           display: 'flex',
