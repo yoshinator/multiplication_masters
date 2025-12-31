@@ -60,6 +60,10 @@ export interface User {
   placedScenes?: {
     [sceneId in SceneTheme]?: SceneObjectInstance[]
   }
+
+  newCardsSeenToday?: number
+  lastNewCardDate?: number
+  maxNewCardsPerDay?: number
 }
 
 export type SessionRecord = {

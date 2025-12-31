@@ -13,7 +13,11 @@ import { buildQueue } from './helpers/queueBuilder'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 
 // MAIN HOOK: useCardScheduler
-export function useCardScheduler(userCards: UserCard[], user: User | null) {
+export function useCardScheduler(
+  userCards: UserCard[],
+  user: User | null,
+  updateUser: (fields: Partial<User>) => void
+) {
   const logger = useLogger('Scheduler', true)
   const { addUpdatedCardToSession, finishSession } = useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
@@ -89,6 +93,19 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
         lastReviewed: now,
       }
 
+      if (card.seen === 0 && user) {
+        const today = new Date(now).toDateString()
+        const lastDate = user.lastNewCardDate
+          ? new Date(user.lastNewCardDate).toDateString()
+          : ''
+
+        const count = lastDate === today ? user.newCardsSeenToday || 0 : 0
+        updateUser({
+          newCardsSeenToday: count + 1,
+          lastNewCardDate: now,
+        })
+      }
+
       if (newBox <= 3) {
         logger(`🔁 Requeueing learning card`, updated)
         queueRef.current?.enqueue(updated)
@@ -129,7 +146,14 @@ export function useCardScheduler(userCards: UserCard[], user: User | null) {
 
       return updated
     },
-    [getNextCard, logger, addUpdatedCardToSession, finishSession]
+    [
+      getNextCard,
+      logger,
+      addUpdatedCardToSession,
+      finishSession,
+      user,
+      updateUser,
+    ]
   )
 
   return {

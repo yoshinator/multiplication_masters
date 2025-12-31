@@ -11,8 +11,8 @@ interface Props {
 
 const CardSchedulerProvider: FC<Props> = ({ children }) => {
   const { userCards } = useFirebaseContext()
-  const { user } = useUser()
-  const cardScheduler = useCardScheduler(userCards, user)
+  const { user, updateUser } = useUser()
+  const cardScheduler = useCardScheduler(userCards, user, updateUser)
 
   return (
     <CardSchedulerContext.Provider value={cardScheduler}>
