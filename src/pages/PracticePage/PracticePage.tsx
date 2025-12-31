@@ -1,5 +1,5 @@
 import { useEffect, type FC, useRef } from 'react'
-import { Box } from '@mui/material'
+import { Box, LinearProgress } from '@mui/material'
 import { driver, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 
@@ -25,7 +25,7 @@ const INITIAL_TOUR_STATE = {
 
 const PracticePage: FC = () => {
   const { isSessionActive, setSessionLength } = useSessionStatusContext()
-  const { latestSession } = useReviewSession()
+  const { latestSession, isSaving, isLoading } = useReviewSession()
   const { user } = useUser()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
@@ -252,6 +252,19 @@ const PracticePage: FC = () => {
         WebkitOverflowScrolling: 'touch',
       }}
     >
+      {(isLoading || isSaving) && (
+        <LinearProgress
+          color={isLoading ? 'primary' : 'secondary'}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1300,
+          }}
+        />
+      )}
+
       <Box
         sx={{
           display: 'flex',

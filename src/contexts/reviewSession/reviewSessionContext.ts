@@ -15,6 +15,8 @@ interface ReviewSessionContextValue {
   isShowingAnswer: boolean
   showAnswer: () => void
   hideAnswer: () => void
+  isLoading: boolean
+  isSaving: boolean
 }
 
 export const ReviewSessionContext = createContext<
