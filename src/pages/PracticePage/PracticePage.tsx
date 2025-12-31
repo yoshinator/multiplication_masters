@@ -11,7 +11,6 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import WelcomeBack from '../../components/WelcomeBack/WelcomeBack'
-import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
@@ -26,21 +25,14 @@ const INITIAL_TOUR_STATE = {
 
 const PracticePage: FC = () => {
   const { isSessionActive, setSessionLength } = useSessionStatusContext()
-  const { latestSession, isSaving, isLoading, error } = useReviewSession()
+  const { latestSession, isSaving, isLoading } = useReviewSession()
   const { user } = useUser()
-  const { showNotification } = useNotification()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef(INITIAL_TOUR_STATE)
   const { stopTimer } = useTimerActions()
   const driverRef = useRef<Driver | null>(null)
   const tourListenersRef = useRef<Array<() => void>>([])
-
-  useEffect(() => {
-    if (error) {
-      showNotification(error, 'error')
-    }
-  }, [error, showNotification])
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)

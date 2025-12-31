@@ -31,18 +31,19 @@ import {
 import { useLogger } from '../../hooks/useLogger'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 import { percentMastered } from '../cardScheduler/helpers/srsLogic'
+import { useNotification } from '../notificationContext/notificationContext'
 
 interface Props {
   children: ReactNode
 }
 
-const defaultPendingUserCard = { correct: 0, incorrect: 0 }
 const SAVE_THRESHOLD = 5 // <--- Auto-save every 5 cards
 const MASTERY_THRESHOLD = 80
 const MAX_GROUPS = 8
 
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
+  const { showNotification } = useNotification()
   const { app, setUserCards } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
   const { user, updateUser } = useUser()
@@ -52,7 +53,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   )
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const { setIsSessionActive } = useSessionStatusContext()
 
   const [isShowingAnswer, setIsShowingAnswer] = useState(false)
@@ -75,11 +75,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   >({})
 
   const pendingUserCardsRef = useRef<Record<string, UserCard>>({})
-
-  // Tracks pending changes that haven't been pushed to DB yet
-  const pendingUserFieldsRef = useRef<Record<'correct' | 'incorrect', number>>({
-    ...defaultPendingUserCard,
-  })
 
   const getLatestMastery = useCallback(() => {
     if (!user || !userCards) return 0
@@ -105,7 +100,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     }
 
     setIsLoading(true)
-    setError(null)
     const db = getFirestore(app)
     const sessionsCol = collection(db, 'users', user.uid, 'Sessions')
     // Get the last session
@@ -123,17 +117,17 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       },
       (error) => {
         setIsLoading(false)
-        setError(extractErrorMessage(error))
+        showNotification(extractErrorMessage(error), 'error')
         logger('Error loading session', error)
       }
     )
 
     return () => unsubscribe()
-  }, [app, user, logger])
+  }, [app, user?.uid, logger, showNotification])
 
   // 1. Helper to push pending cards and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
-    if (!app || !user?.uid) return
+    if (!app || !user?.uid || isSaving) return
     // Snapshot pending cards to handle concurrency and partial retries
     const cardsToSave = { ...pendingUserCardsRef.current }
     const cardIds = Object.keys(cardsToSave)
@@ -142,7 +136,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     if (cardIds.length === 0) return
 
     setIsSaving(true)
-    setError(null)
 
     const db = getFirestore(app)
     const batch = writeBatch(db)
@@ -166,7 +159,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       for (const id of cardIds) {
         delete pendingUserCardsRef.current[id]
       }
-      pendingUserFieldsRef.current = { ...defaultPendingUserCard }
     } catch (error) {
       const message = extractErrorMessage(error)
       // Log the failure, but don't re-throw.
@@ -175,14 +167,14 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         'Auto-save failed, keeping local pending state for retry:',
         message
       )
-      setError(`Auto-save failed: ${message}`)
+      showNotification(`Auto-save failed: ${message}`, 'error')
     } finally {
       setIsSaving(false)
     }
 
     // Note: We do NOT reset sessionCorrectCount state here,
     // because the session is still active visually.
-  }, [app, user, logger])
+  }, [app, user, logger, showNotification])
 
   const addUpdatedCardToSession = useCallback(
     (card: UserCard, oldBox: number) => {
@@ -190,12 +182,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       pendingUserCardsRef.current[card.id] = card
 
       if (card.wasLastReviewCorrect) {
-        pendingUserFieldsRef.current.correct += 1
-
         if (card.lastElapsedTime <= BOX_ADVANCE) fastCorrectRef.current++
         else slowCorrectRef.current++
-      } else {
-        pendingUserFieldsRef.current.incorrect += 1
       }
 
       // 2. Optimistic UI Update for Cards
@@ -248,7 +236,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     // Clear refs manually just in case
     pendingUserCardsRef.current = {}
-    pendingUserFieldsRef.current = { ...defaultPendingUserCard }
   }, [setIsSessionActive])
 
   const finishSession = useCallback(
@@ -313,7 +300,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       resetSessionState()
 
       setIsSaving(true)
-      setError(null)
 
       // Background Database Updates
       const db = getFirestore(app)
@@ -364,12 +350,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       } catch (error) {
         const message = extractErrorMessage(error)
         logger('Failed to save session in background:', message)
-        setError(`Failed to save session: ${message}`)
+        showNotification(`Failed to save session: ${message}`, 'error')
       } finally {
         setIsSaving(false)
       }
     },
-    [app, user, updateUser, resetSessionState, getLatestMastery, logger]
+    [
+      app,
+      user,
+      updateUser,
+      resetSessionState,
+      getLatestMastery,
+      logger,
+      showNotification,
+    ]
   )
 
   return (
@@ -390,7 +384,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         hideAnswer,
         isLoading,
         isSaving,
-        error,
       }}
     >
       {children}
