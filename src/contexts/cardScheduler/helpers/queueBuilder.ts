@@ -67,7 +67,6 @@ export function buildQueue(
     const slotsAvailable = sessionLength - sessionCards.length
     const newCards = groupCards
       .filter((c) => c.seen === 0)
-      .slice(0, sessionLength - sessionCards.length)
       .slice(0, Math.min(slotsAvailable, remainingDailyLimit))
 
     sessionCards.push(...newCards)
