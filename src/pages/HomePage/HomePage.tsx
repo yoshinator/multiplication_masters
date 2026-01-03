@@ -22,6 +22,13 @@ export default function HomePage() {
   const { loginAnonymously } = useAuthActions()
   const theme = useTheme()
 
+  const scrollToHowItWorks = () => {
+    const element = document.getElementById('how-it-works')
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   useEffect(() => {
     if (authStatus === 'signedIn') navigate(ROUTES.TRAIN)
   }, [authStatus, navigate])
@@ -111,7 +118,7 @@ export default function HomePage() {
                 <Button
                   variant="outlined"
                   size="large"
-                  onClick={loginAnonymously}
+                  onClick={scrollToHowItWorks}
                   sx={{
                     px: 4,
                     py: 1.8,
@@ -129,7 +136,7 @@ export default function HomePage() {
                 variant="body2"
                 sx={{ mt: 3, opacity: 0.6, fontWeight: 500 }}
               >
-                No credit card required • No setup needed
+                No credit card required &bull; No setup needed
               </Typography>
             </Grid>
 
@@ -138,11 +145,11 @@ export default function HomePage() {
               <Box
                 sx={{
                   position: 'relative',
-                  borderRadius: 6,
+                  borderRadius: 4,
                   boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
                   bgcolor: 'background.paper',
                   overflow: 'hidden',
-                  p: 3,
+                  p: 4,
                   transform: 'perspective(1000px) rotateY(-5deg)',
                   transition: 'transform 0.3s ease',
                   '&:hover': {
@@ -171,7 +178,10 @@ export default function HomePage() {
       {/* ============================ */}
       {/* WHY SMART PRACTICE WORKS */}
       {/* ============================ */}
-      <Box sx={{ bgcolor: 'background.paper', py: { xs: 10, md: 16 } }}>
+      <Box
+        id="how-it-works"
+        sx={{ bgcolor: 'background.paper', py: { xs: 10, md: 16 } }}
+      >
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto', mb: 10 }}>
             <Typography
@@ -204,7 +214,7 @@ export default function HomePage() {
           <Grid container spacing={8} alignItems="center">
             {/* TEXT CONTENT */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <Stack spacing={6}>
+              <Stack spacing={5}>
                 <Box>
                   <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
                     <Typography
@@ -219,6 +229,23 @@ export default function HomePage() {
                     your child answers 7 × 8 correctly, we wait until the moment
                     they are just about to forget it (e.g., 3 days later) to
                     show it again.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 700, opacity: 1 }}
+                    >
+                      🔄 Smart Recovery
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ opacity: 0.7, pl: 0 }}>
+                    Missed a fact? No problem. The system instantly detects the
+                    slip-up and brings that specific problem back
+                    sooner—reinforcing the memory exactly when it's needed most
+                    until it's solid.
                   </Typography>
                 </Box>
 
@@ -263,8 +290,8 @@ export default function HomePage() {
                   borderRadius: 4,
                   overflow: 'hidden',
                   boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                  bgcolor: '#fff',
-                  p: 3,
+                  bgcolor: theme.palette.common.white,
+                  p: 4,
                 }}
               >
                 <Box
@@ -313,7 +340,7 @@ export default function HomePage() {
                   overflow: 'hidden',
                   boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
                   bgcolor: 'background.paper',
-                  p: 3,
+                  p: 4,
                 }}
               >
                 <Box
@@ -426,8 +453,8 @@ export default function HomePage() {
                   borderRadius: 4,
                   overflow: 'hidden',
                   boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-                  bgcolor: '#fff',
-                  p: 3,
+                  bgcolor: theme.palette.common.white,
+                  p: 4,
                 }}
               >
                 <Box
@@ -495,7 +522,7 @@ export default function HomePage() {
               borderRadius: 3,
               fontWeight: 800,
               '&:hover': {
-                bgcolor: alpha('#fff', 0.9),
+                bgcolor: alpha(theme.palette.common.white, 0.9),
               },
             }}
           >
