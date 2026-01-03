@@ -23,6 +23,7 @@ import {
   BOX_ADVANCE,
   BOX_REGRESS,
   BOX_STAY,
+  MAX_NEW_CARDS_PER_DAY,
 } from '../../constants/appConstants'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import ZoneTimer from './ZoneTimer'
