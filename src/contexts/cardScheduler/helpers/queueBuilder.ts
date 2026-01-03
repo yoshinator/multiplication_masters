@@ -40,7 +40,7 @@ export function buildQueue(
       (c) => c.group === group && c.table === user.table
     )
 
-    // 1. Add all DUE cards (ANY box)
+    // 1. Add all DUE cards (ANY box). If not seen yet, they are new. Seen variable is a lifetime counter
     const due = groupCards.filter((c) => c.nextDueTime <= now && c.seen > 0)
     for (const d of due) {
       if (sessionCards.length < sessionLength) {

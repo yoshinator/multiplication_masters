@@ -12,7 +12,10 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useThemeContext } from '../../contexts/themeContext/themeContext'
-import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import {
+  DEFAULT_SESSION_LENGTH,
+  MAX_NEW_CARDS_PER_DAY,
+} from '../../constants/appConstants'
 import { useUser } from '../../contexts/userContext/useUserContext'
 
 const gridContainerStyle = {
@@ -232,11 +235,17 @@ const ProfilePage: FC = () => {
         >
           {[
             { value: 5, label: 'Gentle', desc: 'Low-friction' },
-            { value: 10, label: 'Standard', desc: 'Recommended' },
+            {
+              value: MAX_NEW_CARDS_PER_DAY,
+              label: 'Standard',
+              desc: 'Recommended',
+            },
             { value: 15, label: 'Fast', desc: 'Solid accuracy' },
             { value: 20, label: 'Aggressive', desc: 'Motivated users' },
           ].map((option) => {
-            const selected = (user?.maxNewCardsPerDay ?? 10) === option.value
+            const selected =
+              (user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY) ===
+              option.value
             return (
               <Box
                 component="button"

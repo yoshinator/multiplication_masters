@@ -3,6 +3,19 @@ const MIN = 60 * SEC
 const HOUR = 60 * MIN
 const DAY = 24 * HOUR
 
+/**
+ * BOX_TIMES defines the intervals for each box in milliseconds.
+ * There are 16 boxes with increasing intervals.
+ * Box 1 starts at 1 minute and Box 16 goes up to 30 years.
+ * This is the core of the Leitner spaced repetition system.
+ * The card scheduler is responsible for moving cards between boxes.
+ *
+ *
+ * We want to keep the initial boxes short for effective learning and
+ * to increase the number of cards reviewed in a day if the user
+ * doesn't stay on for long periods. Long periods are defined as
+ * more than 15 minutes.
+ */
 export const BOX_TIMES = [
   1 * MIN, // Box 1
   2 * MIN, // Box 2

@@ -158,7 +158,7 @@ const MultiplicationCard: FC = () => {
     }
   }, [answer, expectedLength, currentCard, isShowingAnswer, handleAutoSubmit])
 
-  const currentLimit = user?.maxNewCardsPerDay ?? 10
+  const currentLimit = user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
   const nextLimit = [5, 10, 15, 20].find((opt) => opt > currentLimit)
 
   const handleIncreaseLimit = () => {

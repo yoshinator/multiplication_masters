@@ -193,6 +193,10 @@ const PracticePage: FC = () => {
 
       driverObj.setConfig({
         onDestroyed: () => {
+          /**
+           * Initial session is short during the tour. Here after the tour is complete
+           * we update the user session length to default and stop showing the tour.
+           */
           updateUser({
             showTour: false,
             userDefaultSessionLength: DEFAULT_SESSION_LENGTH,

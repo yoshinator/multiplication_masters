@@ -6,6 +6,7 @@ import { useDailyReviews } from '../../hooks/useDailyReviews'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LevelUpAnimation from '../LevelUpAnimation/LevelUpAnimation'
 import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
+import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 
 export const DailyGoalPanel: FC = () => {
   const { user } = useUser()
@@ -15,7 +16,14 @@ export const DailyGoalPanel: FC = () => {
   const dailyGoal = useMemo(() => {
     if (!user) return 60
 
-    const limit = user.maxNewCardsPerDay ?? 10
+    const limit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+    /**
+     * We are setting this based on the user's maxNewCardsPerDay
+     * because the steady state of the application at 10 cards per
+     * day is about 8x or reviews for 10 new cards. This makes the daily goal
+     * achievable even on lighter days or when the user is just starting out,
+     * while still requiring effort.
+     */
     return limit * 6
   }, [user])
 
