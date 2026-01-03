@@ -24,9 +24,9 @@ const INITIAL_TOUR_STATE = {
 }
 
 const PracticePage: FC = () => {
-  const { isSessionActive, setSessionLength } = useSessionStatusContext()
+  const { isSessionActive } = useSessionStatusContext()
   const { latestSession, isSaving, isLoading } = useReviewSession()
-  const { user } = useUser()
+  const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef(INITIAL_TOUR_STATE)
@@ -193,8 +193,10 @@ const PracticePage: FC = () => {
 
       driverObj.setConfig({
         onDestroyed: () => {
-          // Also sets user.showTour false
-          setSessionLength(DEFAULT_SESSION_LENGTH)
+          updateUser({
+            showTour: false,
+            userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
+          })
           tourState.current = INITIAL_TOUR_STATE
         },
       })
@@ -224,13 +226,7 @@ const PracticePage: FC = () => {
 
       driverObj.drive()
     }
-  }, [
-    user?.showTour,
-    isSessionActive,
-    isPlayedSession,
-    stopTimer,
-    setSessionLength,
-  ])
+  }, [user?.showTour, isSessionActive, isPlayedSession, stopTimer, updateUser])
 
   useEffect(() => {
     if (isKeyboardOpen) {

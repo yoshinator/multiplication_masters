@@ -7,22 +7,16 @@ import { useIsMobile } from '../../hooks/useIsMobile'
 import LevelUpAnimation from '../LevelUpAnimation/LevelUpAnimation'
 import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
 
-const GOAL_CONFIG = {
-  BEGINNER: 150, // Group 1
-  ADVANCED: 120, // Group 2+
-}
-
 export const DailyGoalPanel: FC = () => {
   const { user } = useUser()
   const reviewsToday = useDailyReviews(user?.uid)
   const isMobile = useIsMobile()
 
   const dailyGoal = useMemo(() => {
-    if (!user) return GOAL_CONFIG.BEGINNER
+    if (!user) return 60
 
-    const group = user.activeGroup ?? 1
-
-    return group <= 2 ? GOAL_CONFIG.BEGINNER : GOAL_CONFIG.ADVANCED
+    const limit = user.maxNewCardsPerDay ?? 10
+    return limit * 6
   }, [user])
 
   const progressPercentage = Math.min(100, (reviewsToday / dailyGoal) * 100)

@@ -41,7 +41,7 @@ export function buildQueue(
     )
 
     // 1. Add all DUE cards (ANY box)
-    const due = groupCards.filter((c) => c.nextDueTime <= now)
+    const due = groupCards.filter((c) => c.nextDueTime <= now && c.seen > 0)
     for (const d of due) {
       if (sessionCards.length < sessionLength) {
         sessionCards.push(d)
