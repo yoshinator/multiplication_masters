@@ -6,6 +6,9 @@ import {
   Typography,
   Card,
   CardContent,
+  Stack,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useEffect } from 'react'
@@ -17,574 +20,516 @@ export default function HomePage() {
   const { authStatus } = useUser()
   const navigate = useNavigate()
   const { loginAnonymously } = useAuthActions()
+  const theme = useTheme()
+
+  const scrollToHowItWorks = () => {
+    const element = document.getElementById('how-it-works')
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   useEffect(() => {
     if (authStatus === 'signedIn') navigate(ROUTES.TRAIN)
   }, [authStatus, navigate])
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', pt: 8 }}>
-      <Container maxWidth="lg">
-        {/* ============================ */}
-        {/* HERO SECTION */}
-        {/* ============================ */}
-        <Grid
-          container
-          spacing={6}
-          alignItems="center"
-          sx={{ pb: { xs: 6, md: 10 } }}
-        >
-          {/* LEFT SIDE */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography
-              variant="h2"
-              sx={{
-                mb: 2,
-                fontSize: { xs: '2.3rem', md: '3rem' },
-                fontWeight: 800,
-              }}
-            >
-              Turn Multiplication Into a{' '}
+    <Box
+      sx={{
+        bgcolor: 'background.default',
+        minHeight: '100vh',
+        overflowX: 'hidden',
+      }}
+    >
+      {/* ============================ */}
+      {/* HERO SECTION */}
+      {/* ============================ */}
+      <Box
+        sx={{
+          pt: { xs: 12, md: 18 },
+          pb: { xs: 10, md: 14 },
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: '-20%',
+            right: '-10%',
+            width: '60%',
+            height: '120%',
+            background: `radial-gradient(circle, ${alpha(
+              theme.palette.primary.main,
+              0.1
+            )} 0%, transparent 70%)`,
+            zIndex: 0,
+          },
+        }}
+      >
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Grid container spacing={8} alignItems="center">
+            {/* LEFT SIDE COPY */}
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography
-                component="span"
-                sx={{ color: 'primary.main', fontWeight: 800 }}
+                variant="h1"
+                sx={{
+                  fontSize: { xs: '2.5rem', md: '3.5rem' },
+                  fontWeight: 800,
+                  lineHeight: 1.1,
+                  mb: 3,
+                  letterSpacing: '-0.02em',
+                }}
               >
-                Lifetime Superpower
+                Master multiplication facts —{' '}
+                <Box component="span" sx={{ color: 'primary.main' }}>
+                  fast.
+                </Box>
               </Typography>
-            </Typography>
 
-            <Typography
-              variant="h5"
-              sx={{
-                mb: 3,
-                opacity: 0.8,
-                maxWidth: 560,
-                fontSize: { xs: '1.05rem', md: '1.25rem' },
-              }}
-            >
-              A time-adaptive{' '}
-              <Typography component="span" sx={{ fontWeight: 700, opacity: 1 }}>
-                Spaced Repetition Memory Engine
-              </Typography>{' '}
-              that builds reflex-level recall in kids, students, and adults — in
-              just 5–10 minutes a day.
-            </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  mb: 4,
+                  opacity: 0.8,
+                  fontWeight: 500,
+                  maxWidth: 500,
+                  lineHeight: 1.6,
+                }}
+              >
+                Short daily sessions that adapt to your child’s speed and
+                accuracy. Builds automatic recall and confidence.
+              </Typography>
 
-            <Grid container spacing={2} sx={{ mb: 1 }}>
-              <Grid>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Button
                   variant="contained"
                   size="large"
-                  sx={{ px: 4, py: 1.6, borderRadius: 3 }}
                   onClick={loginAnonymously}
+                  sx={{
+                    px: 4,
+                    py: 1.8,
+                    fontSize: '1.1rem',
+                    borderRadius: 3,
+                    boxShadow: `0 8px 20px ${alpha(
+                      theme.palette.primary.main,
+                      0.3
+                    )}`,
+                  }}
                 >
                   Start Free
                 </Button>
-              </Grid>
-              <Grid>
                 <Button
                   variant="outlined"
                   size="large"
-                  sx={{ px: 4, py: 1.6, borderRadius: 3 }}
-                  onClick={loginAnonymously}
+                  onClick={scrollToHowItWorks}
+                  sx={{
+                    px: 4,
+                    py: 1.8,
+                    fontSize: '1.1rem',
+                    borderRadius: 3,
+                    borderWidth: 2,
+                    '&:hover': { borderWidth: 2 },
+                  }}
                 >
                   See How It Works
                 </Button>
+              </Stack>
+
+              <Typography
+                variant="body2"
+                sx={{ mt: 3, opacity: 0.6, fontWeight: 500 }}
+              >
+                No credit card required &bull; No setup needed
+              </Typography>
+            </Grid>
+
+            {/* RIGHT SIDE IMAGE */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  position: 'relative',
+                  borderRadius: 4,
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+                  bgcolor: 'background.paper',
+                  overflow: 'hidden',
+                  p: 4,
+                  transform: 'perspective(1000px) rotateY(-5deg)',
+                  transition: 'transform 0.3s ease',
+                  '&:hover': {
+                    transform: 'perspective(1000px) rotateY(0deg)',
+                  },
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/MathBuildersPracticePage.png"
+                  alt="Multiplication Masters Practice Interface"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  }}
+                />
+              </Box>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ============================ */}
+      {/* WHY SMART PRACTICE WORKS */}
+      {/* ============================ */}
+      <Box
+        id="how-it-works"
+        sx={{ bgcolor: 'background.paper', py: { xs: 10, md: 16 } }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto', mb: 10 }}>
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 800,
+                mb: 3,
+                fontSize: { xs: '2rem', md: '2.75rem' },
+              }}
+            >
+              Why "Smart Practice" Works Better
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{ opacity: 0.7, lineHeight: 1.6, fontWeight: 400 }}
+            >
+              Traditional flashcards waste time because children often practice
+              facts they already know. Our app uses a scientifically proven
+              method called{' '}
+              <Box
+                component="span"
+                sx={{ color: 'primary.main', fontWeight: 700 }}
+              >
+                Spaced Repetition
+              </Box>{' '}
+              to fix this.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={8} alignItems="center">
+            {/* TEXT CONTENT */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Stack spacing={5}>
+                <Box>
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 700, opacity: 1 }}
+                    >
+                      ⚡ The "Just-in-Time" Method
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ opacity: 0.7, pl: 0 }}>
+                    We track every single multiplication fact individually. If
+                    your child answers 7 × 8 correctly, we wait until the moment
+                    they are just about to forget it (e.g., 3 days later) to
+                    show it again.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 700, opacity: 1 }}
+                    >
+                      🔄 Smart Recovery
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ opacity: 0.7, pl: 0 }}>
+                    Missed a fact? No problem. The system instantly detects the
+                    slip-up and brings that specific problem back
+                    sooner—reinforcing the memory exactly when it's needed most
+                    until it's solid.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 700, opacity: 1 }}
+                    >
+                      ⏱️ Efficiency First
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ opacity: 0.7, pl: 0 }}>
+                    This means your child spends 100% of their study time on the
+                    facts they struggle with, and 0% of their time reviewing
+                    easy facts they have already mastered.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Typography
+                      variant="h5"
+                      sx={{ fontWeight: 700, opacity: 1 }}
+                    >
+                      🧠 Long-Term Memory
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ opacity: 0.7, pl: 0 }}>
+                    By gradually increasing the gap between reviews (1 day → 3
+                    days → 1 week → 1 month), we move information from
+                    short-term memory into permanent long-term storage.
+                  </Typography>
+                </Box>
+              </Stack>
+            </Grid>
+
+            {/* IMAGE CONTENT */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  bgcolor: theme.palette.common.white,
+                  p: 4,
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/MathBuildersParentExplainer.png"
+                  alt="Spaced Repetition Explainer"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: 2,
+                  }}
+                />
+              </Box>
+              <Typography
+                sx={{
+                  mt: 3,
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  color: 'primary.main',
+                }}
+              >
+                The Result: Your child learns the entire multiplication table in
+                less time, with less frustration.
+              </Typography>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ============================ */}
+      {/* GAMIFICATION / MOTIVATION */}
+      {/* ============================ */}
+      <Box sx={{ py: { xs: 10, md: 16 } }}>
+        <Container maxWidth="lg">
+          <Grid
+            container
+            spacing={8}
+            alignItems="center"
+            direction={{ xs: 'column-reverse', md: 'row' }}
+          >
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  bgcolor: 'background.paper',
+                  p: 4,
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/MathBuildersSummaryPage.png"
+                  alt="Session Summary and Rewards"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  }}
+                />
+              </Box>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  mb: 3,
+                  fontSize: { xs: '2rem', md: '2.75rem' },
+                }}
+              >
+                Motivation That Actually Works
+              </Typography>
+              <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
+                Every practice session earns progress towards new levels and
+                visual rewards. This isn't a distraction—it's a{' '}
+                <strong>reward system built on modern behavior design</strong>{' '}
+                that keeps learners consistently engaged without feeling like
+                "work".
+              </Typography>
+
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      borderRadius: 3,
+                      boxShadow: 'none',
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    }}
+                  >
+                    <CardContent>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        ⭐ Visible Progress
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                        Kids see their mastery grow daily, turning "I can't"
+                        into "I did it".
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      borderRadius: 3,
+                      boxShadow: 'none',
+                      bgcolor: alpha(theme.palette.secondary.main, 0.05),
+                    }}
+                  >
+                    <CardContent>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        📈 Consistent Habits
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                        Short sessions (5 mins) mean it's easy to fit into a
+                        busy evening routine.
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
               </Grid>
             </Grid>
+          </Grid>
+        </Container>
+      </Box>
 
-            {/* Micro-testimonial under hero */}
-            <Typography
-              sx={{
-                mt: 2,
-                fontSize: '0.9rem',
-                color: 'text.secondary',
-                maxWidth: 420,
-              }}
-            >
-              “In two weeks, homework went from tears to, ‘I’ve got this.’” —{' '}
-              <Typography component="span" sx={{ fontWeight: 600 }}>
-                Parent of a 3rd grader
+      {/* ============================ */}
+      {/* STATS / PROGRESS */}
+      {/* ============================ */}
+      <Box sx={{ bgcolor: 'background.paper', py: { xs: 10, md: 16 } }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={8} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  mb: 3,
+                  fontSize: { xs: '2rem', md: '2.75rem' },
+                }}
+              >
+                Data-Driven Insights
               </Typography>
-            </Typography>
-          </Grid>
-
-          {/* RIGHT SIDE IMAGE */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Box
-              sx={{
-                width: '100%',
-                height: { xs: 260, md: 360 },
-                borderRadius: 4,
-                overflow: 'hidden',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-              }}
-            >
+              <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
+                No more guessing. See exactly which facts are mastered and which
+                need work. Our detailed statistics dashboard tracks lifetime
+                accuracy, response times, and mastery levels.
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Box
-                component="img"
-                src="https://placehold.co/900x600?text=Practice+Session+Dashboard"
-                alt="Multiplication Masters dashboard preview"
                 sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  bgcolor: theme.palette.common.white,
+                  p: 4,
                 }}
-              />
-            </Box>
-          </Grid>
-        </Grid>
-
-        {/* ============================ */}
-        {/* SOCIAL PROOF */}
-        {/* ============================ */}
-        <Box sx={{ textAlign: 'center', mt: 6, mb: 8 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              opacity: 0.6,
-              fontSize: { xs: '0.95rem', md: '1.1rem' },
-              px: { xs: 2, md: 0 },
-            }}
-          >
-            Built on the same memory principles used by medical students and
-            memory athletes — designed for multiplication.
-          </Typography>
-
-          <Typography
-            sx={{
-              mt: 3,
-              fontSize: '0.95rem',
-              color: 'text.secondary',
-            }}
-          >
-            “My 4th graders finally stopped counting on their fingers.”
-            <Typography component="span" sx={{ fontWeight: 600 }}>
-              {' '}
-              — 4th Grade Teacher
-            </Typography>
-          </Typography>
-
-          <Box
-            sx={{
-              mt: 4,
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 4,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Box
-              component="img"
-              src="https://placehold.co/140x40?text=School+Logo"
-              alt="School logo placeholder"
-              sx={{ opacity: 0.6 }}
-            />
-            <Box
-              component="img"
-              src="https://placehold.co/140x40?text=District+Logo"
-              alt="District logo placeholder"
-              sx={{ opacity: 0.6 }}
-            />
-            <Box
-              component="img"
-              src="https://placehold.co/140x40?text=Homeschool+Group"
-              alt="Homeschool logo placeholder"
-              sx={{ opacity: 0.6 }}
-            />
-          </Box>
-        </Box>
-
-        {/* ============================ */}
-        {/* FEATURE GRID */}
-        {/* ============================ */}
-        <Grid container spacing={4} sx={{ mb: 14 }}>
-          {/* FEATURE 1 */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card sx={{ height: '100%', borderRadius: 4 }}>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  🔥 Time-Adaptive Memory Engine
-                </Typography>
-                <Typography sx={{ opacity: 0.75 }}>
-                  Facts appear exactly when the brain is about to forget them.
-                  Spacing automatically stretches as mastery increases — saving
-                  time while locking multiplication into long-term memory.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* FEATURE 2 */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card sx={{ height: '100%', borderRadius: 4 }}>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  🧠 Backed by Cognitive Science
-                </Typography>
-                <Typography sx={{ opacity: 0.75 }}>
-                  Built on the spaced-repetition research used by medical
-                  students to memorize thousands of facts and by memory athletes
-                  to perform on stage — tuned specifically for multiplication
-                  tables up to 24×24.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* FEATURE 3 */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card sx={{ height: '100%', borderRadius: 4 }}>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  🚀 Lightning Reflex Training
-                </Typography>
-                <Typography sx={{ opacity: 0.75 }}>
-                  Our Leitner + SM-2 hybrid scheduler adapts to both accuracy
-                  and response time. Kids and adults build sub-2-second recall,
-                  turning hesitation into instant “I know this.”
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Tiny testimonial after features */}
-        <Box sx={{ mb: 6, textAlign: 'center' }}>
-          <Typography
-            sx={{ fontSize: '0.95rem', color: 'text.secondary', px: 2 }}
-          >
-            “It feels like the app knows exactly which facts my students are
-            shaky on, and it quietly fixes them.”{' '}
-            <Typography component="span" sx={{ fontWeight: 600 }}>
-              — 5th Grade Teacher
-            </Typography>
-          </Typography>
-        </Box>
-
-        {/* GAMIFICATION SECTION */}
-        <Box sx={{ textAlign: 'center', mb: 14 }}>
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: 800 }}>
-            Motivation That Actually Works
-          </Typography>
-
-          <Typography sx={{ maxWidth: 700, mx: 'auto', opacity: 0.8, mb: 4 }}>
-            Every practice session earns new items for your personalized scene —
-            a garden, spaceport, farm, or workshop that grows as you master your
-            multiplication facts. This isn't a game. It's a{' '}
-            <strong>reward system built on modern behavior design </strong>
-            that keeps learners consistently engaged.
-          </Typography>
-
-          <Grid container spacing={4} justifyContent="center">
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ px: 4, pt: 4, height: '100%' }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  🌱 Build Your World
-                </Typography>
-                <Typography sx={{ opacity: 0.75 }}>
-                  Kids unlock new decorations, stickers, birds, plants, and
-                  structures as their mastery grows — turning progress into
-                  something they can see and feel.
-                </Typography>
-              </Card>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ px: 4, pt: 4, height: '100%' }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  ⭐ Achievement Badges
-                </Typography>
-                <Typography sx={{ opacity: 0.75 }}>
-                  Earn badges for accuracy streaks, fast sessions, perfect runs,
-                  and milestone mastery. Students get hooked on improving —
-                  naturally.
-                </Typography>
-              </Card>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ px: 4, pt: 4, height: '100%' }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  🚀 Designed With Purpose
-                </Typography>
-                <Typography sx={{ opacity: 0.75 }}>
-                  It isn’t random gamification. Every reward is aligned with
-                  true spaced-repetition intervals — reinforcing the habit loop
-                  that leads to real fluency.
-                </Typography>
-              </Card>
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/MathBuildersStatsPage.png"
+                  alt="Progress Tracking Dashboard"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  }}
+                />
+              </Box>
             </Grid>
           </Grid>
-        </Box>
+        </Container>
+      </Box>
 
-        {/* ============================ */}
-        {/* AUDIENCE SECTIONS */}
-        {/* ============================ */}
-        <Grid container spacing={10} sx={{ mb: 14 }}>
-          {/* PARENTS */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h4" sx={{ mb: 2 }}>
-              For Parents
-            </Typography>
-            <Typography sx={{ opacity: 0.8, mb: 2 }}>
-              Give your child the quiet confidence of truly knowing their math
-              facts. No more tears, no more “I’m just bad at math” — just
-              steady, science-backed progress.
-            </Typography>
-            <Typography sx={{ opacity: 0.8 }}>
-              As they master new facts, their background scene evolves, turning
-              practice into a game loop they actually want to come back to.
-            </Typography>
-          </Grid>
-
-          {/* TEACHERS */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Typography variant="h4" sx={{ mb: 2 }}>
-              For Teachers & Schools
-            </Typography>
-            <Typography sx={{ opacity: 0.8, mb: 2 }}>
-              Replace one-size-fits-all drill worksheets with adaptive,
-              individualized practice. Every student sees the right fact at the
-              right time for their brain.
-            </Typography>
-            <Typography sx={{ opacity: 0.8 }}>
-              Track accuracy, speed, and fluency benchmarks automatically, and
-              see which facts each student needs help with — at a glance.
-            </Typography>
-          </Grid>
-
-          {/* TEACHER DASHBOARD IMAGE */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Box
-              sx={{
-                borderRadius: 3,
-                overflow: 'hidden',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
-              }}
-            >
-              <Box
-                component="img"
-                src="https://placehold.co/600x400?text=Teacher+Dashboard+Analytics"
-                alt="Teacher dashboard mockup"
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
-            </Box>
-          </Grid>
-        </Grid>
-
-        {/* ============================ */}
-        {/* ADULTS SECTION */}
-        {/* ============================ */}
-        <Box sx={{ mb: 14, textAlign: 'center', px: { xs: 2, md: 0 } }}>
-          <Typography variant="h4" sx={{ mb: 2 }}>
-            For Adults & Professionals
+      {/* ============================ */}
+      {/* CTA SECTION */}
+      {/* ============================ */}
+      <Box
+        sx={{
+          bgcolor: 'primary.main',
+          color: 'white',
+          py: { xs: 10, md: 14 },
+          textAlign: 'center',
+        }}
+      >
+        <Container maxWidth="md">
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 800,
+              mb: 3,
+              fontSize: { xs: '2rem', md: '3rem' },
+            }}
+          >
+            Try it tonight: 5 minutes, no setup.
           </Typography>
           <Typography
             sx={{
-              maxWidth: 700,
-              mx: 'auto',
-              opacity: 0.8,
-              fontSize: { xs: '1rem', md: '1.1rem' },
-              mb: 4,
-            }}
-          >
-            Maybe you never fully memorized your times tables. Maybe you want
-            sharper mental math for business, finance, or everyday life. Our
-            system uses the same techniques medical students rely on — applied
-            to multiplication, so it finally sticks.
-          </Typography>
-
-          <Box
-            sx={{
-              width: '100%',
+              opacity: 0.9,
+              mb: 5,
+              fontSize: '1.2rem',
               maxWidth: 600,
               mx: 'auto',
-              borderRadius: 4,
-              overflow: 'hidden',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
             }}
           >
-            <Box
-              component="img"
-              src="https://placehold.co/900x500?text=Adult+Learner+Session"
-              alt="Adult learner practicing multiplication"
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-          </Box>
-        </Box>
-
-        {/* ============================ */}
-        {/* SCIENCE SECTION */}
-        {/* ============================ */}
-        <Box sx={{ mb: 10 }}>
-          <Card sx={{ p: { xs: 4, md: 6 }, borderRadius: 4 }}>
-            <Typography variant="h4" sx={{ mb: 3 }}>
-              The Science Behind the System
-            </Typography>
-
-            <Typography sx={{ opacity: 0.85, mb: 2, fontSize: '1.05rem' }}>
-              Most apps drill facts randomly. That creates short bursts of
-              improvement that fade away — and it wastes your child’s effort.
-            </Typography>
-
-            <Typography sx={{ opacity: 0.85, mb: 2, fontSize: '1.05rem' }}>
-              Multiplication Masters uses a time-driven Leitner system enhanced
-              with SM-2 — the spaced-repetition algorithm behind classic tools
-              like SuperMemo and Anki. Each correct answer stretches the review
-              interval; each struggle brings a fact back sooner.
-            </Typography>
-
-            <Typography sx={{ opacity: 0.85, fontSize: '1.05rem' }}>
-              It’s the same core idea that helps medical students and memory
-              competitors learn massive amounts of information — focused
-              exclusively on multiplication facts, with kid-friendly design.
-            </Typography>
-          </Card>
-        </Box>
-
-        {/* ============================ */}
-        {/* TESTIMONIALS SECTION */}
-        {/* ============================ */}
-        <Box sx={{ mb: 14 }}>
-          <Typography
-            variant="h4"
-            sx={{ mb: 4, textAlign: 'center', px: { xs: 2, md: 0 } }}
-          >
-            What Parents and Teachers Are Saying
+            Track progress automatically and see the difference in just a few
+            sessions.
           </Typography>
-
-          <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ borderRadius: 4, height: '100%' }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography sx={{ mb: 2, fontWeight: 600 }}>
-                    “The tears just stopped.”
-                  </Typography>
-                  <Typography sx={{ opacity: 0.8, mb: 1.5 }}>
-                    “My son went from melting down over homework to finishing
-                    his multiplication sheet on his own. The small daily
-                    sessions actually fit our life.”
-                  </Typography>
-                  <Typography
-                    sx={{ fontSize: '0.9rem', color: 'text.secondary' }}
-                  >
-                    — Parent of a 3rd grader
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ borderRadius: 4, height: '100%' }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography sx={{ mb: 2, fontWeight: 600 }}>
-                    “I can see exactly who needs help.”
-                  </Typography>
-                  <Typography sx={{ opacity: 0.8, mb: 1.5 }}>
-                    “The dashboard shows me which facts each student is shaky
-                    on. I don’t have to guess anymore — I can target small-group
-                    time where it matters.”
-                  </Typography>
-                  <Typography
-                    sx={{ fontSize: '0.9rem', color: 'text.secondary' }}
-                  >
-                    — 5th Grade Teacher
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Card sx={{ borderRadius: 4, height: '100%' }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography sx={{ mb: 2, fontWeight: 600 }}>
-                    “I finally closed the gap.”
-                  </Typography>
-                  <Typography sx={{ opacity: 0.8, mb: 1.5 }}>
-                    “As an adult, I was always embarrassed about my times
-                    tables. Ten minutes a night with this and I actually feel
-                    sharp when I do mental math at work.”
-                  </Typography>
-                  <Typography
-                    sx={{ fontSize: '0.9rem', color: 'text.secondary' }}
-                  >
-                    — Adult learner
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {/* ============================ */}
-        {/* CTA SECTION */}
-        {/* ============================ */}
-        <Box
-          sx={{
-            textAlign: 'center',
-            mt: 8,
-            mb: 16,
-            px: { xs: 2, md: 0 },
-          }}
-        >
-          <Typography
-            variant="h3"
-            sx={{
-              mb: 2,
-              fontWeight: 800,
-              fontSize: { xs: '1.9rem', md: '2.5rem' },
-            }}
-          >
-            Build Math Mastery That Lasts a Lifetime
-          </Typography>
-
-          <Typography
-            variant="h6"
-            sx={{
-              opacity: 0.75,
-              mb: 4,
-              fontSize: { xs: '1rem', md: '1.2rem' },
-            }}
-          >
-            Create a free account in under 60 seconds. Your first personalized
-            practice session is ready as soon as you log in.
-          </Typography>
-
           <Button
             variant="contained"
             size="large"
+            onClick={loginAnonymously}
             sx={{
+              bgcolor: 'white',
+              color: 'primary.main',
               px: 6,
               py: 2,
-              fontSize: '1.1rem',
+              fontSize: '1.2rem',
               borderRadius: 3,
+              fontWeight: 800,
+              '&:hover': {
+                bgcolor: alpha(theme.palette.common.white, 0.9),
+              },
             }}
-            onClick={loginAnonymously}
           >
-            Get Started Free
+            Start Free Practice
           </Button>
-
-          <Typography
-            sx={{
-              mt: 2,
-              fontSize: '0.9rem',
-              color: 'text.secondary',
-            }}
-          >
-            No credit card. Just smarter, calmer multiplication practice.
-          </Typography>
-        </Box>
-      </Container>
+        </Container>
+      </Box>
     </Box>
   )
 }

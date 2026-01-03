@@ -374,11 +374,12 @@ const MultiplicationCard: FC = () => {
                 </Button>
               </Box>
             ) : (
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} autoComplete="off">
                 <TextField
                   id="game-input"
                   value={answer}
                   fullWidth
+                  autoComplete="off"
                   inputRef={inputRef}
                   slotProps={{
                     htmlInput: {
