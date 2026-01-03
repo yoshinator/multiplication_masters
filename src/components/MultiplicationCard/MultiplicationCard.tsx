@@ -23,18 +23,24 @@ import {
   BOX_ADVANCE,
   BOX_REGRESS,
   BOX_STAY,
+  MAX_NEW_CARDS_PER_DAY,
 } from '../../constants/appConstants'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import ZoneTimer from './ZoneTimer'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LayersIcon from '@mui/icons-material/Layers'
 import RepeatIcon from '@mui/icons-material/Repeat'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
+import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
+import { useUser } from '../../contexts/userContext/useUserContext'
 
 const MultiplicationCard: FC = () => {
   // COMPONENT STATE
   const [answer, setAnswer] = useState('')
   const [cardColor, setCardColor] = useState('background.paper')
   const { isShowingAnswer, showAnswer, hideAnswer } = useReviewSession()
+  const [limitIncreased, setLimitIncreased] = useState(false)
 
   // REFS
   const timeoutRef = useRef<number | null>(null)
@@ -46,6 +52,8 @@ const MultiplicationCard: FC = () => {
     useTimerActions()
   const { currentCard, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
+  const { setIsSessionActive } = useSessionStatusContext()
+  const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
 
   const { top, bottom, value } = currentCard ?? {}
@@ -150,7 +158,106 @@ const MultiplicationCard: FC = () => {
       handleAutoSubmit()
     }
   }, [answer, expectedLength, currentCard, isShowingAnswer, handleAutoSubmit])
-  if (!currentCard) return null
+
+  const currentLimit = user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+  const nextLimit = [5, 10, 15, 20].find((opt) => opt > currentLimit)
+
+  const handleIncreaseLimit = () => {
+    if (nextLimit) {
+      updateUser({ maxNewCardsPerDay: nextLimit })
+      setLimitIncreased(true)
+    }
+  }
+
+  if (!currentCard) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        mt={isMobile ? 2 : 6}
+        px={isMobile ? 1 : 2}
+        flexDirection="column"
+      >
+        <Card
+          sx={{
+            p: isMobile ? 3 : 5,
+            width: '100%',
+            maxWidth: 450,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: 2,
+          }}
+        >
+          <CheckCircleOutlineIcon
+            color="success"
+            sx={{ fontSize: isMobile ? 60 : 80 }}
+          />
+          <Typography variant="h4" fontWeight={700}>
+            Great Job!
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            You've finished all your cards for now. Come back later for more!
+          </Typography>
+
+          <Box
+            sx={{
+              bgcolor: 'action.hover',
+              p: 2,
+              borderRadius: 2,
+              mt: 1,
+              width: '100%',
+            }}
+          >
+            <Typography variant="subtitle2" gutterBottom fontWeight={700}>
+              Daily Limit: {currentLimit} New Cards
+            </Typography>
+
+            {limitIncreased ? (
+              <Typography variant="body2" color="success.main" fontWeight={600}>
+                Done! Go back to the dashboard to play.
+              </Typography>
+            ) : nextLimit ? (
+              <>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  Want to learn faster? Upgrade to {nextLimit} cards per day.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={handleIncreaseLimit}
+                  startIcon={<AddCircleOutlineIcon />}
+                  fullWidth
+                  sx={{ bgcolor: 'background.paper' }}
+                >
+                  Upgrade to {nextLimit} New Cards
+                </Button>
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                You are on the highest setting. Amazing work!
+              </Typography>
+            )}
+          </Box>
+
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            onClick={() => setIsSessionActive(false)}
+            sx={{ mt: 2 }}
+          >
+            Back to Dashboard
+          </Button>
+        </Card>
+      </Box>
+    )
+  }
 
   return (
     <Box

@@ -1,5 +1,6 @@
 import { MinPriorityQueue } from 'datastructures-js'
 import type { User, UserCard } from '../../../constants/dataModels'
+import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
 
 /**
  * Build the initial session queue
@@ -17,6 +18,18 @@ export function buildQueue(
   if (!user) return null
 
   const now = Date.now()
+  const MAX_NEW_CARDS_TODAY = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+
+  let newCardsSeenToday = 0
+  if (user.lastNewCardDate) {
+    const last = new Date(user.lastNewCardDate)
+    const today = new Date(now)
+    if (last.toDateString() === today.toDateString()) {
+      newCardsSeenToday = user.newCardsSeenToday || 0
+    }
+  }
+
+  let newCardsAddedThisSession = 0
   const sessionCards: UserCard[] = []
 
   let group = 1
@@ -27,8 +40,8 @@ export function buildQueue(
       (c) => c.group === group && c.table === user.table
     )
 
-    // 1. Add all DUE cards (ANY box)
-    const due = groupCards.filter((c) => c.nextDueTime <= now)
+    // 1. Add all DUE cards (ANY box). If not seen yet, they are new. Seen variable is a lifetime counter
+    const due = groupCards.filter((c) => c.nextDueTime <= now && c.seen > 0)
     for (const d of due) {
       if (sessionCards.length < sessionLength) {
         sessionCards.push(d)
@@ -47,11 +60,17 @@ export function buildQueue(
     if (sessionCards.length >= sessionLength) break
 
     // 3. Add NEW cards (seen = 0)
+    const remainingDailyLimit = Math.max(
+      0,
+      MAX_NEW_CARDS_TODAY - newCardsSeenToday - newCardsAddedThisSession
+    )
+    const slotsAvailable = sessionLength - sessionCards.length
     const newCards = groupCards
       .filter((c) => c.seen === 0)
-      .slice(0, sessionLength - sessionCards.length)
+      .slice(0, Math.min(slotsAvailable, remainingDailyLimit))
 
     sessionCards.push(...newCards)
+    newCardsAddedThisSession += newCards.length
 
     if (sessionCards.length >= sessionLength) break
 

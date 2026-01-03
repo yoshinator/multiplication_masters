@@ -6,11 +6,7 @@ import { useDailyReviews } from '../../hooks/useDailyReviews'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LevelUpAnimation from '../LevelUpAnimation/LevelUpAnimation'
 import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
-
-const GOAL_CONFIG = {
-  BEGINNER: 150, // Group 1
-  ADVANCED: 120, // Group 2+
-}
+import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 
 export const DailyGoalPanel: FC = () => {
   const { user } = useUser()
@@ -18,11 +14,17 @@ export const DailyGoalPanel: FC = () => {
   const isMobile = useIsMobile()
 
   const dailyGoal = useMemo(() => {
-    if (!user) return GOAL_CONFIG.BEGINNER
+    if (!user) return 60
 
-    const group = user.activeGroup ?? 1
-
-    return group <= 2 ? GOAL_CONFIG.BEGINNER : GOAL_CONFIG.ADVANCED
+    const limit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+    /**
+     * We are setting this based on the user's maxNewCardsPerDay
+     * because the steady state of the application at 10 cards per
+     * day is about 8x or reviews for 10 new cards. This makes the daily goal
+     * achievable even on lighter days or when the user is just starting out,
+     * while still requiring effort.
+     */
+    return limit * 6
   }, [user])
 
   const progressPercentage = Math.min(100, (reviewsToday / dailyGoal) * 100)

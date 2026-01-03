@@ -9,7 +9,6 @@ interface SessionStatusContextValue {
   isSessionActive: boolean
   setIsSessionActive: Dispatch<SetStateAction<boolean>>
   sessionLength: number
-  setSessionLength: (next: number) => void
 }
 
 export const SessionStatusContext =

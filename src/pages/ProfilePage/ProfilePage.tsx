@@ -12,14 +12,86 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useThemeContext } from '../../contexts/themeContext/themeContext'
-import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import {
+  DEFAULT_SESSION_LENGTH,
+  MAX_NEW_CARDS_PER_DAY,
+} from '../../constants/appConstants'
 import { useUser } from '../../contexts/userContext/useUserContext'
 
+const gridContainerStyle = {
+  display: 'grid',
+  gridTemplateColumns: {
+    xs: 'repeat(2, 1fr)',
+    sm: 'repeat(4, 1fr)',
+  },
+  gap: 1,
+}
+
+const optionButtonStyle = (selected: boolean) => ({
+  all: 'unset',
+  px: 1,
+  py: 1.5,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: selected ? 'primary.main' : 'divider',
+  cursor: 'pointer',
+  bgcolor: selected ? 'primary.light' : 'background.paper',
+  color: selected ? 'primary.contrastText' : 'inherit',
+  transition: '0.2s',
+  fontWeight: 600,
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 56,
+  height: '100%',
+
+  '&:hover': {
+    borderColor: selected ? 'primary.main' : 'text.primary',
+  },
+  '&:focus-visible': {
+    outline: '2px solid',
+    outlineColor: 'primary.main',
+    outlineOffset: 2,
+  },
+})
+
+const getNewCardText = (isTooltip: boolean) => (
+  <Typography
+    variant="caption"
+    color={isTooltip ? 'inherit' : 'text.secondary'}
+  >
+    This limits how many <strong>brand new</strong> facts you see each day.
+    <br />
+    <br />
+    For example, if you choose <strong>5</strong>, you will only learn 5 new
+    facts today. The rest of your practice will be on facts you already know.
+  </Typography>
+)
+
+const getSessionText = (isTooltip: boolean) => (
+  <Typography
+    variant="caption"
+    color={isTooltip ? 'inherit' : 'text.secondary'}
+  >
+    Choose a session size. <strong>Daily</strong> is recommended.
+    <br />
+    <br />
+    For difficult tables (like 4s, 6s, 7s), choose <strong>
+      Light
+    </strong> or <strong>Quick</strong> to limit new cards.
+    <br />
+    <br />
+    (1 new card ≈ 3 reviews)
+  </Typography>
+)
+
 const ProfilePage: FC = () => {
-  const { sessionLength, setSessionLength } = useSessionStatusContext()
+  const { sessionLength } = useSessionStatusContext()
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
-  const { user } = useUser()
+  const { user, updateUser } = useUser()
 
   const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMode(event.target.value as 'light' | 'dark' | 'system')
@@ -70,34 +142,9 @@ const ProfilePage: FC = () => {
         <Typography variant="subtitle2">Session Intensity</Typography>
 
         {isMobile ? (
-          <Typography variant="caption" color="text.secondary">
-            Choose a session size. <strong>Daily</strong> is recommended.
-            <br />
-            <br />
-            For difficult tables (like 4s, 6s, 7s), choose{' '}
-            <strong>Light</strong> or <strong>Quick</strong> to limit new cards.
-            <br />
-            <br />
-            (1 new card ≈ 3 reviews)
-          </Typography>
+          getSessionText(false)
         ) : (
-          <Tooltip
-            arrow
-            placement="right"
-            title={
-              <Typography variant="caption" sx={{ lineHeight: 1.4 }}>
-                Choose a session size. <strong>Daily</strong> is recommended.
-                <br />
-                <br />
-                For difficult tables (like 4s, 6s, 7s), choose{' '}
-                <strong>Light</strong> or <strong>Quick</strong> to limit new
-                cards.
-                <br />
-                <br />
-                (1 new card ≈ 3 reviews)
-              </Typography>
-            }
-          >
+          <Tooltip arrow placement="right" title={getSessionText(true)}>
             <InfoOutlinedIcon
               sx={{
                 fontSize: 16,
@@ -110,18 +157,7 @@ const ProfilePage: FC = () => {
       </Box>
 
       {/* Choices */}
-      <Box
-        role="group"
-        aria-label="Session Intensity"
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: 'repeat(2, 1fr)',
-            sm: 'repeat(4, 1fr)',
-          },
-          gap: 1,
-        }}
-      >
+      <Box role="group" aria-label="Session Intensity" sx={gridContainerStyle}>
         {[
           { value: 10, label: 'Quick', reviews: 'about 30' },
           {
@@ -139,38 +175,13 @@ const ProfilePage: FC = () => {
               component="button"
               type="button"
               key={option.value}
-              onClick={() => setSessionLength(option.value)}
+              onClick={() =>
+                updateUser({ userDefaultSessionLength: option.value })
+              }
               onKeyDown={handleChoiceKeyDown}
               aria-label={`Set session to ${option.label}`}
               aria-pressed={selected}
-              sx={{
-                all: 'unset',
-                px: 1,
-                py: 1.5,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: selected ? 'primary.main' : 'divider',
-                cursor: 'pointer',
-                bgcolor: selected ? 'primary.light' : 'background.paper',
-                color: selected ? 'primary.contrastText' : 'inherit',
-                transition: '0.2s',
-                fontWeight: 600,
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: 56,
-
-                '&:hover': {
-                  borderColor: selected ? 'primary.main' : 'text.primary',
-                },
-                '&:focus-visible': {
-                  outline: '2px solid',
-                  outlineColor: 'primary.main',
-                  outlineOffset: 2,
-                },
-              }}
+              sx={optionButtonStyle(selected)}
             >
               <Typography
                 variant="body2"
@@ -187,6 +198,81 @@ const ProfilePage: FC = () => {
             </Box>
           )
         })}
+      </Box>
+
+      {/* New Cards Per Day */}
+      <Box sx={{ mt: 4 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 0.5,
+            mb: 1,
+            flexDirection: { xs: 'column', sm: 'row' },
+          }}
+        >
+          <Typography variant="subtitle2">New Cards per Day</Typography>
+
+          {isMobile ? (
+            getNewCardText(false)
+          ) : (
+            <Tooltip arrow placement="right" title={getNewCardText(true)}>
+              <InfoOutlinedIcon
+                sx={{
+                  fontSize: 16,
+                  color: 'text.secondary',
+                  cursor: 'help',
+                }}
+              />
+            </Tooltip>
+          )}
+        </Box>
+
+        <Box
+          role="group"
+          aria-label="New Cards Per Day"
+          sx={gridContainerStyle}
+        >
+          {[
+            { value: 5, label: 'Gentle', desc: 'Low-friction' },
+            {
+              value: MAX_NEW_CARDS_PER_DAY,
+              label: 'Standard',
+              desc: 'Recommended',
+            },
+            { value: 15, label: 'Fast', desc: 'Solid accuracy' },
+            { value: 20, label: 'Aggressive', desc: 'Motivated users' },
+          ].map((option) => {
+            const selected =
+              (user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY) ===
+              option.value
+            return (
+              <Box
+                component="button"
+                type="button"
+                key={option.value}
+                onClick={() => updateUser({ maxNewCardsPerDay: option.value })}
+                onKeyDown={handleChoiceKeyDown}
+                aria-label={`Set new cards limit to ${option.label}`}
+                aria-pressed={selected}
+                sx={optionButtonStyle(selected)}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                >
+                  {option.label}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ opacity: 0.8, fontSize: '0.7rem', mt: 0.5 }}
+                >
+                  {option.desc}
+                </Typography>
+              </Box>
+            )
+          })}
+        </Box>
       </Box>
 
       {/* Theme Preference */}

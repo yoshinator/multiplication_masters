@@ -22,7 +22,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { useLogger } from '../../hooks/useLogger'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
-import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 import { generateRandomUsername } from '../../utilities/accountHelpers'
 
 type Props = {
@@ -36,7 +36,7 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   activeGroup: 1,
   table: 12,
   totalAccuracy: 100,
-  userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
+  userDefaultSessionLength: 0,
   showTour: true,
 
   lifetimeCorrect: 0,
@@ -44,6 +44,8 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   totalSessions: 0,
   currentLevelProgress: 0,
   subscriptionStatus: 'free',
+  newCardsSeenToday: 0,
+  maxNewCardsPerDay: MAX_NEW_CARDS_PER_DAY,
 }
 
 const UserProvider: FC<Props> = ({ children }) => {
