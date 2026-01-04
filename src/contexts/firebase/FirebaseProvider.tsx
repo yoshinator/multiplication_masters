@@ -57,7 +57,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   const isEmulatorConnectedRef = useRef(false)
   const isAuthEmulatorConnectedRef = useRef(false)
 
-  const logger = useLogger('Firebase Provider', true)
+  const logger = useLogger('Firebase Provider')
 
   const EMULATOR_HOST =
     import.meta.env.VITE_EMULATOR_HOST ||
