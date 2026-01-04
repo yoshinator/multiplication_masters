@@ -38,6 +38,7 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   totalAccuracy: 100,
   userDefaultSessionLength: 0,
   showTour: true,
+  upgradePromptCount: 0,
 
   lifetimeCorrect: 0,
   lifetimeIncorrect: 0,

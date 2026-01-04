@@ -1,14 +1,32 @@
 import { useState, useRef } from 'react'
-import { Avatar, Button, Menu, MenuItem, Typography } from '@mui/material'
+import {
+  Avatar,
+  Button,
+  Divider,
+  Menu,
+  MenuItem,
+  Typography,
+} from '@mui/material'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
+import SaveProgressModal from '../Login/SaveProgressModal'
+import { useSaveProgress } from '../../hooks/useSaveProgress'
 
 const UserMenu = () => {
   const { user } = useUser()
+  const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const {
+    saveModalOpen,
+    setSaveModalOpen,
+    handleGoogleLink,
+    handleSnooze,
+    handleEmailLink,
+  } = useSaveProgress()
   const { signOut } = useAuthActions()
   const navigate = useNavigate()
   const avatarRef = useRef<HTMLDivElement>(null)
@@ -18,6 +36,7 @@ const UserMenu = () => {
   const handleClose = () => setAnchorEl(null)
 
   const firstLetter = user?.username?.charAt(0)?.toUpperCase() ?? '?'
+  const isAnonymous = auth?.currentUser?.isAnonymous
 
   return (
     <>
@@ -46,6 +65,18 @@ const UserMenu = () => {
       </Button>
 
       <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+        {isAnonymous && (
+          <MenuItem
+            onClick={() => {
+              handleClose()
+              setSaveModalOpen(true)
+            }}
+            sx={{ color: 'warning.main', fontWeight: 'bold' }}
+          >
+            Save Progress
+          </MenuItem>
+        )}
+        {isAnonymous && <Divider />}
         <MenuItem
           onClick={() => {
             handleClose()
@@ -81,6 +112,14 @@ const UserMenu = () => {
           Sign Out
         </MenuItem>
       </Menu>
+
+      <SaveProgressModal
+        open={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onGoogle={handleGoogleLink}
+        onSnooze={handleSnooze}
+        onSendEmailLink={handleEmailLink}
+      />
     </>
   )
 }
