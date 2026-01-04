@@ -1,6 +1,7 @@
-import { type FC } from 'react'
+import { useState, type FC } from 'react'
 import {
   Box,
+  Button,
   Typography,
   Tooltip,
   FormControl,
@@ -17,6 +18,9 @@ import {
   MAX_NEW_CARDS_PER_DAY,
 } from '../../constants/appConstants'
 import { useUser } from '../../contexts/userContext/useUserContext'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
+import { useAuthActions } from '../../hooks/useAuthActions'
+import SaveProgressModal from '../../components/Login/SaveProgressModal'
 
 const gridContainerStyle = {
   display: 'grid',
@@ -92,6 +96,34 @@ const ProfilePage: FC = () => {
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
   const { user, updateUser } = useUser()
+  const { auth } = useFirebaseContext()
+  const { linkGoogleAccount, snoozeUpgradePrompt, sendLoginLink } =
+    useAuthActions()
+  const [saveModalOpen, setSaveModalOpen] = useState(false)
+
+  const isAnonymous = auth?.currentUser?.isAnonymous
+
+  const handleGoogleLink = async () => {
+    try {
+      await linkGoogleAccount()
+      setSaveModalOpen(false)
+    } catch {
+      // Error notification handled in hook
+    }
+  }
+
+  const handleSnooze = async () => {
+    await snoozeUpgradePrompt()
+    setSaveModalOpen(false)
+  }
+
+  const handleEmailLink = async (email: string) => {
+    try {
+      await sendLoginLink(email)
+    } catch {
+      // Error notification handled in hook
+    }
+  }
 
   const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMode(event.target.value as 'light' | 'dark' | 'system')
@@ -128,6 +160,17 @@ const ProfilePage: FC = () => {
       >
         {user?.username ?? 'Student Profile'}
       </Typography>
+
+      {isAnonymous && (
+        <Button
+          variant="outlined"
+          color="warning"
+          onClick={() => setSaveModalOpen(true)}
+          sx={{ mb: 3 }}
+        >
+          Save Progress (Sign Up)
+        </Button>
+      )}
 
       {/* Header */}
       <Box
@@ -298,6 +341,14 @@ const ProfilePage: FC = () => {
           </RadioGroup>
         </FormControl>
       </Box>
+
+      <SaveProgressModal
+        open={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onGoogle={handleGoogleLink}
+        onSnooze={handleSnooze}
+        onSendEmailLink={handleEmailLink}
+      />
     </Box>
   )
 }

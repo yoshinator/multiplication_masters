@@ -96,6 +96,7 @@ This document provides context for the Multiplication Masters UI repository, inc
 ## Documentation
 - Add js doc to all top level functions and to functions with more than a single responsibility.
 - Do not use emojis in any comment
+- this includes functions inside component and hooks including useEffect, useMemo and useCallback
 
 ## Error handling
 - When catching errors use logger from `src/hooks/useLogger` and show notification using  

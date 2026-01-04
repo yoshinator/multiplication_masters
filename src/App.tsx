@@ -11,6 +11,7 @@ import Header from './components/Header/Header'
 import RequireUser from './components/RequireUser/RequireUser'
 import StatsPage from './pages/StatsPage/StatsPage'
 import TimerContextProvider from './contexts/timerContext/TimerProvider'
+import FinishSignin from './components/FinishSignin/FinishSignin'
 
 const App: FC = () => {
   return (
@@ -56,6 +57,8 @@ const App: FC = () => {
               </RequireUser>
             }
           />
+
+          <Route path="/finish-signin" element={<FinishSignin />} />
 
           <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
         </Routes>

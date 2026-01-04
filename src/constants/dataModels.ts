@@ -44,6 +44,9 @@ export interface User {
   lastLogin: Timestamp | null
   subscriptionStatus: 'free' | 'premium'
   showTour: boolean
+  upgradePromptCount: number
+  lastUpgradePromptAt?: Timestamp
+  upgradePromptSnoozedUntil?: Timestamp
 
   activeGroup: number
   table: number
@@ -51,7 +54,7 @@ export interface User {
 
   lifetimeCorrect: number
   lifetimeIncorrect: number
-  totalSessions: number
+  totalSessions: number // Also used upgrade prompt logic
   userDefaultSessionLength: number
   currentLevelProgress: number
 
