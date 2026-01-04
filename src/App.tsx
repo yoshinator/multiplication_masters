@@ -58,7 +58,7 @@ const App: FC = () => {
             }
           />
 
-          <Route path="/finish-signin" element={<FinishSignin />} />
+          <Route path={ROUTES.SIGNIN} element={<FinishSignin />} />
 
           <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
         </Routes>
