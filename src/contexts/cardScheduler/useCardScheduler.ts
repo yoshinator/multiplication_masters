@@ -18,7 +18,7 @@ export function useCardScheduler(
   user: User | null,
   updateUser: (fields: Partial<User>) => void
 ) {
-  const logger = useLogger('Scheduler', true)
+  const logger = useLogger('Scheduler')
   const { addUpdatedCardToSession, finishSession } = useReviewSession()
   const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
   const [currentCard, setCurrentCard] = useState<UserCard | null>(null)

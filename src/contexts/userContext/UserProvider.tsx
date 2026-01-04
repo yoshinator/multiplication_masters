@@ -52,7 +52,7 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
 const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
-  const logger = useLogger('UserProvider', true)
+  const logger = useLogger('UserProvider')
   const { app, auth, loadUserCards } = useFirebaseContext()
 
   /**
