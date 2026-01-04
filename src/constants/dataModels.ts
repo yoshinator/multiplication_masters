@@ -54,7 +54,7 @@ export interface User {
 
   lifetimeCorrect: number
   lifetimeIncorrect: number
-  totalSessions: number // Also used upgrade prompt logic
+  totalSessions: number // Also used in upgrade prompt logic
   userDefaultSessionLength: number
   currentLevelProgress: number
 

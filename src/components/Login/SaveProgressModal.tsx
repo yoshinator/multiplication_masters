@@ -22,6 +22,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
   const [email, setEmail] = useState('')
 
   const handleSendLink = () => {
+    if (!email.trim()) return
     onSendEmailLink(email)
     onClose()
   }
@@ -70,10 +71,21 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
               onChange={(e) => setEmail(e.target.value)}
               autoFocus
             />
-            <Button variant="contained" onClick={handleSendLink} fullWidth>
+            <Button
+              variant="contained"
+              onClick={handleSendLink}
+              disabled={!email.trim()}
+              fullWidth
+            >
               Send Link
             </Button>
-            <Button onClick={() => setIsEmailMode(false)} fullWidth>
+            <Button
+              onClick={() => {
+                setEmail('')
+                setIsEmailMode(false)
+              }}
+              fullWidth
+            >
               Back
             </Button>
           </>
@@ -82,14 +94,22 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
 
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Button
-          onClick={onClose}
+          onClick={() => {
+            setEmail('')
+            setIsEmailMode(false)
+            onClose()
+          }}
           color="inherit"
           sx={{ color: 'text.secondary' }}
         >
           Not now
         </Button>
         <Button
-          onClick={onSnooze}
+          onClick={() => {
+            setEmail('')
+            setIsEmailMode(false)
+            onSnooze()
+          }}
           color="inherit"
           sx={{ color: 'text.secondary' }}
         >

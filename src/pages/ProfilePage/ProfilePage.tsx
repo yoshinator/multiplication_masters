@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { type FC } from 'react'
 import {
   Box,
   Button,
@@ -19,8 +19,8 @@ import {
 } from '../../constants/appConstants'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
-import { useAuthActions } from '../../hooks/useAuthActions'
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
+import { useSaveProgress } from '../../hooks/useSaveProgress'
 
 const gridContainerStyle = {
   display: 'grid',
@@ -97,33 +97,15 @@ const ProfilePage: FC = () => {
   const { mode, setMode } = useThemeContext()
   const { user, updateUser } = useUser()
   const { auth } = useFirebaseContext()
-  const { linkGoogleAccount, snoozeUpgradePrompt, sendLoginLink } =
-    useAuthActions()
-  const [saveModalOpen, setSaveModalOpen] = useState(false)
+  const {
+    saveModalOpen,
+    setSaveModalOpen,
+    handleGoogleLink,
+    handleSnooze,
+    handleEmailLink,
+  } = useSaveProgress()
 
   const isAnonymous = auth?.currentUser?.isAnonymous
-
-  const handleGoogleLink = async () => {
-    try {
-      await linkGoogleAccount()
-      setSaveModalOpen(false)
-    } catch {
-      // Error notification handled in hook
-    }
-  }
-
-  const handleSnooze = async () => {
-    await snoozeUpgradePrompt()
-    setSaveModalOpen(false)
-  }
-
-  const handleEmailLink = async (email: string) => {
-    try {
-      await sendLoginLink(email)
-    } catch {
-      // Error notification handled in hook
-    }
-  }
 
   const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMode(event.target.value as 'light' | 'dark' | 'system')

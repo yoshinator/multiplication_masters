@@ -73,18 +73,8 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
 
   const firebaseAuth = useMemo<Auth | null>(() => {
     if (!firebaseApp) return null
-    const auth = getAuth(firebaseApp)
-    if (import.meta.env.DEV && auth) {
-      if (!isAuthEmulatorConnectedRef.current) {
-        connectAuthEmulator(auth, `http://${EMULATOR_HOST}:9099`, {
-          disableWarnings: true,
-        })
-        isAuthEmulatorConnectedRef.current = true
-        logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
-      }
-    }
-    return auth
-  }, [firebaseApp, EMULATOR_HOST, logger])
+    return getAuth(firebaseApp)
+  }, [firebaseApp])
 
   const firestoreDb = useMemo<Firestore | null>(() => {
     if (!firebaseApp) return null
@@ -112,8 +102,19 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     logger(`Connected to Firestore emulator at ${EMULATOR_HOST}:8080`)
   }, [firestoreDb, EMULATOR_HOST, logger])
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (!firebaseAuth) return
+    if (isAuthEmulatorConnectedRef.current) return
+    connectAuthEmulator(firebaseAuth, `http://${EMULATOR_HOST}:9099`, {
+      disableWarnings: true,
+    })
+    isAuthEmulatorConnectedRef.current = true
+    logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
+  }, [firebaseAuth, EMULATOR_HOST, logger])
+
   /**
-   * Get's and sets the updated UserCards collection to be shared in the context
+   * Gets and sets the updated UserCards collection to be shared in the context
    */
   const subscribeToUserCards = useCallback(
     (uid: string) => {

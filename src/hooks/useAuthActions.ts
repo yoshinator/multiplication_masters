@@ -95,7 +95,12 @@ export const useAuthActions = () => {
         handleCodeInApp: true,
       }
       await sendSignInLinkToEmail(auth, email, actionCodeSettings)
-      window.localStorage.setItem('emailForSignIn', email)
+      const expiry = new Date().getTime() + 3 * 24 * 60 * 60 * 1000 // 3 days
+      const item = {
+        value: email,
+        expiry,
+      }
+      window.localStorage.setItem('emailForSignIn', JSON.stringify(item))
       showNotification('Link sent! Check your email.', 'success')
     } catch (error: unknown) {
       logger('Error sending login link', error)

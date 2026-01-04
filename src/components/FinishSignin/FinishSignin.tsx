@@ -32,7 +32,22 @@ const FinishSignin = () => {
       if (processedRef.current) return
 
       if (isEmailLink(window.location.href)) {
-        const savedEmail = window.localStorage.getItem('emailForSignIn')
+        const itemStr = window.localStorage.getItem('emailForSignIn')
+        let savedEmail: string | null = null
+
+        if (itemStr) {
+          try {
+            const item = JSON.parse(itemStr)
+            const now = new Date().getTime()
+            if (item && item.expiry && now < item.expiry) {
+              savedEmail = item.value
+            } else {
+              window.localStorage.removeItem('emailForSignIn')
+            }
+          } catch {
+            window.localStorage.removeItem('emailForSignIn')
+          }
+        }
 
         if (savedEmail) {
           processedRef.current = true
@@ -48,8 +63,11 @@ const FinishSignin = () => {
           }
         } else {
           setPromptForEmail(true)
-          setLoading(true)
+          setLoading(false)
         }
+      } else {
+        setLoading(false)
+        navigate('/')
       }
     })
 

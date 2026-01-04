@@ -14,14 +14,20 @@ import { useAuthActions } from '../../hooks/useAuthActions'
 import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../Login/SaveProgressModal'
+import { useSaveProgress } from '../../hooks/useSaveProgress'
 
 const UserMenu = () => {
   const { user } = useUser()
   const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [saveModalOpen, setSaveModalOpen] = useState(false)
-  const { signOut, linkGoogleAccount, snoozeUpgradePrompt, sendLoginLink } =
-    useAuthActions()
+  const {
+    saveModalOpen,
+    setSaveModalOpen,
+    handleGoogleLink,
+    handleSnooze,
+    handleEmailLink,
+  } = useSaveProgress()
+  const { signOut } = useAuthActions()
   const navigate = useNavigate()
   const avatarRef = useRef<HTMLDivElement>(null)
 
@@ -31,28 +37,6 @@ const UserMenu = () => {
 
   const firstLetter = user?.username?.charAt(0)?.toUpperCase() ?? '?'
   const isAnonymous = auth?.currentUser?.isAnonymous
-
-  const handleGoogleLink = async () => {
-    try {
-      await linkGoogleAccount()
-      setSaveModalOpen(false)
-    } catch {
-      // Error notification handled in hook
-    }
-  }
-
-  const handleSnooze = async () => {
-    await snoozeUpgradePrompt()
-    setSaveModalOpen(false)
-  }
-
-  const handleEmailLink = async (email: string) => {
-    try {
-      await sendLoginLink(email)
-    } catch {
-      // Error notification handled in hook
-    }
-  }
 
   return (
     <>

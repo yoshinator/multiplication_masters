@@ -4,5 +4,5 @@ export const ROUTES = {
   BUILDER: '/builder',
   PROFILE: '/profile',
   STATS: '/stats',
-  SIGNIN: 'finish-signin',
+  SIGNIN: '/finish-signin',
 }

@@ -16,7 +16,12 @@ const LoginModal: FC<LoginModalProps> = ({ open, onClose }) => {
   const { showNotification } = useNotification()
 
   const handleGoogleLogin = async () => {
-    await loginWithGoogle()
+    try {
+      await loginWithGoogle()
+      onClose()
+    } catch {
+      showNotification('Google sign-in failed. Please try again.', 'error')
+    }
     onClose()
   }
 
