@@ -55,11 +55,15 @@ const configFromEnv = () => {
 const FirebaseProvider: FC<Props> = ({ children }) => {
   const [userCards, setUserCards] = useState<UserCard[]>([])
   const isEmulatorConnectedRef = useRef(false)
+  const isAuthEmulatorConnectedRef = useRef(false)
 
   const logger = useLogger('Firebase Provider', true)
 
   const EMULATOR_HOST =
-    location.hostname === 'localhost' ? 'localhost' : location.hostname
+    import.meta.env.VITE_EMULATOR_HOST ||
+    (['localhost', '127.0.0.1'].includes(window.location.hostname)
+      ? 'localhost'
+      : window.location.hostname)
 
   const firebaseApp = useMemo<FirebaseApp | null>(() => {
     const cfg = configFromEnv()
@@ -69,8 +73,18 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
 
   const firebaseAuth = useMemo<Auth | null>(() => {
     if (!firebaseApp) return null
-    return getAuth(firebaseApp)
-  }, [firebaseApp])
+    const auth = getAuth(firebaseApp)
+    if (import.meta.env.DEV && auth) {
+      if (!isAuthEmulatorConnectedRef.current) {
+        connectAuthEmulator(auth, `http://${EMULATOR_HOST}:9099`, {
+          disableWarnings: true,
+        })
+        isAuthEmulatorConnectedRef.current = true
+        logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
+      }
+    }
+    return auth
+  }, [firebaseApp, EMULATOR_HOST, logger])
 
   const firestoreDb = useMemo<Firestore | null>(() => {
     if (!firebaseApp) return null
@@ -88,9 +102,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     return analytics
   }, [firebaseApp])
 
-  // #region Emulator Connections
-
-  // ONLY connect to the emulator if running locally
+  // ONLY connect to the FireStore emulator if running locally
   useEffect(() => {
     if (!import.meta.env.DEV || !firestoreDb || isEmulatorConnectedRef.current)
       return
@@ -100,13 +112,9 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     logger(`Connected to Firestore emulator at ${EMULATOR_HOST}:8080`)
   }, [firestoreDb, EMULATOR_HOST, logger])
 
-  useEffect(() => {
-    if (!import.meta.env.DEV || !firebaseAuth) return
-
-    connectAuthEmulator(firebaseAuth, `http://${EMULATOR_HOST}:9099`)
-    logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
-  }, [firebaseAuth, EMULATOR_HOST, logger])
-
+  /**
+   * Get's and sets the updated UserCards collection to be shared in the context
+   */
   const subscribeToUserCards = useCallback(
     (uid: string) => {
       if (!firestoreDb) return () => {}
@@ -139,7 +147,6 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     [firestoreDb, logger]
   )
 
-  // #endregion
   const loadUserCards = useCallback(
     (uid: string): Unsubscribe => {
       logger('Loading user cards')

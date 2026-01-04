@@ -9,10 +9,9 @@ type LoginProps = {
 
 const Login: FC<LoginProps> = ({ onSuccess }) => {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { loginWithEmail } = useAuthActions()
+  const { sendLoginLink } = useAuthActions()
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -21,7 +20,7 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
       setLoading(true)
       setError(null)
 
-      await loginWithEmail(email, password)
+      await sendLoginLink(email)
 
       onSuccess?.()
     } catch (err) {
@@ -38,7 +37,7 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
       sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 1 }}
     >
       <Typography variant="body1" color="text.secondary">
-        Sign in to your account.
+        Sign in with email link.
       </Typography>
 
       <TextField
@@ -50,16 +49,6 @@ const Login: FC<LoginProps> = ({ onSuccess }) => {
         autoFocus
         required
         error={!!error}
-      />
-      <TextField
-        label="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        fullWidth
-        required
-        error={!!error}
-        helperText={error}
       />
 
       <Button
