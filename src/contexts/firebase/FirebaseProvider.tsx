@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from 'react'
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react' // Import useEffect
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import type { Analytics } from 'firebase/analytics'
@@ -11,7 +11,6 @@ import {
   onSnapshot,
   Firestore,
   query,
-  orderBy,
 } from 'firebase/firestore'
 import {
   getAuth,
@@ -122,19 +121,22 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
 
       const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
 
-      // Use orderBy to keep UserCards in a stable order; Firestore does not guarantee implicit ordering.
-      const q = query(
-        userCardsCol,
-        orderBy('group'),
-        orderBy('top'),
-        orderBy('bottom')
-      )
+      // Query without sorting to avoid needing a composite index in Firestore.
+      // We will sort in memory below since the dataset is small.
+      const q = query(userCardsCol)
       return onSnapshot(
         q,
         (snapshot) => {
           const data = snapshot.docs.map((d) => {
             const raw = d.data() as Omit<UserCard, 'id'>
             return { ...raw, id: d.id } as UserCard
+          })
+
+          // Sort in memory: group -> top -> bottom
+          data.sort((a, b) => {
+            if (a.group !== b.group) return a.group - b.group
+            if (a.top !== b.top) return a.top - b.top
+            return a.bottom - b.bottom
           })
 
           logger('🔄 Firestore pushed userCards count:', data.length)

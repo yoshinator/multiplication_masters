@@ -199,7 +199,7 @@ const ProfilePage: FC = () => {
             <Box
               component="button"
               type="button"
-              key={option.value}
+              key={option.label}
               onClick={() =>
                 updateUser({ userDefaultSessionLength: option.value })
               }
