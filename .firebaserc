@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "multiplicationmaster"
+    "default": "multiplicationmaster",
+    "development": "multiplicationmaster",
+    "production": "mathbuildersapp"
   }
 }

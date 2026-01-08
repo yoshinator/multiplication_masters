@@ -176,6 +176,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         // Check if the user document exists and has been initialized.
         // We check for 'createdAt' to ensure we don't overwrite an existing valid user.
         if (!userSnap.exists() || !userData?.createdAt) {
+          logger('Seeding initial user data...')
           const username = userData?.username || generateRandomUsername()
           await setDoc(
             userRef,
@@ -224,9 +225,20 @@ const UserProvider: FC<Props> = ({ children }) => {
           },
           (error) => {
             logger('Error listening to user document:', error)
+            setAuthStatus('signedOut')
           }
         )
-      } catch (error) {
+      } catch (error: unknown) {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'permission-denied'
+        ) {
+          logger(
+            'Permission Denied: Check Firestore Rules for "users" collection.'
+          )
+        }
         logger('Failed to initialize or update user document:', error)
         setUser(null)
         setAuthStatus('signedOut')

@@ -8,7 +8,7 @@ export const useLogger = (
 
   return useCallback(
     (...args: Parameters<typeof console.log>) => {
-      if (import.meta.env.DEV && log) {
+      if (log) {
         console.log(prefix, ...args)
       }
     },

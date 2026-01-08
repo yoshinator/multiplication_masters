@@ -36,6 +36,9 @@ functions/node_modules
 # secrets
 .env
 .env.local
+.env.production
+.env.development
+
 
 # individual project notes
-zzz.md
+zzz**

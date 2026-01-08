@@ -90,8 +90,9 @@ export const useAuthActions = () => {
   const sendLoginLink = async (email: string) => {
     try {
       if (!auth) throw new Error('Firebase not ready')
+      const url = `${window.location.origin}/finish-signin`
       const actionCodeSettings = {
-        url: `${window.location.origin}/finish-signin`,
+        url,
         handleCodeInApp: true,
       }
       await sendSignInLinkToEmail(auth, email, actionCodeSettings)
