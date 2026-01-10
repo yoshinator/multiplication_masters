@@ -2,38 +2,26 @@ import { useState, type FC } from 'react'
 import { Box, Button, Typography, Stack, TextField } from '@mui/material'
 import GoogleIcon from '@mui/icons-material/Google'
 import AppModal from '../AppModal/AppModal'
+import { useSaveProgress } from '../../hooks/useSaveProgress'
 
 type SaveProgressModalProps = {
-  open: boolean
   onClose: () => void
-  onSnooze: () => void
-  onGoogle: () => void
-  onSendEmailLink: (email: string) => void
 }
 
-const SaveProgressModal: FC<SaveProgressModalProps> = ({
-  open,
-  onClose,
-  onSnooze,
-  onGoogle,
-  onSendEmailLink,
-}) => {
+const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
   const [isEmailMode, setIsEmailMode] = useState(false)
   const [email, setEmail] = useState('')
 
+  const { handleSnooze, handleGoogleLink, handleEmailLink } = useSaveProgress()
+
   const handleSendLink = () => {
     if (!email.trim()) return
-    onSendEmailLink(email)
+    handleEmailLink(email)
     onClose()
   }
 
   return (
-    <AppModal
-      open={open}
-      onClose={onClose}
-      title="Save your progress?"
-      maxWidth="xs"
-    >
+    <AppModal open onClose={onClose} title="Save your progress?" maxWidth="xs">
       <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
           Create an account to keep streaks, levels, and unlocks across devices.
@@ -47,7 +35,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
               variant="contained"
               size="large"
               startIcon={<GoogleIcon />}
-              onClick={onGoogle}
+              onClick={handleGoogleLink}
               fullWidth
             >
               Continue with Google
@@ -108,7 +96,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
           onClick={() => {
             setEmail('')
             setIsEmailMode(false)
-            onSnooze()
+            handleSnooze()
           }}
           color="inherit"
           sx={{ color: 'text.secondary' }}

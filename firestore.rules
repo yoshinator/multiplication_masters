@@ -1,9 +1,29 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-   match /users/{userId}/{document=**} {
-      // Allow read/write only for authenticated users accessing their own user-scoped documents
+
+    // User root doc
+    match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Any subcollections under the user
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Feedback (write-only from client)
+    match /feedback/{feedbackId} {
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.type in ['bug', 'confusing', 'feature', 'pricing', 'other']
+        && request.resource.data.summary is string
+        && request.resource.data.summary.size() > 0
+        && request.resource.data.summary.size() <= 140
+        // keep payload bounded
+        && (!('details' in request.resource.data) || request.resource.data.details == null || request.resource.data.details.size() <= 4000);
+
+      allow read, update, delete: if false;
     }
   }
 }

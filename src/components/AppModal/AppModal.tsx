@@ -36,7 +36,7 @@ const AppModal: FC<AppModalProps> = ({
       slotProps={{
         paper: {
           sx: {
-            borderRadius: isMobile ? '16px 16px 0 0' : 2,
+            borderRadius: isMobile ? 0 : 2,
             position: isMobile ? 'absolute' : 'relative',
             bottom: isMobile ? 0 : 'auto',
             m: 0,
