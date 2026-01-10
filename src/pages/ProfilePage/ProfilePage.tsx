@@ -16,6 +16,7 @@ import { useThemeContext } from '../../contexts/themeContext/themeContext'
 import {
   DEFAULT_SESSION_LENGTH,
   MAX_NEW_CARDS_PER_DAY,
+  NEW_CARDS_PER_DAY_OPTIONS,
 } from '../../constants/appConstants'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
@@ -251,14 +252,26 @@ const ProfilePage: FC = () => {
           sx={gridContainerStyle}
         >
           {[
-            { value: 6, label: 'Gentle', desc: 'Low-friction' },
+            {
+              value: NEW_CARDS_PER_DAY_OPTIONS[0],
+              label: 'Gentle',
+              desc: 'Low-friction',
+            },
             {
               value: MAX_NEW_CARDS_PER_DAY,
               label: 'Standard',
               desc: 'Recommended',
             },
-            { value: 24, label: 'Fast', desc: 'Solid accuracy' },
-            { value: 32, label: 'Aggressive', desc: 'Motivated users' },
+            {
+              value: NEW_CARDS_PER_DAY_OPTIONS[2],
+              label: 'Difficult',
+              desc: 'Easy in the beginning',
+            },
+            {
+              value: NEW_CARDS_PER_DAY_OPTIONS[3],
+              label: 'Aggressive',
+              desc: 'Motivated users',
+            },
           ].map((option) => {
             const selected =
               (user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY) ===
