@@ -12,6 +12,7 @@ import RequireUser from './components/RequireUser/RequireUser'
 import StatsPage from './pages/StatsPage/StatsPage'
 import TimerContextProvider from './contexts/timerContext/TimerProvider'
 import FinishSignin from './components/FinishSignin/FinishSignin'
+import FeedbackButton from './components/FeedbackButton/FeedbackButton'
 
 const App: FC = () => {
   return (
@@ -62,6 +63,7 @@ const App: FC = () => {
 
           <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
         </Routes>
+        <FeedbackButton />
       </Box>
     </BrowserRouter>
   )

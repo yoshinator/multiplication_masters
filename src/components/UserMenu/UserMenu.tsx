@@ -15,18 +15,14 @@ import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../Login/SaveProgressModal'
 import { useSaveProgress } from '../../hooks/useSaveProgress'
+import { useModal } from '../../contexts/modalContext/modalContext'
 
 const UserMenu = () => {
   const { user } = useUser()
   const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const {
-    saveModalOpen,
-    setSaveModalOpen,
-    handleGoogleLink,
-    handleSnooze,
-    handleEmailLink,
-  } = useSaveProgress()
+  const { openModal, closeModal } = useModal()
+  const { handleGoogleLink, handleSnooze, handleEmailLink } = useSaveProgress()
   const { signOut } = useAuthActions()
   const navigate = useNavigate()
   const avatarRef = useRef<HTMLDivElement>(null)
@@ -69,7 +65,15 @@ const UserMenu = () => {
           <MenuItem
             onClick={() => {
               handleClose()
-              setSaveModalOpen(true)
+              openModal(
+                <SaveProgressModal
+                  open={true}
+                  onClose={closeModal}
+                  onGoogle={handleGoogleLink}
+                  onSnooze={handleSnooze}
+                  onSendEmailLink={handleEmailLink}
+                />
+              )
             }}
             sx={{ color: 'warning.main', fontWeight: 'bold' }}
           >
@@ -112,14 +116,6 @@ const UserMenu = () => {
           Sign Out
         </MenuItem>
       </Menu>
-
-      <SaveProgressModal
-        open={saveModalOpen}
-        onClose={() => setSaveModalOpen(false)}
-        onGoogle={handleGoogleLink}
-        onSnooze={handleSnooze}
-        onSendEmailLink={handleEmailLink}
-      />
     </>
   )
 }
