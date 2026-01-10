@@ -21,6 +21,7 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
 import { useSaveProgress } from '../../hooks/useSaveProgress'
+import { useModal } from '../../contexts/modalContext/modalContext'
 
 const gridContainerStyle = {
   display: 'grid',
@@ -97,13 +98,8 @@ const ProfilePage: FC = () => {
   const { mode, setMode } = useThemeContext()
   const { user, updateUser } = useUser()
   const { auth } = useFirebaseContext()
-  const {
-    saveModalOpen,
-    setSaveModalOpen,
-    handleGoogleLink,
-    handleSnooze,
-    handleEmailLink,
-  } = useSaveProgress()
+  const { handleGoogleLink, handleSnooze, handleEmailLink } = useSaveProgress()
+  const { openModal, closeModal } = useModal()
 
   const isAnonymous = auth?.currentUser?.isAnonymous
 
@@ -142,18 +138,26 @@ const ProfilePage: FC = () => {
       >
         {user?.username ?? 'Student Profile'}
       </Typography>
-
       {isAnonymous && (
         <Button
           variant="outlined"
           color="warning"
-          onClick={() => setSaveModalOpen(true)}
+          onClick={() => {
+            openModal(
+              <SaveProgressModal
+                open={true}
+                onClose={closeModal}
+                onGoogle={handleGoogleLink}
+                onSnooze={handleSnooze}
+                onSendEmailLink={handleEmailLink}
+              />
+            )
+          }}
           sx={{ mb: 3 }}
         >
           Save Progress (Sign Up)
         </Button>
       )}
-
       {/* Header */}
       <Box
         sx={{
@@ -180,7 +184,6 @@ const ProfilePage: FC = () => {
           </Tooltip>
         )}
       </Box>
-
       {/* Choices */}
       <Box role="group" aria-label="Session Intensity" sx={gridContainerStyle}>
         {[
@@ -224,7 +227,6 @@ const ProfilePage: FC = () => {
           )
         })}
       </Box>
-
       {/* New Cards Per Day */}
       <Box sx={{ mt: 4 }}>
         <Box
@@ -259,14 +261,14 @@ const ProfilePage: FC = () => {
           sx={gridContainerStyle}
         >
           {[
-            { value: 5, label: 'Gentle', desc: 'Low-friction' },
+            { value: 6, label: 'Gentle', desc: 'Low-friction' },
             {
               value: MAX_NEW_CARDS_PER_DAY,
               label: 'Standard',
               desc: 'Recommended',
             },
-            { value: 15, label: 'Fast', desc: 'Solid accuracy' },
-            { value: 20, label: 'Aggressive', desc: 'Motivated users' },
+            { value: 24, label: 'Fast', desc: 'Solid accuracy' },
+            { value: 32, label: 'Aggressive', desc: 'Motivated users' },
           ].map((option) => {
             const selected =
               (user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY) ===
@@ -299,7 +301,6 @@ const ProfilePage: FC = () => {
           })}
         </Box>
       </Box>
-
       {/* Theme Preference */}
       <Box sx={{ mt: 4 }}>
         <Typography id="appearance-label" variant="subtitle2" sx={{ mb: 1 }}>
@@ -323,14 +324,6 @@ const ProfilePage: FC = () => {
           </RadioGroup>
         </FormControl>
       </Box>
-
-      <SaveProgressModal
-        open={saveModalOpen}
-        onClose={() => setSaveModalOpen(false)}
-        onGoogle={handleGoogleLink}
-        onSnooze={handleSnooze}
-        onSendEmailLink={handleEmailLink}
-      />
     </Box>
   )
 }
