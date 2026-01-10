@@ -25,9 +25,7 @@ const FeedbackButton: FC = () => {
         <Fab
           color="primary"
           aria-label="feedback"
-          onClick={() =>
-            openModal(<FeedbackModal open={true} onClose={closeModal} />)
-          }
+          onClick={() => openModal(<FeedbackModal onClose={closeModal} />)}
           sx={{
             position: 'fixed',
             bottom: 24,
