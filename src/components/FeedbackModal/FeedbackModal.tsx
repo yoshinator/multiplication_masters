@@ -44,11 +44,10 @@ const getBuildString = () => {
 }
 
 type FeedbackModalProps = {
-  open: boolean
   onClose: () => void
 }
 
-const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
+const FeedbackModal: FC<FeedbackModalProps> = ({ onClose }) => {
   const [type, setType] = useState<FeedbackType>('bug')
   const logger = useLogger('FeedbackModal')
 
@@ -76,7 +75,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
     const user = auth.currentUser
     const candidate = user?.email ?? ''
     setEmail((prev) => prev || candidate)
-  }, [open])
+  }, [])
 
   const prompt = useMemo(() => {
     switch (type) {
@@ -116,7 +115,6 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
     setExpected('')
     setActual('')
     setCanContact(false)
-    setEmail('')
   }
 
   const handleClose = () => {
@@ -200,12 +198,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
     summary.trim().length > 0 && (!canContact || email.trim().length > 0)
 
   return (
-    <AppModal
-      open={open}
-      onClose={handleClose}
-      title="Send Feedback"
-      maxWidth="sm"
-    >
+    <AppModal open onClose={handleClose} title="Send Feedback" maxWidth="sm">
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
         <TextField
           select
@@ -274,6 +267,8 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
           onChange={(e) => setDetails(e.target.value)}
           placeholder="Add any context that would help."
           fullWidth
+          slotProps={{ htmlInput: { maxLength: 4000 } }}
+          helperText={`${summary.length}/4000`}
         />
 
         {type === 'bug' && (
@@ -289,6 +284,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
               onChange={(e) => setStepsToReproduce(e.target.value)}
               placeholder={'1) ...\n2) ...\n3) ...'}
               fullWidth
+              slotProps={{ htmlInput: { maxLength: 4000 } }}
             />
 
             <TextField
@@ -297,6 +293,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
               onChange={(e) => setExpected(e.target.value)}
               placeholder="What should have happened?"
               fullWidth
+              slotProps={{ htmlInput: { maxLength: 4000 } }}
             />
 
             <TextField
@@ -305,6 +302,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
               onChange={(e) => setActual(e.target.value)}
               placeholder="What actually happened?"
               fullWidth
+              slotProps={{ htmlInput: { maxLength: 4000 } }}
             />
           </>
         )}

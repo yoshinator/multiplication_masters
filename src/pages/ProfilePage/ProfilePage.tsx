@@ -20,7 +20,6 @@ import {
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
-import { useSaveProgress } from '../../hooks/useSaveProgress'
 import { useModal } from '../../contexts/modalContext/modalContext'
 
 const gridContainerStyle = {
@@ -98,7 +97,6 @@ const ProfilePage: FC = () => {
   const { mode, setMode } = useThemeContext()
   const { user, updateUser } = useUser()
   const { auth } = useFirebaseContext()
-  const { handleGoogleLink, handleSnooze, handleEmailLink } = useSaveProgress()
   const { openModal, closeModal } = useModal()
 
   const isAnonymous = auth?.currentUser?.isAnonymous
@@ -143,15 +141,7 @@ const ProfilePage: FC = () => {
           variant="outlined"
           color="warning"
           onClick={() => {
-            openModal(
-              <SaveProgressModal
-                open={true}
-                onClose={closeModal}
-                onGoogle={handleGoogleLink}
-                onSnooze={handleSnooze}
-                onSendEmailLink={handleEmailLink}
-              />
-            )
+            openModal(<SaveProgressModal onClose={closeModal} />)
           }}
           sx={{ mb: 3 }}
         >

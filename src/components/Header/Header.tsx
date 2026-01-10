@@ -71,9 +71,7 @@ const Header = () => {
               </Button>
               <Button
                 size={isMobile ? 'small' : 'medium'}
-                onClick={() =>
-                  openModal(<LoginModal open={true} onClose={closeModal} />)
-                }
+                onClick={() => openModal(<LoginModal onClose={closeModal} />)}
               >
                 Login
               </Button>
