@@ -11,25 +11,28 @@ import ModalProvider from './contexts/modalContext/ModalProvider.tsx'
 
 import { ThemeContextProvider } from './contexts/themeContext/ThemeContextProvider.tsx'
 import { NotificationProvider } from './contexts/notificationContext/NotificationProvider.tsx'
+import { BrowserRouter } from 'react-router-dom'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <FirebaseProvider>
-      <NotificationProvider>
-        <ModalProvider>
-          <UserProvider>
-            <SessionStatusProvider>
-              <ReviewSessionProvider>
-                <CardSchedulerProvider>
-                  <ThemeContextProvider>
-                    <App />
-                  </ThemeContextProvider>
-                </CardSchedulerProvider>
-              </ReviewSessionProvider>
-            </SessionStatusProvider>
-          </UserProvider>
-        </ModalProvider>
-      </NotificationProvider>
-    </FirebaseProvider>
+    <BrowserRouter>
+      <FirebaseProvider>
+        <ThemeContextProvider>
+          <NotificationProvider>
+            <ModalProvider>
+              <UserProvider>
+                <SessionStatusProvider>
+                  <ReviewSessionProvider>
+                    <CardSchedulerProvider>
+                      <App />
+                    </CardSchedulerProvider>
+                  </ReviewSessionProvider>
+                </SessionStatusProvider>
+              </UserProvider>
+            </ModalProvider>
+          </NotificationProvider>
+        </ThemeContextProvider>
+      </FirebaseProvider>
+    </BrowserRouter>
   </StrictMode>
 )

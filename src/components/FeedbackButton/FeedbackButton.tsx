@@ -1,12 +1,13 @@
-import { type FC, useState, useContext } from 'react'
+import { type FC, useContext } from 'react'
 import { Fab, Tooltip } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import { SessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import { ROUTES } from '../../constants/routeConstants'
 import FeedbackModal from '../FeedbackModal/FeedbackModal'
+import { useModal } from '../../contexts/modalContext/modalContext'
 
 const FeedbackButton: FC = () => {
-  const [open, setOpen] = useState(false)
+  const { closeModal, openModal } = useModal()
   const location = useLocation()
   const sessionStatus = useContext(SessionStatusContext)
 
@@ -24,7 +25,9 @@ const FeedbackButton: FC = () => {
         <Fab
           color="primary"
           aria-label="feedback"
-          onClick={() => setOpen(true)}
+          onClick={() =>
+            openModal(<FeedbackModal open={true} onClose={closeModal} />)
+          }
           sx={{
             position: 'fixed',
             bottom: 24,
@@ -37,7 +40,6 @@ const FeedbackButton: FC = () => {
           Feedback
         </Fab>
       </Tooltip>
-      <FeedbackModal open={open} onClose={() => setOpen(false)} />
     </>
   )
 }

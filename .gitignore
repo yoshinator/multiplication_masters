@@ -29,9 +29,10 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
+
 # Functions build output
-functions/lib
-functions/node_modules
+functions/lib/
+functions/node_modules/
 
 # secrets
 .env
@@ -41,4 +42,4 @@ functions/node_modules
 
 
 # individual project notes
-zzz**
+zzz.*

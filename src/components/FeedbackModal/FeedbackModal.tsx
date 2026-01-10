@@ -19,6 +19,8 @@ import { getAuth } from 'firebase/auth'
 import { useLocation } from 'react-router-dom'
 import AppModal from '../AppModal/AppModal'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import { useLogger } from '../../hooks/useLogger'
+import { extractErrorMessage } from '../../utilities/typeutils'
 
 type FeedbackType = 'bug' | 'confusing' | 'feature' | 'pricing' | 'other'
 
@@ -48,6 +50,7 @@ type FeedbackModalProps = {
 
 const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
   const [type, setType] = useState<FeedbackType>('bug')
+  const logger = useLogger('FeedbackModal')
 
   // Guided fields
   const [summary, setSummary] = useState('')
@@ -118,7 +121,6 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
 
   const handleClose = () => {
     onClose()
-    // optional: keep state if you want; for now reset for a clean UX
     resetForm()
   }
 
@@ -187,7 +189,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ open, onClose }) => {
       showNotification('Feedback sent. Thank you!', 'success')
       handleClose()
     } catch (error) {
-      console.error('Error submitting feedback:', error)
+      logger('Error submitting feedback: ' + extractErrorMessage(error))
       showNotification('Failed to submit feedback. Please try again.', 'error')
     } finally {
       setIsSubmitting(false)
