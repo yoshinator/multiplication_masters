@@ -118,6 +118,7 @@ const ProfilePage: FC = () => {
       sx={{
         p: { xs: 1.5, sm: 2 },
         m: { xs: 1, sm: 2 },
+        mb: { xs: 4, sm: 'inherit' },
 
         // Card visuals only on desktop
         borderRadius: { xs: 0, sm: 2 },
