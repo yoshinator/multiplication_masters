@@ -97,6 +97,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
             setEmail('')
             setIsEmailMode(false)
             handleSnooze()
+            onClose()
           }}
           color="inherit"
           sx={{ color: 'text.secondary' }}
