@@ -68,7 +68,10 @@ const StatsPage: FC = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
+    <Container
+      maxWidth="md"
+      sx={{ py: { xs: 2, sm: 4 }, mb: { xs: 5, sm: 'inherit' } }}
+    >
       <Box
         mb={4}
         display="flex"
