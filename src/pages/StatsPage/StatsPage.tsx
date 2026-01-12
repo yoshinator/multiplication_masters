@@ -31,7 +31,7 @@ const StatsPage: FC = () => {
 
   const topTenMissedMultiplication = useMemo(
     () =>
-      userCards
+      [...userCards]
         .sort((a, b) => {
           if (b.incorrect === a.incorrect) {
             return b.seen - a.seen
@@ -47,7 +47,7 @@ const StatsPage: FC = () => {
     (user?.lifetimeCorrect || 0) + (user?.lifetimeIncorrect || 0)
   const accuracy =
     totalQuestions > 0
-      ? user && Math.round((user?.lifetimeCorrect / totalQuestions) * 100)
+      ? Math.round(((user?.lifetimeCorrect || 0) / totalQuestions) * 100)
       : 0
 
   const startTour = () => {
