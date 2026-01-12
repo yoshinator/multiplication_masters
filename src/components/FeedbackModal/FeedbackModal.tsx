@@ -268,7 +268,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ onClose }) => {
           placeholder="Add any context that would help."
           fullWidth
           slotProps={{ htmlInput: { maxLength: 4000 } }}
-          helperText={`${summary.length}/4000`}
+          helperText={`${details.length}/4000`}
         />
 
         {type === 'bug' && (
