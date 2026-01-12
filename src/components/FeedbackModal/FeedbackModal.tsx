@@ -70,7 +70,6 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ onClose }) => {
 
   // Prefill email when modal opens (if available)
   useEffect(() => {
-    if (!open) return
     const auth = getAuth()
     const user = auth.currentUser
     const candidate = user?.email ?? ''
