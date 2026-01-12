@@ -259,7 +259,7 @@ const ProfilePage: FC = () => {
               desc: 'Low-friction',
             },
             {
-              value: MAX_NEW_CARDS_PER_DAY,
+              value: NEW_CARDS_PER_DAY_OPTIONS[1],
               label: 'Standard',
               desc: 'Recommended',
             },
