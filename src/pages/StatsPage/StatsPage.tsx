@@ -82,7 +82,7 @@ const StatsPage: FC = () => {
           popover: {
             title: 'See Most Missed Facts',
             description:
-              'See your most missed facts. How many times they were missed and how many times they were seen.',
+              'See your most missed facts. How many times they were missed and how many times they were seen.Overtime you will see up to 10 missed facts.',
           },
         },
       ],

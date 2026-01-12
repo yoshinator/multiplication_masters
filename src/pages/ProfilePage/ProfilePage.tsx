@@ -257,22 +257,22 @@ const ProfilePage: FC = () => {
           {[
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[0],
-              label: ` ${NEW_CARDS_PER_DAY_OPTIONS[0]} Gentle`,
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[0]} Gentle`,
               desc: 'Low-friction',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[1],
-              label: ` ${NEW_CARDS_PER_DAY_OPTIONS[1]} Standard`,
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[1]} Standard`,
               desc: 'Recommended',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[2],
-              label: ` ${NEW_CARDS_PER_DAY_OPTIONS[2]} Difficult`,
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[2]} Difficult`,
               desc: 'More challenging',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[3],
-              label: ` ${NEW_CARDS_PER_DAY_OPTIONS[3]} Aggressive`,
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[3]} Aggressive`,
               desc: 'Motivated users',
             },
           ].map((option) => {
