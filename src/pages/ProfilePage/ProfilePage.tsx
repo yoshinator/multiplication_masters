@@ -70,8 +70,10 @@ const getNewCardText = (isTooltip: boolean) => (
     This limits how many <strong>brand new</strong> facts you see each day.
     <br />
     <br />
-    For example, if you choose <strong>5</strong>, you will only learn 5 new
-    facts today. The rest of your practice will be on facts you already know.
+    For example, if you choose{' '}
+    <strong>{`${NEW_CARDS_PER_DAY_OPTIONS[0]}`}</strong>, you will only learn{' '}
+    {`${NEW_CARDS_PER_DAY_OPTIONS[0]}`} new facts today. The rest of your
+    practice will be on facts you already know.
   </Typography>
 )
 
@@ -255,22 +257,22 @@ const ProfilePage: FC = () => {
           {[
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[0],
-              label: 'Gentle',
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[0]} Gentle`,
               desc: 'Low-friction',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[1],
-              label: 'Standard',
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[1]} Standard`,
               desc: 'Recommended',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[2],
-              label: 'Difficult',
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[2]} Difficult`,
               desc: 'More challenging',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[3],
-              label: 'Aggressive',
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[3]} Aggressive`,
               desc: 'Motivated users',
             },
           ].map((option) => {
