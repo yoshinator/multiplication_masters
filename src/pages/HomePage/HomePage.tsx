@@ -476,6 +476,101 @@ export default function HomePage() {
       </Box>
 
       {/* ============================ */}
+      {/* ANYWHERE ACCESS / DEVICES */}
+      {/* ============================ */}
+      <Box sx={{ py: { xs: 10, md: 16 } }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto', mb: 8 }}>
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 800,
+                mb: 3,
+                fontSize: { xs: '2rem', md: '2.75rem' },
+              }}
+            >
+              Practice Math Facts Anywhere
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{ opacity: 0.7, lineHeight: 1.6, fontWeight: 400 }}
+            >
+              Whether in the classroom or on the couch, our platform adapts to
+              your lifestyle. Consistent practice is key to{' '}
+              <strong>learning math facts</strong>, so we made it easy to play
+              on any device.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  mb: 3,
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/PlayingMathBuilders.jpg"
+                  alt="Child learning math facts on desktop computer"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    transition: 'transform 0.3s ease',
+                    '&:hover': { transform: 'scale(1.02)' },
+                  }}
+                />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                🖥️ Desktop & Classroom Ready
+              </Typography>
+              <Typography sx={{ opacity: 0.7 }}>
+                Perfect for focused study sessions at home or in school. The
+                immersive full-screen experience helps children concentrate on
+                mastering multiplication tables without distractions.
+              </Typography>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  mb: 3,
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/PlayingOnPhoneMathBuilders.jpg"
+                  alt="Child practicing math facts on mobile phone"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    transition: 'transform 0.3s ease',
+                    '&:hover': { transform: 'scale(1.02)' },
+                  }}
+                />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                📱 Mobile Learning on the Go
+              </Typography>
+              <Typography sx={{ opacity: 0.7 }}>
+                Turn car rides or waiting rooms into productive practice. Our
+                mobile-friendly interface makes learning math facts accessible
+                anywhere, fitting seamlessly into busy family schedules.
+              </Typography>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ============================ */}
       {/* CTA SECTION */}
       {/* ============================ */}
       <Box
