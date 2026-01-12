@@ -12,9 +12,11 @@ const ModalProvider: FC<Props> = ({ children }) => {
     if (modalContent !== null) {
       // A modal is already open; this will replace the existing modal.
       // This warning helps detect unexpected multiple modal openings.
-      console.warn(
-        'ModalProvider.openModal was called while a modal is already open. The existing modal will be replaced.'
-      )
+      if (import.meta.env?.DEV) {
+        console.warn(
+          'ModalProvider.openModal was called while a modal is already open. The existing modal will be replaced.'
+        )
+      }
     }
     setModalContent(content)
   }
