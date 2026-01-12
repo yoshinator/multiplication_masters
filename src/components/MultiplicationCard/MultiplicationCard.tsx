@@ -24,6 +24,7 @@ import {
   BOX_REGRESS,
   BOX_STAY,
   MAX_NEW_CARDS_PER_DAY,
+  NEW_CARDS_PER_DAY_OPTIONS,
 } from '../../constants/appConstants'
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import ZoneTimer from './ZoneTimer'
@@ -160,7 +161,7 @@ const MultiplicationCard: FC = () => {
   }, [answer, expectedLength, currentCard, isShowingAnswer, handleAutoSubmit])
 
   const currentLimit = user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
-  const nextLimit = [5, 10, 15, 20].find((opt) => opt > currentLimit)
+  const nextLimit = NEW_CARDS_PER_DAY_OPTIONS.find((opt) => opt > currentLimit)
 
   const handleIncreaseLimit = () => {
     if (nextLimit) {

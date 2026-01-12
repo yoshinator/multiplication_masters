@@ -98,3 +98,29 @@ export type SessionRecord = {
     }
   }
 }
+
+export type Feedback = {
+  uid: string
+  isAnonymous: boolean
+  providers: string[]
+  type: 'bug' | 'confusing' | 'feature' | 'pricing' | 'other'
+
+  summary: string
+  details: string | null
+
+  // bug-only (nullable for other types)
+  stepsToReproduce: string | null
+  expected: string | null
+  actual: string | null
+
+  canContact: boolean
+  contactEmail: string | null
+
+  createdAt: Timestamp
+  route: string
+  build: string
+  env: 'prod' | 'dev'
+  viewport: { w: number; h: number }
+  userAgent: string
+  locale: string
+}

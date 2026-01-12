@@ -7,11 +7,10 @@ import { useAuthActions } from '../../hooks/useAuthActions'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 
 type LoginModalProps = {
-  open: boolean
   onClose: () => void
 }
 
-const LoginModal: FC<LoginModalProps> = ({ open, onClose }) => {
+const LoginModal: FC<LoginModalProps> = ({ onClose }) => {
   const { loginWithGoogle } = useAuthActions()
   const { showNotification } = useNotification()
 
@@ -26,7 +25,7 @@ const LoginModal: FC<LoginModalProps> = ({ open, onClose }) => {
   }
 
   return (
-    <AppModal open={open} onClose={onClose} title="Sign In" maxWidth="xs">
+    <AppModal open onClose={onClose} title="Sign In" maxWidth="xs">
       <Box sx={{ mb: 2 }}>
         <Button
           variant="outlined"

@@ -16,11 +16,12 @@ import { useThemeContext } from '../../contexts/themeContext/themeContext'
 import {
   DEFAULT_SESSION_LENGTH,
   MAX_NEW_CARDS_PER_DAY,
+  NEW_CARDS_PER_DAY_OPTIONS,
 } from '../../constants/appConstants'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
-import { useSaveProgress } from '../../hooks/useSaveProgress'
+import { useModal } from '../../contexts/modalContext/modalContext'
 
 const gridContainerStyle = {
   display: 'grid',
@@ -69,8 +70,10 @@ const getNewCardText = (isTooltip: boolean) => (
     This limits how many <strong>brand new</strong> facts you see each day.
     <br />
     <br />
-    For example, if you choose <strong>5</strong>, you will only learn 5 new
-    facts today. The rest of your practice will be on facts you already know.
+    For example, if you choose{' '}
+    <strong>{`${NEW_CARDS_PER_DAY_OPTIONS[0]}`}</strong>, you will only learn{' '}
+    {`${NEW_CARDS_PER_DAY_OPTIONS[0]}`} new facts today. The rest of your
+    practice will be on facts you already know.
   </Typography>
 )
 
@@ -97,13 +100,7 @@ const ProfilePage: FC = () => {
   const { mode, setMode } = useThemeContext()
   const { user, updateUser } = useUser()
   const { auth } = useFirebaseContext()
-  const {
-    saveModalOpen,
-    setSaveModalOpen,
-    handleGoogleLink,
-    handleSnooze,
-    handleEmailLink,
-  } = useSaveProgress()
+  const { openModal, closeModal } = useModal()
 
   const isAnonymous = auth?.currentUser?.isAnonymous
 
@@ -123,6 +120,7 @@ const ProfilePage: FC = () => {
       sx={{
         p: { xs: 1.5, sm: 2 },
         m: { xs: 1, sm: 2 },
+        mb: { xs: 4, sm: 'inherit' },
 
         // Card visuals only on desktop
         borderRadius: { xs: 0, sm: 2 },
@@ -142,18 +140,18 @@ const ProfilePage: FC = () => {
       >
         {user?.username ?? 'Student Profile'}
       </Typography>
-
       {isAnonymous && (
         <Button
           variant="outlined"
           color="warning"
-          onClick={() => setSaveModalOpen(true)}
+          onClick={() => {
+            openModal(<SaveProgressModal onClose={closeModal} />)
+          }}
           sx={{ mb: 3 }}
         >
           Save Progress (Sign Up)
         </Button>
       )}
-
       {/* Header */}
       <Box
         sx={{
@@ -180,7 +178,6 @@ const ProfilePage: FC = () => {
           </Tooltip>
         )}
       </Box>
-
       {/* Choices */}
       <Box role="group" aria-label="Session Intensity" sx={gridContainerStyle}>
         {[
@@ -224,7 +221,6 @@ const ProfilePage: FC = () => {
           )
         })}
       </Box>
-
       {/* New Cards Per Day */}
       <Box sx={{ mt: 4 }}>
         <Box
@@ -259,14 +255,26 @@ const ProfilePage: FC = () => {
           sx={gridContainerStyle}
         >
           {[
-            { value: 5, label: 'Gentle', desc: 'Low-friction' },
             {
-              value: MAX_NEW_CARDS_PER_DAY,
-              label: 'Standard',
+              value: NEW_CARDS_PER_DAY_OPTIONS[0],
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[0]} Gentle`,
+              desc: 'Low-friction',
+            },
+            {
+              value: NEW_CARDS_PER_DAY_OPTIONS[1],
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[1]} Standard`,
               desc: 'Recommended',
             },
-            { value: 15, label: 'Fast', desc: 'Solid accuracy' },
-            { value: 20, label: 'Aggressive', desc: 'Motivated users' },
+            {
+              value: NEW_CARDS_PER_DAY_OPTIONS[2],
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[2]} Difficult`,
+              desc: 'More challenging',
+            },
+            {
+              value: NEW_CARDS_PER_DAY_OPTIONS[3],
+              label: `${NEW_CARDS_PER_DAY_OPTIONS[3]} Aggressive`,
+              desc: 'Motivated users',
+            },
           ].map((option) => {
             const selected =
               (user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY) ===
@@ -299,7 +307,6 @@ const ProfilePage: FC = () => {
           })}
         </Box>
       </Box>
-
       {/* Theme Preference */}
       <Box sx={{ mt: 4 }}>
         <Typography id="appearance-label" variant="subtitle2" sx={{ mb: 1 }}>
@@ -323,14 +330,6 @@ const ProfilePage: FC = () => {
           </RadioGroup>
         </FormControl>
       </Box>
-
-      <SaveProgressModal
-        open={saveModalOpen}
-        onClose={() => setSaveModalOpen(false)}
-        onGoogle={handleGoogleLink}
-        onSnooze={handleSnooze}
-        onSendEmailLink={handleEmailLink}
-      />
     </Box>
   )
 }

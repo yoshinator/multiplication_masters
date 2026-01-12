@@ -1,6 +1,5 @@
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { useState } from 'react'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -8,11 +7,12 @@ import LoginModal from '../Login/LoginModal'
 import UserMenu from '../UserMenu/UserMenu'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
+import { useModal } from '../../contexts/modalContext/modalContext'
 
 const Header = () => {
   const { user } = useUser()
   const isMobile = useIsMobile()
-  const [loginOpen, setLoginOpen] = useState(false)
+  const { openModal, closeModal } = useModal()
   const { loginAnonymously } = useAuthActions()
   const navigate = useNavigate()
 
@@ -71,7 +71,7 @@ const Header = () => {
               </Button>
               <Button
                 size={isMobile ? 'small' : 'medium'}
-                onClick={() => setLoginOpen(true)}
+                onClick={() => openModal(<LoginModal onClose={closeModal} />)}
               >
                 Login
               </Button>
@@ -83,8 +83,6 @@ const Header = () => {
           )}
         </Toolbar>
       </AppBar>
-
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   )
 }
