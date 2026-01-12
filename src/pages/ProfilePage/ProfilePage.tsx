@@ -266,7 +266,7 @@ const ProfilePage: FC = () => {
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[2],
               label: 'Difficult',
-              desc: 'Easy in the beginning',
+              desc: 'More challenging',
             },
             {
               value: NEW_CARDS_PER_DAY_OPTIONS[3],
