@@ -116,20 +116,19 @@ const UserProvider: FC<Props> = ({ children }) => {
   // Automatic Migration Trigger
   useEffect(() => {
     // If we have a user, but they haven't been initialized for the new system yet
-    if (app && user && user.metaInitialized !== true) {
-      const functions = getFunctions(app)
-      const migrate = httpsCallable(functions, 'migrateUserToFacts')
-
-      logger('User not initialized. Attempting migration...')
-
-      migrate()
-        .then((result) => {
-          logger('Migration result:', result.data)
-          // The function updates the user doc, which triggers onSnapshot,
-          // updating 'user' -> 'metaInitialized: true', stopping this loop.
-        })
-        .catch((err) => logger('Migration failed:', err))
+    if (!app || !user?.uid || user.metaInitialized === true) {
+      return
     }
+    const functions = getFunctions(app)
+    const migrate = httpsCallable(functions, 'migrateUserToFacts')
+    logger('User not initialized. Attempting migration...')
+    migrate()
+      .then((result) => {
+        logger('Migration result:', result.data)
+        // The function updates the user doc, which triggers onSnapshot,
+        // updating 'user' -> 'metaInitialized: true', stopping this loop.
+      })
+      .catch((err) => logger('Migration failed:', err))
   }, [app, user?.uid, user?.metaInitialized, logger])
 
   const activePackFactIds = useMemo(() => {

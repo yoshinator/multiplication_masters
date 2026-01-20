@@ -208,13 +208,12 @@ export const migrateUserToFacts = onCall(async (request) => {
   if (masterList) {
     // Find first missing index to set cursor.
     // This ensures provisionFacts fills any holes in their knowledge first.
-    let nextSeq = 0
+    let nextSeq = masterList.length
     for (let i = 0; i < masterList.length; i++) {
       if (!migratedIds.has(masterList[i].id)) {
         nextSeq = i
         break
       }
-      if (i === masterList.length - 1) nextSeq = masterList.length
     }
 
     const metaRef = userRef.collection('packMeta').doc(packName)
@@ -229,13 +228,16 @@ export const migrateUserToFacts = onCall(async (request) => {
       },
       { merge: true }
     )
-
+    // Build enabled packs list so that the active pack is always included.
+    const enabledPacks = ['mul_36', 'mul_144'].includes(packName)
+      ? ['mul_36', 'mul_144']
+      : ['mul_36', 'mul_144', packName]
     // Update user pointers
     currentBatch.set(
       userRef,
       {
         activePack: packName,
-        enabledPacks: ['mul_36', 'mul_144'], // Ensure basics are enabled
+        enabledPacks, // Ensure basics are enabled and active pack is included
         metaInitialized: true,
       },
       { merge: true }
@@ -245,8 +247,19 @@ export const migrateUserToFacts = onCall(async (request) => {
   batches.push(currentBatch)
 
   // Commit all
-  for (const batch of batches) {
-    await batch.commit()
+  try {
+    for (const batch of batches) {
+      await batch.commit()
+    }
+  } catch (err) {
+    logger.error('Failed to migrate user cards to facts', {
+      uid,
+      error: (err as Error)?.message ?? err,
+    })
+    throw new HttpsError(
+      'internal',
+      'Failed to migrate user data. Please try again later.'
+    )
   }
 
   return { success: true, count: migratedIds.size, pack: packName }
