@@ -3,7 +3,7 @@ import { logger } from 'firebase-functions'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
-import { MASTER_FACTS, PackMeta } from './masterCards'
+import { MASTER_FACTS, PackMeta, UserFact } from './masterCards'
 
 initializeApp()
 const db = getFirestore()
@@ -115,3 +115,152 @@ const getOrCreatePackMeta = async (
   transaction.set(metaRef, newMeta)
   return newMeta
 }
+
+export const migrateUserToFacts = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
+  const userRef = db.collection('users').doc(uid)
+  const cardsCol = userRef.collection('UserCards')
+  const factsCol = userRef.collection('UserFacts')
+
+  // 1. Fetch only seen cards
+  const snapshot = await cardsCol.where('seen', '>', 0).get()
+  if (snapshot.empty) {
+    // If they have no seen cards, just initialize them as a fresh user
+    // so we don't keep trying to migrate them.
+    await userRef.set(
+      {
+        metaInitialized: true,
+        enabledPacks: ['mul_36', 'mul_144'],
+        activePack: 'mul_36',
+      },
+      { merge: true }
+    )
+    return {
+      success: true,
+      message: 'No seen cards to migrate. Initialized as new.',
+    }
+  }
+
+  const migratedIds = new Set<string>()
+  let maxOperand = 0
+
+  // We'll use a chunked batch approach to avoid the 500-write limit
+  const batches: FirebaseFirestore.WriteBatch[] = []
+  let currentBatch = db.batch()
+  let opCount = 0
+
+  const commitThreshold = 450 // leave buffer
+
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data()
+    // Old ID format: "3-4"
+    const [op1Str, op2Str] = docSnap.id.split('-')
+    const op1 = parseInt(op1Str, 10)
+    const op2 = parseInt(op2Str, 10)
+
+    if (isNaN(op1) || isNaN(op2)) continue
+
+    maxOperand = Math.max(maxOperand, op1, op2)
+    const factId = `mul:${op1}:${op2}`
+
+    const newFact: UserFact = {
+      id: factId,
+      type: 'mul',
+      operands: [op1, op2],
+      answer: data.value,
+      level: op1,
+      difficulty: data.difficulty || 'basic',
+
+      // SRS
+      box: data.box || 1,
+      nextDueTime: data.nextDueTime || 0,
+      lastReviewed: data.lastReviewed || null,
+      wasLastReviewCorrect: data.wasLastReviewCorrect || false,
+      lastElapsedTime: data.lastElapsedTime || 0,
+      avgResponseTime: data.avgResponseTime || null,
+
+      // Counters
+      seen: data.seen || 0,
+      correct: data.correct || 0,
+      incorrect: data.incorrect || 0,
+
+      expression: `${op1} × ${op2}`,
+    }
+
+    currentBatch.set(factsCol.doc(factId), newFact)
+    migratedIds.add(factId)
+    opCount++
+
+    if (opCount >= commitThreshold) {
+      batches.push(currentBatch)
+      currentBatch = db.batch()
+      opCount = 0
+    }
+  }
+
+  // 2. Determine Pack and Meta
+  // If they have seen 13x13, they are in the 576 pack. Otherwise default to 144.
+  const packName = maxOperand > 12 ? 'mul_576' : 'mul_144'
+  const masterList = MASTER_FACTS[packName]
+
+  if (masterList) {
+    // Find first missing index to set cursor.
+    // This ensures provisionFacts fills any holes in their knowledge first.
+    let nextSeq = masterList.length
+    for (let i = 0; i < masterList.length; i++) {
+      if (!migratedIds.has(masterList[i].id)) {
+        nextSeq = i
+        break
+      }
+    }
+
+    const metaRef = userRef.collection('packMeta').doc(packName)
+    currentBatch.set(
+      metaRef,
+      {
+        packName,
+        totalFacts: masterList.length,
+        isCompleted: nextSeq >= masterList.length,
+        nextSeqToIntroduce: nextSeq,
+        lastActivity: Date.now(),
+      },
+      { merge: true }
+    )
+    // Build enabled packs list so that the active pack is always included.
+    const enabledPacks = ['mul_36', 'mul_144'].includes(packName)
+      ? ['mul_36', 'mul_144']
+      : ['mul_36', 'mul_144', packName]
+    // Update user pointers
+    currentBatch.set(
+      userRef,
+      {
+        activePack: packName,
+        enabledPacks, // Ensure basics are enabled and active pack is included
+        metaInitialized: true,
+      },
+      { merge: true }
+    )
+  }
+
+  batches.push(currentBatch)
+
+  // Commit all
+  try {
+    for (const batch of batches) {
+      await batch.commit()
+    }
+  } catch (err) {
+    logger.error('Failed to migrate user cards to facts', {
+      uid,
+      error: (err as Error)?.message ?? err,
+    })
+    throw new HttpsError(
+      'internal',
+      'Failed to migrate user data. Please try again later.'
+    )
+  }
+
+  return { success: true, count: migratedIds.size, pack: packName }
+})
