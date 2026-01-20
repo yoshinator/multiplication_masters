@@ -43,6 +43,10 @@ export const initializeUserMeta = onDocumentCreated(
 
 export const provisionFacts = onCall(async (request) => {
   const { packName, count = 8 } = request.data
+  if (count <= 0 || count > 32) {
+    throw new HttpsError('invalid-argument', 'Count must be between 1 and 32.')
+  }
+
   const uid = request.auth?.uid
 
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
