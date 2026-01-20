@@ -1,68 +1,86 @@
-export type UserCard = {
-  avgResponseTime: number | null
-  bottom: number
+export type FactType = 'mul' | 'div' | 'add' | 'sub' | 'square' | 'trig'
+
+export type Difficulty = 'basic' | 'advanced' | 'elite'
+
+export type UserFact = {
+  id: string // canonical doc id: "mul:7:8"
+  type: FactType
+  operands: (number | string)[]
+  answer: number | string
+
+  // scope + ordering
+  level: number
+  difficulty: Difficulty
+
+  // SRS
   box: number
-  correct: number
-  correctDivision: number
-  difficulty: 'basic' | 'advanced' | 'elite'
-  expression: string
-  group: number
-  id: string
-  incorrect: number
-  incorrectDivision: number
-  isPrimary: boolean
-  lastReviewed: number | null
-  mirrorOf: string | null
   nextDueTime: number
-  seen: number
-  table: number
-  top: number
-  value: number
+  lastReviewed: number | null
   wasLastReviewCorrect: boolean
-  wasLastDivisionReviewCorrect: boolean
   lastElapsedTime: number
+  avgResponseTime: number | null
+
+  // counters
+  seen: number
+  correct: number
+  incorrect: number
+
+  // UI convenience
+  expression?: string
 }
 
-const generateMasterCards = (): UserCard[] => {
-  const cards: UserCard[] = []
-  for (let i = 1; i <= 24; i++) {
-    for (let j = 1; j <= 24; j++) {
-      const isMirror = j < i
-      const is24Table = i > 12 || j > 12
+export type PackMeta = {
+  packName: string
+  totalFacts: number
+  isCompleted: boolean
+  nextSeqToIntroduce: number
+  lastActivity: number
+}
 
-      let difficulty: 'basic' | 'advanced' | 'elite' = 'basic'
-      if (i * j > 144) difficulty = 'elite'
-      else if (i * j > 64) difficulty = 'advanced'
+// --- helpers ---
+const defaultSrs = () => ({
+  box: 1,
+  nextDueTime: 0,
+  lastReviewed: null as number | null,
+  wasLastReviewCorrect: false,
+  lastElapsedTime: 0,
+  avgResponseTime: null as number | null,
+  seen: 0,
+  correct: 0,
+  incorrect: 0,
+})
 
-      cards.push({
-        id: `${i}-${j}`,
-        expression: `${i} x ${j}`,
-        top: i,
-        bottom: j,
-        value: i * j,
-        table: is24Table ? 24 : 12,
-        group: Math.ceil(i / 3),
-        difficulty,
-        mirrorOf: isMirror ? `${j}-${i}` : null,
-        isPrimary: !isMirror,
+const createFactId = (type: FactType, operands: (number | string)[]) =>
+  `${type}:${operands.join(':')}`
 
-        // Default Progress Values
-        box: 1,
-        nextDueTime: 0,
-        lastReviewed: null,
-        avgResponseTime: null,
-        seen: 0,
-        correct: 0,
-        correctDivision: 0,
-        incorrect: 0,
-        incorrectDivision: 0,
-        wasLastReviewCorrect: false,
-        wasLastDivisionReviewCorrect: false,
-        lastElapsedTime: 0,
+/**
+ * Generates multiplication tables.
+ * For mul_36: start 1, end 6
+ * For mul_144: start 1, end 12
+ * For mul_576: start 1, end 24
+ */
+export const generateMulPack = (start: number, end: number): UserFact[] => {
+  const facts: UserFact[] = []
+
+  for (let i = start; i <= end; i++) {
+    for (let j = 1; j <= end; j++) {
+      facts.push({
+        id: createFactId('mul', [i, j]),
+        type: 'mul',
+        operands: [i, j],
+        answer: i * j,
+        level: i,
+        difficulty: i <= 7 ? 'basic' : i <= 12 ? 'advanced' : 'elite',
+        expression: `${i} × ${j}`,
+        ...defaultSrs(),
       })
     }
   }
-  return cards
+  return facts
 }
 
-export const MASTER_CARDS = generateMasterCards()
+export const MASTER_FACTS: Record<string, UserFact[]> = {
+  mul_36: generateMulPack(1, 6),
+  mul_144: generateMulPack(1, 12),
+  mul_576: generateMulPack(1, 24),
+}

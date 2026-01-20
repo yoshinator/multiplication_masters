@@ -1,87 +1,65 @@
 import { MinPriorityQueue } from 'datastructures-js'
-import type { User, UserCard } from '../../../constants/dataModels'
+import type { PackMeta, User, UserFact } from '../../../constants/dataModels'
 import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
 
 /**
- * Build the initial session queue
- * Rules:
- *  - First: load all due cards (box ≥ 1 AND nextDue ≤ now)
- *  - If no due cards: load up to 35 new cards (seen = 0)
- *  - If neither exist: increment activeGroup until one of the above is true
+ * Builds a just-in-time review queue based on the user's facts and session length.
+ * Prioritizes DUE cards, then LEARNING cards, and finally NEW cards within daily limits.
+ *
+ *
+ * @param userFacts - The array of UserFact objects available to the user.
+ * @param user - The User object containing user settings and progress.
+ * @param activePackMeta - Metadata about the currently active pack.
+ * @param sessionLength - The desired length of the review session.
+ * @param logger - A logging function for debug output.
+ * @returns An object containing the built queue, session facts, and a flag indicating if provisioning is needed.
  */
 export function buildQueue(
-  cards: UserCard[],
+  userFacts: UserFact[],
   user: User,
+  activePackMeta: PackMeta | null,
   sessionLength: number,
   logger: (...args: unknown[]) => void
 ) {
   if (!user) return null
 
   const now = Date.now()
-  const MAX_NEW_CARDS_TODAY = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+  const sessionFacts: UserFact[] = []
 
-  let newCardsSeenToday = 0
-  if (user.lastNewCardDate) {
-    const last = new Date(user.lastNewCardDate)
-    const today = new Date(now)
-    if (last.toDateString() === today.toDateString()) {
-      newCardsSeenToday = user.newCardsSeenToday || 0
-    }
+  // 1. Gather all DUE facts the user already owns across ALL packs
+  const due = userFacts.filter((f) => f.nextDueTime <= now && f.seen > 0)
+  sessionFacts.push(...due)
+  // 2. Gather LEARNING facts (Box 1-3) that aren't due yet
+  if (sessionFacts.length < sessionLength) {
+    const learning = userFacts
+      .filter((f) => f.box <= 3 && f.nextDueTime > now)
+      .slice(0, sessionLength - sessionFacts.length)
+    sessionFacts.push(...learning)
   }
 
-  let newCardsAddedThisSession = 0
-  const sessionCards: UserCard[] = []
+  // 3. Identify NEW facts (seen = 0) already in Firestore
+  if (sessionFacts.length < sessionLength) {
+    const dailyLimit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+    const seenToday = user.newCardsSeenToday ?? 0
+    const remainingDaily = Math.max(0, dailyLimit - seenToday)
 
-  let group = 1
+    const newCards = userFacts
+      .filter((f) => f.seen === 0)
+      .slice(0, Math.min(sessionLength - sessionFacts.length, remainingDaily))
 
-  // Loop through ALL groups from 1 → activeGroup
-  while (group <= user.activeGroup && sessionCards.length < sessionLength) {
-    const groupCards = cards.filter(
-      (c) => c.group === group && c.table === user.table
-    )
-
-    // 1. Add all DUE cards (ANY box). If not seen yet, they are new. Seen variable is a lifetime counter
-    const due = groupCards.filter((c) => c.nextDueTime <= now && c.seen > 0)
-    for (const d of due) {
-      if (sessionCards.length < sessionLength) {
-        sessionCards.push(d)
-      }
-    }
-
-    if (sessionCards.length >= sessionLength) break
-
-    // 2. Add learning cards (box <= 3, not due)
-    const learning = groupCards
-      .filter((c) => c.box <= 3 && c.nextDueTime > now)
-      .slice(0, sessionLength - sessionCards.length)
-
-    sessionCards.push(...learning)
-
-    if (sessionCards.length >= sessionLength) break
-
-    // 3. Add NEW cards (seen = 0)
-    const remainingDailyLimit = Math.max(
-      0,
-      MAX_NEW_CARDS_TODAY - newCardsSeenToday - newCardsAddedThisSession
-    )
-    const slotsAvailable = sessionLength - sessionCards.length
-    const newCards = groupCards
-      .filter((c) => c.seen === 0)
-      .slice(0, Math.min(slotsAvailable, remainingDailyLimit))
-
-    sessionCards.push(...newCards)
-    newCardsAddedThisSession += newCards.length
-
-    if (sessionCards.length >= sessionLength) break
-
-    group++
+    sessionFacts.push(...newCards)
   }
 
-  /* Build the PQ */
-  const queue = new MinPriorityQueue<UserCard>((c) => c.nextDueTime)
-  sessionCards.forEach((c) => queue.enqueue(c))
+  const queue = new MinPriorityQueue<UserFact>((f) => f.nextDueTime)
+  sessionFacts.forEach((f) => queue.enqueue(f))
 
-  logger(`📦 Session queue built (${queue.size()} cards):`, sessionCards)
+  logger(`📦 JIT Session queue built (${queue.size()} facts)`)
 
-  return { queue, sessionCards }
+  return {
+    queue,
+    sessionFacts,
+    needsProvisioning:
+      sessionFacts.length < sessionLength &&
+      (!activePackMeta || !activePackMeta.isCompleted),
+  }
 }

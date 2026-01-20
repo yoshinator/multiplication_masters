@@ -1,6 +1,11 @@
 import type { FC, ReactNode } from 'react'
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app'
+import {
+  getFunctions,
+  connectFunctionsEmulator,
+  type Functions,
+} from 'firebase/functions'
 import { getAnalytics } from 'firebase/analytics'
 import type { Analytics } from 'firebase/analytics'
 import { FirebaseContext, type FirebaseContextValue } from './firebaseContext'
@@ -19,7 +24,7 @@ import {
   type Unsubscribe,
 } from 'firebase/auth'
 import { useLogger } from '../../hooks/useLogger'
-import { type UserCard } from '../../constants/dataModels'
+import { type UserFact } from '../../constants/dataModels'
 
 type Props = {
   children: ReactNode
@@ -52,9 +57,10 @@ const configFromEnv = () => {
 }
 
 const FirebaseProvider: FC<Props> = ({ children }) => {
-  const [userCards, setUserCards] = useState<UserCard[]>([])
+  const [userFacts, setUserFacts] = useState<UserFact[]>([])
   const isEmulatorConnectedRef = useRef(false)
   const isAuthEmulatorConnectedRef = useRef(false)
+  const isFunctionsEmulatorConnectedRef = useRef(false)
 
   const logger = useLogger('Firebase Provider')
 
@@ -112,63 +118,72 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     logger(`Connected to Auth emulator at ${EMULATOR_HOST}:9099`)
   }, [firebaseAuth, EMULATOR_HOST, logger])
 
+  const firebaseFunctions = useMemo<Functions | null>(() => {
+    if (!firebaseApp) return null
+    return getFunctions(firebaseApp)
+  }, [firebaseApp])
+
+  useEffect(() => {
+    if (
+      !import.meta.env.DEV ||
+      !firebaseFunctions ||
+      isFunctionsEmulatorConnectedRef.current
+    )
+      return
+
+    // Port 5001 is the default for Functions
+    connectFunctionsEmulator(firebaseFunctions, EMULATOR_HOST, 5001)
+    isFunctionsEmulatorConnectedRef.current = true
+    logger(`Connected to Functions emulator at ${EMULATOR_HOST}:5001`)
+  }, [firebaseFunctions, EMULATOR_HOST, logger])
+
   /**
    * Gets and sets the updated UserCards collection to be shared in the context
    */
-  const subscribeToUserCards = useCallback(
+  const subscribeToUserFacts = useCallback(
     (uid: string) => {
       if (!firestoreDb) return () => {}
 
-      const userCardsCol = collection(firestoreDb, 'users', uid, 'UserCards')
+      const userFactsCol = collection(firestoreDb, 'users', uid, 'UserFacts')
+      const q = query(userFactsCol)
 
-      // Query without sorting to avoid needing a composite index in Firestore.
-      // We will sort in memory below since the dataset is small.
-      const q = query(userCardsCol)
       return onSnapshot(
         q,
         (snapshot) => {
-          const data = snapshot.docs.map((d) => {
-            const raw = d.data() as Omit<UserCard, 'id'>
-            return { ...raw, id: d.id } as UserCard
-          })
+          const data = snapshot.docs.map((d) => ({
+            ...(d.data() as UserFact),
+            id: d.id,
+          }))
 
-          // Sort in memory: group -> top -> bottom
-          data.sort((a, b) => {
-            if (a.group !== b.group) return a.group - b.group
-            if (a.top !== b.top) return a.top - b.top
-            return a.bottom - b.bottom
-          })
-
-          logger('🔄 Firestore pushed userCards count:', data.length)
-          setUserCards(data)
+          logger('🔄 Firestore pushed userFacts count:', data.length)
+          setUserFacts(data)
         },
         (error) => {
-          logger('❌ UserCards onSnapshot error:', error)
+          logger('❌ UserFacts onSnapshot error:', error)
         }
       )
     },
     [firestoreDb, logger]
   )
 
-  const loadUserCards = useCallback(
-    (uid: string): Unsubscribe => {
-      logger('Loading user cards')
+  const loadUserFacts = useCallback(
+    (uid?: string): Unsubscribe => {
+      logger('Loading user facts')
       if (!firestoreDb || !uid) return () => {}
-      return subscribeToUserCards(uid)
+      return subscribeToUserFacts(uid)
     },
-    [firestoreDb, subscribeToUserCards, logger]
+    [firestoreDb, subscribeToUserFacts, logger]
   )
-
   const value = useMemo<FirebaseContextValue>(
     () => ({
       app: firebaseApp,
       analytics: firebaseAnalytics,
       auth: firebaseAuth,
-      userCards,
-      loadUserCards,
-      setUserCards,
+      userFacts,
+      loadUserFacts,
+      setUserFacts,
     }),
-    [firebaseApp, firebaseAnalytics, firebaseAuth, userCards, loadUserCards]
+    [firebaseApp, firebaseAnalytics, firebaseAuth, userFacts, loadUserFacts]
   )
   return (
     <FirebaseContext.Provider value={value}>

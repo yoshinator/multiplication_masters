@@ -51,23 +51,26 @@ const MultiplicationCard: FC = () => {
   // HOOKS
   const { startTimer, resetTimer, stopTimer, getTime, isRunning } =
     useTimerActions()
-  const { currentCard, submitAnswer, estimatedReviews } =
+  const { currentFact, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
   const { setIsSessionActive } = useSessionStatusContext()
   const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
 
-  const { top, bottom, value } = currentCard ?? {}
+  const top = currentFact?.operands[0]
+  const bottom = currentFact?.operands[1]
+  const value = currentFact?.answer
+
   const expectedLength = value != null ? String(value).length : 0
-  const reviewsLeftForCard = Math.max(1, 4 - (currentCard?.box ?? 1))
+  const reviewsLeftForCard = Math.max(1, 4 - (currentFact?.box ?? 1))
 
   const getElapsed = useCallback(() => BOX_REGRESS - getTime(), [getTime])
 
   useEffect(() => {
-    if (currentCard && !isShowingAnswer) {
+    if (currentFact && !isShowingAnswer) {
       startTimer()
     }
-  }, [currentCard, isShowingAnswer, startTimer])
+  }, [currentFact, isShowingAnswer, startTimer])
 
   useEffect(() => {
     return () => {
@@ -81,30 +84,30 @@ const MultiplicationCard: FC = () => {
     } else if (isShowingAnswer && buttonRef.current) {
       setTimeout(() => buttonRef.current?.focus(), 50)
     }
-  }, [currentCard, isShowingAnswer])
+  }, [currentFact, isShowingAnswer])
 
   useEffect(() => {
     if (isShowingAnswer) return
     // If timer stopped and time is 0, it expired
-    if (!isRunning && currentCard && getTime() <= 0) {
+    if (!isRunning && currentFact && getTime() <= 0) {
       showAnswer()
       setCardColor('error.main')
     }
-  }, [isRunning, showAnswer, currentCard, getTime, isShowingAnswer])
+  }, [isRunning, showAnswer, currentFact, getTime, isShowingAnswer])
 
   const handleResume = () => {
     hideAnswer()
     setCardColor('background.paper')
     setAnswer('')
-    if (!currentCard) return
+    if (!currentFact) return
 
-    submitAnswer(currentCard, false, getElapsed())
+    submitAnswer(currentFact, false, getElapsed())
     resetTimer()
     startTimer()
   }
 
   const handleAutoSubmit = useCallback(() => {
-    if (!answer || !currentCard) return
+    if (!answer || !currentFact) return
 
     const correct = Number(answer) === value
     const elapsed = getElapsed()
@@ -124,7 +127,7 @@ const MultiplicationCard: FC = () => {
     setCardColor(color)
 
     resetTimer()
-    submitAnswer(currentCard, true, elapsed)
+    submitAnswer(currentFact, true, elapsed)
     setAnswer('')
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -134,7 +137,7 @@ const MultiplicationCard: FC = () => {
     }, 700)
   }, [
     answer,
-    currentCard,
+    currentFact,
     value,
     getElapsed,
     resetTimer,
@@ -150,7 +153,7 @@ const MultiplicationCard: FC = () => {
   }
 
   useEffect(() => {
-    if (!currentCard) return
+    if (!currentFact) return
     if (isShowingAnswer) return
     if (answer.length === 0) return
 
@@ -158,7 +161,7 @@ const MultiplicationCard: FC = () => {
     if (answer.length === expectedLength) {
       handleAutoSubmit()
     }
-  }, [answer, expectedLength, currentCard, isShowingAnswer, handleAutoSubmit])
+  }, [answer, expectedLength, currentFact, isShowingAnswer, handleAutoSubmit])
 
   const currentLimit = user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
   const nextLimit = NEW_CARDS_PER_DAY_OPTIONS.find((opt) => opt > currentLimit)
@@ -170,7 +173,7 @@ const MultiplicationCard: FC = () => {
     }
   }
 
-  if (!currentCard) {
+  if (!currentFact) {
     return (
       <Box
         display="flex"
