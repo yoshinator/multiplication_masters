@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { User } from '../../constants/dataModels'
+import type { PackMeta, User } from '../../constants/dataModels'
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
 interface UserContextValue {
@@ -7,6 +7,8 @@ interface UserContextValue {
   setUser: (u: User | null) => void
   updateUser: (fields: Partial<User>) => void
   authStatus: AuthStatus
+  activePackMeta: PackMeta | null
+  activePackFactIds: Set<string>
 }
 
 export const UserContext = createContext<UserContextValue | undefined>(

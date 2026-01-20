@@ -5,8 +5,13 @@ import {
   useState,
   type FC,
   type ReactNode,
+  useMemo,
 } from 'react'
-import type { User } from '../../constants/dataModels'
+import {
+  type PackMeta,
+  type User,
+  getPackFactIds,
+} from '../../constants/dataModels'
 import { type AuthStatus, UserContext } from './useUserContext'
 import {
   doc,
@@ -24,6 +29,8 @@ import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 import { generateRandomUsername } from '../../utilities/accountHelpers'
+import { extractErrorMessage } from '../../utilities/typeutils'
+import { useNotification } from '../notificationContext/notificationContext'
 
 type Props = {
   children: ReactNode
@@ -33,8 +40,6 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   userRole: 'student',
   createdAt: null,
   lastLogin: null,
-  activeGroup: 1,
-  table: 12,
   totalAccuracy: 100,
   userDefaultSessionLength: 0,
   showTour: true,
@@ -43,17 +48,19 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   lifetimeCorrect: 0,
   lifetimeIncorrect: 0,
   totalSessions: 0,
-  currentLevelProgress: 0,
   subscriptionStatus: 'free',
   newCardsSeenToday: 0,
   maxNewCardsPerDay: MAX_NEW_CARDS_PER_DAY,
+  enabledPacks: ['mul_36', 'mul_144'],
+  activePack: 'mul_36',
 }
 
 const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
-  const { app, auth, loadUserCards } = useFirebaseContext()
+  const { app, auth, loadUserFacts } = useFirebaseContext()
+  const { showNotification } = useNotification()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -68,28 +75,49 @@ const UserProvider: FC<Props> = ({ children }) => {
     uidRef.current = user?.uid
   }, [user?.uid])
 
-  /**
-   * Load user cards subscription when user is authenticated.
-   *
-   * Note: Card initialization (copying 576 cards from master collection to user's
-   * UserCards subcollection) is now handled server-side by the `initializeUserCards`
-   * Cloud Function, which is triggered automatically when a new user document is created.
-   * This eliminates the expensive client-side read/write operations that previously
-   * blocked the UI.
-   */
+  // Add this state to UserProvider
+  const [activePackMeta, setActivePackMeta] = useState<PackMeta | null>(null)
+
   useEffect(() => {
-    if (!user?.uid) return
-
-    let unsubscribe: Unsubscribe = () => {}
-
-    // Load user cards directly - initialization is now handled server-side
-    // by the Cloud Function triggered on user creation
-    unsubscribe = loadUserCards(user.uid)
-
-    return () => {
-      unsubscribe()
+    if (!user?.uid || !user?.activePack || !app) {
+      setActivePackMeta(null) // Reset if logged out or no pack active
+      return
     }
-  }, [user?.uid, loadUserCards])
+
+    const db = getFirestore(app)
+    const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
+
+    return onSnapshot(
+      metaRef,
+      (snap) => {
+        if (snap.exists()) {
+          setActivePackMeta(snap.data() as PackMeta)
+        } else {
+          // Clear state if the packMeta document is missing
+          setActivePackMeta(null)
+        }
+      },
+      (error) => {
+        // Log and reset state on listener errors
+        showNotification(extractErrorMessage(error), 'error')
+        setActivePackMeta(null)
+      }
+    )
+  }, [user?.uid, user?.activePack, app, showNotification])
+
+  useEffect(() => {
+    if (user?.uid) {
+      const unsubscribe = loadUserFacts(user.uid)
+      return () => unsubscribe()
+    }
+  }, [user?.uid, loadUserFacts])
+
+  const activePackFactIds = useMemo(() => {
+    if (!user?.activePack) return new Set<string>()
+    return getPackFactIds(user.activePack)
+  }, [user?.activePack])
+
+  // Pass activePackMeta into the Context value
 
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {
@@ -105,11 +133,11 @@ const UserProvider: FC<Props> = ({ children }) => {
 
     const db = getFirestore(app)
     const userRef = doc(db, 'users', uid)
-    logger('User updated', pending)
+    logger('Committing user updates:', pending)
 
     try {
       await updateDoc(userRef, pending)
-      logger('User updated success', pending)
+      logger('User updates committed successfully')
     } catch (error) {
       logger(`Error updating user ${error}`)
     }
@@ -266,7 +294,16 @@ const UserProvider: FC<Props> = ({ children }) => {
   }, [commitUserUpdates])
 
   return (
-    <UserContext.Provider value={{ user, setUser, updateUser, authStatus }}>
+    <UserContext.Provider
+      value={{
+        user,
+        setUser,
+        updateUser,
+        authStatus,
+        activePackMeta,
+        activePackFactIds,
+      }}
+    >
       {children}
     </UserContext.Provider>
   )

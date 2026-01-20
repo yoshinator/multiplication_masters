@@ -1,14 +1,14 @@
 import { createContext, useContext } from 'react'
-import type { UserCard } from '../../constants/dataModels'
+import type { UserFact } from '../../constants/dataModels'
 
 interface CardSchedulerContextValue {
-  startSession: () => void
-  getNextCard: () => UserCard | null
-  submitAnswer: (card: UserCard, correct: boolean, elapsed: number) => void
-  currentCard: UserCard | null
+  currentFact: UserFact | null
+  getNextFact: () => UserFact | null
+  submitAnswer: (fact: UserFact, correct: boolean, elapsed: number) => UserFact
+  startSession: () => Promise<void>
   isQueueEmpty: boolean
   estimatedReviews: number
-  estimatedUniqueCards: number
+  estimatedUniqueFacts: number
 }
 
 export const CardSchedulerContext =

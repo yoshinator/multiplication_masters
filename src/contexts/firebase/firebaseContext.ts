@@ -9,15 +9,15 @@ import {
 } from 'react'
 import type { Unsubscribe } from 'firebase/firestore'
 import { noop } from '../../utilities/typeutils'
-import type { UserCard } from '../../constants/dataModels'
+import type { UserFact } from '../../constants/dataModels'
 
 export type FirebaseContextValue = {
   app: FirebaseApp | null
   auth: Auth | null
   analytics: Analytics | null
-  userCards: UserCard[]
-  loadUserCards: (uid: string) => Unsubscribe
-  setUserCards: Dispatch<SetStateAction<UserCard[]>> | null
+  userFacts: UserFact[]
+  loadUserFacts: (uid?: string) => Unsubscribe
+  setUserFacts: Dispatch<SetStateAction<UserFact[]>> | null
 }
 
 export const FirebaseContext = createContext<FirebaseContextValue | undefined>(
@@ -31,9 +31,11 @@ export const useFirebaseContext = (): FirebaseContextValue => {
       app: null,
       auth: null,
       analytics: null,
-      userCards: [],
-      loadUserCards: () => noop,
-      setUserCards: null,
+      userFacts: [],
+      loadUserFacts() {
+        return noop as Unsubscribe
+      },
+      setUserFacts: null,
     }
   return ctx
 }
