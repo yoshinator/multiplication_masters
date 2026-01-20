@@ -9,6 +9,7 @@ interface CardSchedulerContextValue {
   isQueueEmpty: boolean
   estimatedReviews: number
   estimatedUniqueFacts: number
+  isLoading: boolean
 }
 
 export const CardSchedulerContext =

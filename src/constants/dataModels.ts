@@ -167,7 +167,12 @@ export type PackMeta = {
   lastActivity: number
 }
 
+const packFactIdsCache = new Map<PackKey, Set<string>>()
+
 export const getPackFactIds = (packName: PackKey): Set<string> => {
+  if (packFactIdsCache.has(packName)) {
+    return packFactIdsCache.get(packName)!
+  }
   const ids = new Set<string>()
   let max = 0
 
@@ -182,5 +187,6 @@ export const getPackFactIds = (packName: PackKey): Set<string> => {
     }
   }
 
+  packFactIdsCache.set(packName, ids)
   return ids
 }

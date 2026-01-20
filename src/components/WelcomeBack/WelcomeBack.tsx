@@ -6,7 +6,7 @@ import { useIsMobile } from '../../hooks/useIsMobile'
 import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 
 const WelcomeBack: FC = () => {
-  const { startSession } = useCardSchedulerContext()
+  const { startSession, isLoading } = useCardSchedulerContext()
   const { user } = useUser()
   const isMobile = useIsMobile()
 
@@ -57,6 +57,7 @@ const WelcomeBack: FC = () => {
           <Button
             id="start-session-btn"
             onClick={startSession}
+            disabled={isLoading}
             variant="contained"
             size="large"
             aria-label="Start session"

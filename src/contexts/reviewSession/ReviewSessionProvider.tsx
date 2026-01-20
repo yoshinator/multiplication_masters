@@ -65,6 +65,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const totalElapsedRef = useRef(0)
   const totalAnswersRef = useRef(0)
 
+  // I should consider removing this completely or updating in future ticket.
   const statsByTableRef = useRef<
     Record<number, { correct: number; incorrect: number }>
   >({})
@@ -191,10 +192,14 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         setIsSessionActive(true)
       }
 
-      // 3. Update Statistics Refs. This kind of paints me into a corner for Multiplication.
+      /**
+       * 3. Update Statistics Refs.
+       * This kind of paints me into a corner for Multiplication
+       * no real equivalent in anything other than division.
+       */
       const table = fact.operands[0]
       if (typeof table === 'number') {
-        if (statsByTableRef.current[table]) {
+        if (!statsByTableRef.current[table]) {
           statsByTableRef.current[table] = { correct: 0, incorrect: 0 }
         }
 

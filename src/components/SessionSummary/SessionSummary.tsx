@@ -19,7 +19,7 @@ const SessionSummary: FC = () => {
   const { correctCount, incorrectCount, latestSession } = useReviewSession()
   const isMobile = useIsMobile()
 
-  const { startSession } = useCardSchedulerContext()
+  const { startSession, isLoading } = useCardSchedulerContext()
   const { setIsSessionActive } = useSessionStatusContext()
 
   const s = latestSession
@@ -124,6 +124,7 @@ const SessionSummary: FC = () => {
       {/* Actions */}
       <Stack spacing={2} sx={{ mt: { xs: 1, sm: 3 } }}>
         <Button
+          disabled={isLoading}
           id="play-again-btn"
           variant="contained"
           size="large"
