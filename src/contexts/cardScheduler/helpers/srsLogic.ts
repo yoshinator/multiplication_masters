@@ -1,4 +1,4 @@
-import type { UserCard } from '../../../constants/dataModels'
+import { type UserFact, type PackMeta } from '../../../constants/dataModels'
 import {
   BOX_ADVANCE,
   BOX_STAY,
@@ -9,7 +9,7 @@ import {
  * Compute new Leitner box
  */
 export function computeNewBox(
-  card: UserCard,
+  card: UserFact,
   elapsed: number,
   correct: boolean
 ) {
@@ -20,36 +20,72 @@ export function computeNewBox(
   return 1
 }
 
-export function isGroupMastered(
-  cards: UserCard[],
-  group: number,
-  table: number
+/**
+ * Check if a pack is mastered (80%+ of total pack facts are in Box 4+)
+ */
+export function isPackMastered(
+  userFacts: UserFact[],
+  meta: PackMeta | null,
+  packFactIds: Set<string>
 ) {
-  return percentMastered(cards, group, table) >= 80
+  return percentPackMastered(userFacts, meta, packFactIds) >= 80
 }
 
-export function percentMastered(
-  cards: UserCard[],
-  group: number,
-  table: number
+/**
+ * Calculates mastery based on the TOTAL facts in a pack.
+ * packFactIds: The PRE-GENERATED Set of IDs for the current pack.
+ */
+export function percentPackMastered(
+  userFacts: UserFact[],
+  meta: PackMeta | null,
+  packFactIds: Set<string>
 ): number {
-  const groupCards = cards.filter((c) => c.group === group && c.table === table)
-  if (groupCards.length === 0) return 0
+  if (!meta || meta.totalFacts === 0 || !packFactIds || packFactIds.size === 0)
+    return 0
 
-  const masteredCount = groupCards.filter((c) => c.box > 3).length
-  return Math.round((masteredCount / groupCards.length) * 100)
+  // High-performance filter: .has() on a Set is O(1)
+  const masteredInPack = userFacts.filter(
+    (f) => packFactIds.has(f.id) && f.box > 3
+  ).length
+
+  return Math.round((masteredInPack / meta.totalFacts) * 100)
 }
 
-export function estimateReviewsForCard(card: UserCard): number {
+/**
+ * Calculates discovery progress (How much of the pack has been seen at least once)
+ */
+export function percentPackDiscovered(
+  userFacts: UserFact[],
+  meta: PackMeta | null,
+  packFactIds: Set<string>
+): number {
+  if (!meta || meta.totalFacts === 0 || !packFactIds || packFactIds.size === 0)
+    return 0
+
+  const discoveredInPack = userFacts.filter(
+    (f) => packFactIds.has(f.id) && f.seen > 0
+  ).length
+
+  return Math.round((discoveredInPack / meta.totalFacts) * 100)
+}
+
+/**
+ * Simple getter for 'Introduced' percentage based purely on the bookmark
+ */
+export function percentPackIntroduced(meta: PackMeta | null): number {
+  if (!meta || meta.totalFacts === 0) return 0
+  return Math.round((meta.nextSeqToIntroduce / meta.totalFacts) * 100)
+}
+
+export function estimateReviewsForCard(card: UserFact): number {
   const box = card.box ?? 1
-
-  if (box <= 1) return 3 // 1 → 2 → 3 → out
-  if (box === 2) return 2 // 2 → 3 → out
-  if (box === 3) return 1 // 3 → 4 → out (or stay at 3 once)
-  return 1 // 4+ → at most once more this session
+  if (box <= 1) return 3
+  if (box === 2) return 2
+  if (box === 3) return 1
+  return 1
 }
 
-export function estimateReviewLoad(cards: UserCard[]) {
+export function estimateReviewLoad(cards: UserFact[]) {
   let total = 0
   for (const c of cards) {
     total += estimateReviewsForCard(c)

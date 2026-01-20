@@ -6,7 +6,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 interface Props {
-  expression: string
+  expression?: string
   incorrect: number
   seen: number
   avgResponseTime?: number | null

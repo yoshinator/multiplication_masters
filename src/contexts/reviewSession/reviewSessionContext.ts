@@ -1,16 +1,16 @@
 import { createContext, useContext } from 'react'
-import type { SessionRecord, UserCard } from '../../constants/dataModels'
+import type { SessionRecord, UserFact } from '../../constants/dataModels'
 
 interface ReviewSessionContextValue {
   correctCount: number
   incorrectCount: number
-  addUpdatedCardToSession: (card: UserCard, oldBox: number) => void
+  addUpdatedFactToSession: (fact: UserFact, oldBox: number) => void
   finishSession: (
     sessionLength: number,
     sessionType?: 'multiplication' | 'division' | 'mixed'
   ) => Promise<void>
   latestSession: SessionRecord | null
-  pendingUserCards: Record<string, UserCard>
+  pendingUserFacts: Record<string, UserFact>
   percentageMastered: number
   isShowingAnswer: boolean
   showAnswer: () => void

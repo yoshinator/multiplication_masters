@@ -18,7 +18,7 @@ import {
   increment,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
-import type { User, UserCard } from '../../constants/dataModels'
+import type { User, UserFact } from '../../constants/dataModels'
 import { useUser } from '../userContext/useUserContext'
 import { ReviewSessionContext } from './reviewSessionContext'
 import type { SessionRecord } from '../../constants/dataModels'
@@ -30,27 +30,22 @@ import {
 } from '../../utilities/typeutils'
 import { useLogger } from '../../hooks/useLogger'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
-import { percentMastered } from '../cardScheduler/helpers/srsLogic'
+import { percentPackMastered } from '../cardScheduler/helpers/srsLogic'
 import { useNotification } from '../notificationContext/notificationContext'
 
 interface Props {
   children: ReactNode
 }
 
-const SAVE_THRESHOLD = 5 // <--- Auto-save every 5 cards
-const MASTERY_THRESHOLD = 80
-const MAX_GROUPS = 8
+const SAVE_THRESHOLD = 5 // <--- Auto-save every 5 facts
 
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
   const { showNotification } = useNotification()
-  const { app, setUserCards } = useFirebaseContext()
+  const { app, setUserFacts, userFacts } = useFirebaseContext()
   const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
-  const { user, updateUser } = useUser()
-  const { userCards } = useFirebaseContext()
-  const [percentageMastered, setPercentageMastered] = useState(
-    user?.currentLevelProgress ?? 0
-  )
+  const { user, updateUser, activePackMeta, activePackFactIds } = useUser()
+  const [percentageMastered, setPercentageMastered] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const { setIsSessionActive } = useSessionStatusContext()
@@ -74,24 +69,26 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     Record<number, { correct: number; incorrect: number }>
   >({})
 
-  const pendingUserCardsRef = useRef<Record<string, UserCard>>({})
+  const pendingUserFactsRef = useRef<Record<string, UserFact>>({})
 
   const getLatestMastery = useCallback(() => {
-    if (!user || !userCards) return 0
+    if (!user || !userFacts || !activePackFactIds) return 0
 
-    // Merge original cards with the ones we just updated in this session
-    const currentSnapshot = userCards.map(
-      (c) => pendingUserCardsRef.current[c.id] || c
+    // Merge original facts with the ones we just updated in this session
+    const currentSnapshot = userFacts.map(
+      (c) => pendingUserFactsRef.current[c.id] || c
     )
 
-    return percentMastered(currentSnapshot, user.activeGroup, user.table)
-  }, [user, userCards])
+    return percentPackMastered(
+      currentSnapshot,
+      activePackMeta,
+      activePackFactIds
+    )
+  }, [user, userFacts, activePackMeta, activePackFactIds])
 
   useEffect(() => {
-    if (user?.currentLevelProgress != null) {
-      setPercentageMastered(user.currentLevelProgress)
-    }
-  }, [user?.currentLevelProgress])
+    setPercentageMastered(getLatestMastery())
+  }, [getLatestMastery])
 
   useEffect(() => {
     if (!app || !user?.uid) {
@@ -125,44 +122,44 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     return () => unsubscribe()
   }, [app, user?.uid, logger, showNotification])
 
-  // 1. Helper to push pending cards and user stats to DB
+  // 1. Helper to push pending facts and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
     if (!app || !user?.uid || isSaving) return
-    // Snapshot pending cards to handle concurrency and partial retries
-    const cardsToSave = { ...pendingUserCardsRef.current }
-    const cardIds = Object.keys(cardsToSave)
+    // Snapshot pending facts to handle concurrency and partial retries
+    const factsToSave = { ...pendingUserFactsRef.current }
+    const factIds = Object.keys(factsToSave)
 
     // If nothing to save, return
-    if (cardIds.length === 0) return
+    if (factIds.length === 0) return
 
     setIsSaving(true)
 
     const db = getFirestore(app)
     const batch = writeBatch(db)
 
-    // A. Update Cards
-    for (const card of Object.values(cardsToSave)) {
-      const cardRef = doc(db, 'users', user.uid, 'UserCards', card.id)
-      const cleanCardPayload = omitUndefined(card)
+    // A. Update Facts
+    for (const fact of Object.values(factsToSave)) {
+      const factRef = doc(db, 'users', user.uid, 'UserFacts', fact.id)
+      const cleanFactPayload = omitUndefined(fact)
 
       // Only update if there are fields left after cleaning
-      if (Object.keys(cleanCardPayload).length > 0) {
-        batch.update(cardRef, cleanCardPayload)
+      if (Object.keys(cleanFactPayload).length > 0) {
+        batch.update(factRef, cleanFactPayload)
       }
     }
 
     // C. Commit and Clear Pending
     try {
       await batch.commit()
-      // On success, remove ONLY the cards we successfully saved.
-      // This prevents race conditions if new cards were added during the await.
-      for (const id of cardIds) {
-        delete pendingUserCardsRef.current[id]
+      // On success, remove ONLY the facts we successfully saved.
+      // This prevents race conditions if new facts were added during the await.
+      for (const id of factIds) {
+        delete pendingUserFactsRef.current[id]
       }
     } catch (error) {
       const message = extractErrorMessage(error)
       // Log the failure, but don't re-throw.
-      // We intentionally DO NOT clear pendingUserCardsRef here so they are retried later.
+      // We intentionally DO NOT clear pendingUserFactsRef here so they are retried later.
       logger(
         'Auto-save failed, keeping local pending state for retry:',
         message
@@ -176,18 +173,18 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     // because the session is still active visually.
   }, [app, user, logger, showNotification, isSaving])
 
-  const addUpdatedCardToSession = useCallback(
-    (card: UserCard, oldBox: number) => {
+  const addUpdatedFactToSession = useCallback(
+    (fact: UserFact, oldBox: number) => {
       // 1. Update Refs
-      pendingUserCardsRef.current[card.id] = card
+      pendingUserFactsRef.current[fact.id] = fact
 
-      if (card.wasLastReviewCorrect) {
-        if (card.lastElapsedTime <= BOX_ADVANCE) fastCorrectRef.current++
+      if (fact.wasLastReviewCorrect) {
+        if (fact.lastElapsedTime <= BOX_ADVANCE) fastCorrectRef.current++
         else slowCorrectRef.current++
       }
 
-      // 2. Optimistic UI Update for Cards
-      setUserCards?.((prev) => prev.map((c) => (c.id === card.id ? card : c)))
+      // 2. Optimistic UI Update for Facts
+      setUserFacts?.((prev) => prev.map((c) => (c.id === fact.id ? fact : c)))
 
       if (!sessionStartRef.current) {
         sessionStartRef.current = Date.now()
@@ -195,31 +192,31 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       }
 
       // 3. Update Statistics Refs
-      const table = card.top
-      if (!statsByTableRef.current[table]) {
+      const table = fact.operands[0]
+      if (typeof table === 'number' && !statsByTableRef.current[table]) {
         statsByTableRef.current[table] = { correct: 0, incorrect: 0 }
       }
 
-      if (card.wasLastReviewCorrect) {
+      if (typeof table === 'number' && fact.wasLastReviewCorrect) {
         statsByTableRef.current[table].correct++
       } else {
-        statsByTableRef.current[table].incorrect++
+        statsByTableRef.current[table as number].incorrect++
       }
 
-      totalElapsedRef.current += card.lastElapsedTime
+      totalElapsedRef.current += fact.lastElapsedTime
       totalAnswersRef.current += 1
 
-      if (oldBox < card.box) boxesAdvancedRef.current++
-      if (oldBox > card.box) boxesRegressedRef.current++
+      if (oldBox < fact.box) boxesAdvancedRef.current++
+      if (oldBox > fact.box) boxesRegressedRef.current++
 
       // 4. MICRO-BATCHING TRIGGER (The Fix for Tab Close)
-      // If we have 5 or more pending cards, save them now.
-      // This ensures that if the tab closes, at most 4 cards are lost.
-      if (Object.keys(pendingUserCardsRef.current).length >= SAVE_THRESHOLD) {
+      // If we have 5 or more pending facts, save them now.
+      // This ensures that if the tab closes, at most 4 facts are lost.
+      if (Object.keys(pendingUserFactsRef.current).length >= SAVE_THRESHOLD) {
         commitSessionUpdates()
       }
     },
-    [setUserCards, commitSessionUpdates, setIsSessionActive]
+    [setUserFacts, commitSessionUpdates, setIsSessionActive]
   )
 
   const resetSessionState = useCallback(() => {
@@ -235,7 +232,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     setIsSessionActive(false)
 
     // Clear refs manually just in case
-    pendingUserCardsRef.current = {}
+    pendingUserFactsRef.current = {}
   }, [setIsSessionActive])
 
   const finishSession = useCallback(
@@ -250,7 +247,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         return
       }
 
-      const currentPercentage = getLatestMastery()
       const finalCorrect = fastCorrectRef.current + slowCorrectRef.current
       const finalTotalAnswers = totalAnswersRef.current
       const finalIncorrect = finalTotalAnswers - finalCorrect
@@ -292,8 +288,8 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         statsByTable: statsByTableSnapshot,
       }
 
-      // Capture pending cards before reset
-      const pendingCards = Object.values(pendingUserCardsRef.current)
+      // Capture pending facts before reset
+      const pendingFacts = Object.values(pendingUserFactsRef.current)
 
       // Optimistic UI Updates
       setLatestSession(sessionRecord)
@@ -305,12 +301,12 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       const db = getFirestore(app)
       const batch = writeBatch(db)
 
-      // A. Pending Cards
-      for (const card of pendingCards) {
-        const cardRef = doc(db, 'users', user.uid, 'UserCards', card.id)
-        const cleanCardPayload = omitUndefined(card)
-        if (Object.keys(cleanCardPayload).length > 0) {
-          batch.update(cardRef, cleanCardPayload)
+      // A. Pending Facts
+      for (const fact of pendingFacts) {
+        const factRef = doc(db, 'users', user.uid, 'UserFacts', fact.id)
+        const cleanFactPayload = omitUndefined(fact)
+        if (Object.keys(cleanFactPayload).length > 0) {
+          batch.update(factRef, cleanFactPayload)
         }
       }
 
@@ -320,22 +316,9 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         totalSessions: increment(1),
         lifetimeCorrect: increment(finalCorrect),
         lifetimeIncorrect: increment(finalIncorrect),
-        currentLevelProgress: currentPercentage,
       }
       const localUserUpdates: Partial<User> = {
         totalSessions: (user.totalSessions || 0) + 1,
-        currentLevelProgress: currentPercentage,
-      }
-
-      if (
-        currentPercentage >= MASTERY_THRESHOLD &&
-        user.activeGroup < MAX_GROUPS
-      ) {
-        userDBUpdates.activeGroup = user.activeGroup + 1
-        userDBUpdates.currentLevelProgress = 0
-
-        localUserUpdates.activeGroup = user.activeGroup + 1
-        localUserUpdates.currentLevelProgress = 0
       }
 
       batch.update(userRef, userDBUpdates)
@@ -355,28 +338,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         setIsSaving(false)
       }
     },
-    [
-      app,
-      user,
-      updateUser,
-      resetSessionState,
-      getLatestMastery,
-      logger,
-      showNotification,
-    ]
+    [app, user, updateUser, resetSessionState, logger, showNotification]
   )
 
   return (
     <ReviewSessionContext.Provider
       value={{
-        addUpdatedCardToSession,
-        // Ref changes do not cause re-renders. addUpdatedCardToSession does the trick.
+        addUpdatedFactToSession,
+        // Ref changes do not cause re-renders. addUpdatedFactToSession does the trick.
         correctCount: fastCorrectRef.current + slowCorrectRef.current,
         incorrectCount:
           totalAnswersRef.current -
           (fastCorrectRef.current + slowCorrectRef.current),
         latestSession,
-        pendingUserCards: pendingUserCardsRef.current,
+        pendingUserFacts: pendingUserFactsRef.current,
         percentageMastered,
         isShowingAnswer,
         showAnswer,

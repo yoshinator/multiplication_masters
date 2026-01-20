@@ -5,7 +5,6 @@ import 'driver.js/dist/driver.css'
 
 import MultiplicationCard from '../../components/MultiplicationCard/MultiplicationCard'
 import StatsPanel from '../../components/StatsPanel/StatsPanel'
-import LevelPanel from '../../components/LevelPanel/LevelPanel'
 import SessionSummary from '../../components/SessionSummary/SessionSummary'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
@@ -106,11 +105,11 @@ const PracticePage: FC = () => {
           },
         },
         {
-          element: '#level-panel',
+          element: '#pack-mastery-panel',
           popover: {
-            title: 'Level Up!',
+            title: 'Pack Mastery',
             description:
-              'Watch your progress bar grow! Every correct answer helps you reach the next level.',
+              'This bar shows how much of the current pack you have mastered (Box 4+).',
           },
         },
         {
@@ -272,19 +271,7 @@ const PracticePage: FC = () => {
           alignItems: 'center',
         }}
       >
-        {isSessionActive ? (
-          !isMobile && <StatsPanel />
-        ) : (
-          <Box
-            display="flex"
-            gap={2}
-            flexDirection={isMobile ? 'column' : 'row'}
-            sx={{ width: { xs: '100%', sm: 'auto' }, px: { xs: 2, sm: 0 } }}
-          >
-            <LevelPanel />
-            <DailyGoalPanel />
-          </Box>
-        )}
+        {isSessionActive ? !isMobile && <StatsPanel /> : <DailyGoalPanel />}
       </Box>
 
       {/* MAIN GAME */}

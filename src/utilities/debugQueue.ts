@@ -1,7 +1,7 @@
 import type { MinPriorityQueue } from 'datastructures-js'
-import type { UserCard } from '../constants/dataModels'
+import type { UserFact } from '../constants/dataModels'
 
-export function debugQueue(queue?: MinPriorityQueue<UserCard> | null) {
+export function debugQueue(queue?: MinPriorityQueue<UserFact> | null) {
   try {
     // warning: queue.toArray() is allowed and safe for read-only debugging
     const arr = queue?.toArray()
@@ -11,8 +11,6 @@ export function debugQueue(queue?: MinPriorityQueue<UserCard> | null) {
       box: c.box,
       nextDue: c.nextDueTime,
       seen: c.seen,
-      group: c.group,
-      table: c.table,
     }))
   } catch {
     return 'Queue debug failed'

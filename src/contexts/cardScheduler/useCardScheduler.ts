@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
+import { httpsCallable, getFunctions } from 'firebase/functions'
 import { MinPriorityQueue } from 'datastructures-js'
-import type { User, UserCard } from '../../constants/dataModels'
+import type { PackMeta, User, UserFact } from '../../constants/dataModels'
 import { BOX_ADVANCE, BOX_STAY, BOX_TIMES } from '../../constants/appConstants'
 import { useLogger } from '../../hooks/useLogger'
 import { debugQueue } from '../../utilities/debugQueue'
@@ -11,69 +12,95 @@ import { computeNewBox, estimateReviewLoad } from './helpers/srsLogic'
 import { shuffleOnce, SHUFFLE_THRESHOLDS } from './helpers/shuffleUtils'
 import { buildQueue } from './helpers/queueBuilder'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
+import { useFirebaseContext } from '../firebase/firebaseContext'
 
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(
-  userCards: UserCard[],
+  userFacts: UserFact[], // Renamed from userFacts
   user: User | null,
+  activePackMeta: PackMeta | null,
   updateUser: (fields: Partial<User>) => void
 ) {
   const logger = useLogger('Scheduler')
-  const { addUpdatedCardToSession, finishSession } = useReviewSession()
-  const queueRef = useRef<MinPriorityQueue<UserCard> | null>(null)
-  const [currentCard, setCurrentCard] = useState<UserCard | null>(null)
+  const { addUpdatedFactToSession, finishSession } = useReviewSession()
+  const queueRef = useRef<MinPriorityQueue<UserFact> | null>(null)
+  const [currentFact, setCurrentFact] = useState<UserFact | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
   const [estimatedReviews, setEstimatedReviews] = useState(0)
-  const [estimatedUniqueCards, setEstimatedUniqueCards] = useState(0)
+  const [estimatedUniqueFacts, setEstimatedUniqueFacts] = useState(0)
   const { setIsSessionActive, sessionLength } = useSessionStatusContext()
   const sessionLengthRef = useRef(sessionLength)
   const shuffleCountsRef = useRef(new Set<number>())
 
-  const startSession = useCallback(() => {
-    logger('🛠 Initializing new review session')
-    sessionLengthRef.current = sessionLength
-    shuffleCountsRef.current = new Set<number>()
-    if (!userCards?.length || !user) return
-    logger(`🚀 Starting session. Building queue with size ${sessionLength}`)
-    const built = buildQueue(userCards, user, sessionLength, logger)
+  const { app } = useFirebaseContext()
+  const functions = app ? getFunctions(app) : null
 
-    if (!built) return
+  const startSession = useCallback(async () => {
+    console.log('Starting session with facts:', { userFacts })
+    if (!userFacts || !user || !functions) return
+
+    const result = buildQueue(
+      userFacts,
+      user,
+      activePackMeta,
+      sessionLength,
+      logger
+    )
+    if (!result) return
+    console.log('Built queue result:', { result })
+    // JIT Trigger: If we couldn't fill the session, call the Cloud Function
+    if (result.needsProvisioning) {
+      logger('ol low card count, provisioning more facts...')
+      logger('Low card count, provisioning more facts...')
+      const provisionFacts = httpsCallable(functions, 'provisionFacts')
+      await provisionFacts({ packName: user.activePack, count: 12 })
+      // The onSnapshot in FirebaseProvider will naturally update userFacts
+      // and this effect will re-run or the user can just start with what's there.
+    }
+
     setIsSessionActive(true)
+    queueRef.current = result.queue
 
-    queueRef.current = built.queue
-
-    const estimates = estimateReviewLoad(built.sessionCards)
+    const estimates = estimateReviewLoad(result.sessionFacts)
     setEstimatedReviews(estimates.estimatedReviews)
-    setEstimatedUniqueCards(estimates.uniqueCards)
+    setEstimatedUniqueFacts(estimates.uniqueCards)
 
     logger('📥 Queue built:', debugQueue(queueRef.current))
     logger('📏 Queue size:', queueRef.current?.size())
     logger('📊 Estimated reviews:', estimates)
 
     const first = queueRef.current?.dequeue() ?? null
-    setCurrentCard(first)
+    setCurrentFact(first)
     setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
 
-    logger('➡️ First card:', first)
-  }, [userCards, user, logger, setIsSessionActive, sessionLength])
+    logger('➡️ First fact:', first)
+  }, [
+    userFacts,
+    user,
+    logger,
+    setIsSessionActive,
+    sessionLength,
+    activePackMeta,
+    functions,
+  ])
 
-  const getNextCard = useCallback(() => {
+  const getNextFact = useCallback(() => {
     const q = queueRef.current
     if (!q) return null
 
     const next = q.dequeue() ?? null
-    setCurrentCard(next)
+    setCurrentFact(next)
     setIsQueueEmpty(q.size() === 0)
 
-    logger('➡️ Dequeued next card:', next)
+    logger('➡️ Dequeued next fact:', next)
     return next
   }, [logger])
 
   const submitAnswer = useCallback(
-    (card: UserCard, correct: boolean, elapsed: number): UserCard => {
+    (fact: UserFact, correct: boolean, elapsed: number): UserFact => {
       const now = Date.now()
-      const oldBox = card.box
-      const newBox = computeNewBox(card, elapsed, correct)
+      const oldBox = fact.box
+      const newBox = computeNewBox(fact, elapsed, correct)
 
       if (correct && elapsed <= BOX_ADVANCE) {
         setEstimatedReviews((prev) => Math.max(0, prev - 1))
@@ -81,19 +108,25 @@ export function useCardScheduler(
         setEstimatedReviews((prev) => prev + 2)
       }
 
-      const updated: UserCard = {
-        ...card,
+      const newAvgResponseTime =
+        fact.avgResponseTime === null || fact.seen === 0
+          ? elapsed
+          : (fact.avgResponseTime + elapsed) / 2
+
+      const updated: UserFact = {
+        ...fact,
         box: newBox,
-        seen: card.seen + 1,
-        correct: card.correct + (correct ? 1 : 0),
-        incorrect: card.incorrect + (correct ? 0 : 1),
+        seen: fact.seen + 1,
+        correct: fact.correct + (correct ? 1 : 0),
+        incorrect: fact.incorrect + (correct ? 0 : 1),
         nextDueTime: now + BOX_TIMES[newBox - 1],
         wasLastReviewCorrect: correct,
         lastElapsedTime: elapsed,
         lastReviewed: now,
+        avgResponseTime: newAvgResponseTime,
       }
 
-      if (card.seen === 0 && user) {
+      if (fact.seen === 0 && user) {
         const today = new Date(now).toDateString()
         const lastDate = user.lastNewCardDate
           ? new Date(user.lastNewCardDate).toDateString()
@@ -107,13 +140,13 @@ export function useCardScheduler(
       }
 
       if (newBox <= 3) {
-        logger(`🔁 Requeueing learning card`, updated)
+        logger(`🔁 Requeueing learning fact`, updated)
         queueRef.current?.enqueue(updated)
       } else {
-        logger(`🎉 Card mastered (box>${3}), removing from session`, updated)
+        logger(`🎉 Fact mastered (box>${3}), removing from session`, updated)
       }
 
-      addUpdatedCardToSession(updated, oldBox)
+      addUpdatedFactToSession(updated, oldBox)
 
       const q = queueRef.current
       if (q) {
@@ -125,7 +158,7 @@ export function useCardScheduler(
         ) {
           shuffleCountsRef.current.add(size)
 
-          const temp: UserCard[] = []
+          const temp: UserFact[] = []
           while (q.size() > 0) {
             const c = q.dequeue()
             if (c) temp.push(c)
@@ -138,8 +171,8 @@ export function useCardScheduler(
         }
       }
 
-      const next = getNextCard()
-      setCurrentCard(next)
+      const next = getNextFact()
+      setCurrentFact(next)
       if (!next && (!q || q.size() === 0)) {
         finishSession(sessionLengthRef.current)
       }
@@ -147,9 +180,9 @@ export function useCardScheduler(
       return updated
     },
     [
-      getNextCard,
+      getNextFact,
       logger,
-      addUpdatedCardToSession,
+      addUpdatedFactToSession,
       finishSession,
       user,
       updateUser,
@@ -157,12 +190,12 @@ export function useCardScheduler(
   )
 
   return {
-    currentCard,
-    getNextCard,
+    currentFact,
+    getNextFact,
     submitAnswer,
     startSession,
     isQueueEmpty,
     estimatedReviews,
-    estimatedUniqueCards,
+    estimatedUniqueFacts,
   }
 }
