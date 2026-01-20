@@ -26,10 +26,10 @@ export function buildQueue(
   const now = Date.now()
   const sessionFacts: UserFact[] = []
 
-  // 1. Gather all DUE cards the user already owns across ALL packs
+  // 1. Gather all DUE facts the user already owns across ALL packs
   const due = userFacts.filter((f) => f.nextDueTime <= now && f.seen > 0)
   sessionFacts.push(...due)
-  // 2. Gather LEARNING cards (Box 1-3) that aren't due yet
+  // 2. Gather LEARNING facts (Box 1-3) that aren't due yet
   if (sessionFacts.length < sessionLength) {
     const learning = userFacts
       .filter((f) => f.box <= 3 && f.nextDueTime > now)
@@ -37,7 +37,7 @@ export function buildQueue(
     sessionFacts.push(...learning)
   }
 
-  // 3. Identify NEW cards (seen = 0) already in Firestore
+  // 3. Identify NEW facts (seen = 0) already in Firestore
   if (sessionFacts.length < sessionLength) {
     const dailyLimit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
     const seenToday = user.newCardsSeenToday ?? 0
@@ -53,7 +53,7 @@ export function buildQueue(
   const queue = new MinPriorityQueue<UserFact>((f) => f.nextDueTime)
   sessionFacts.forEach((f) => queue.enqueue(f))
 
-  logger(`📦 JIT Session queue built (${queue.size()} cards)`)
+  logger(`📦 JIT Session queue built (${queue.size()} facts)`)
 
   return {
     queue,

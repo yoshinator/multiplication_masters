@@ -13,10 +13,11 @@ import { shuffleOnce, SHUFFLE_THRESHOLDS } from './helpers/shuffleUtils'
 import { buildQueue } from './helpers/queueBuilder'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 import { useFirebaseContext } from '../firebase/firebaseContext'
+import { extractErrorMessage } from '../../utilities/typeutils'
 
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(
-  userFacts: UserFact[], // Renamed from userFacts
+  userFacts: UserFact[],
   user: User | null,
   activePackMeta: PackMeta | null,
   updateUser: (fields: Partial<User>) => void
@@ -36,7 +37,6 @@ export function useCardScheduler(
   const functions = app ? getFunctions(app) : null
 
   const startSession = useCallback(async () => {
-    console.log('Starting session with facts:', { userFacts })
     if (!userFacts || !user || !functions) return
 
     const result = buildQueue(
@@ -50,12 +50,15 @@ export function useCardScheduler(
     console.log('Built queue result:', { result })
     // JIT Trigger: If we couldn't fill the session, call the Cloud Function
     if (result.needsProvisioning) {
-      logger('ol low card count, provisioning more facts...')
       logger('Low card count, provisioning more facts...')
-      const provisionFacts = httpsCallable(functions, 'provisionFacts')
-      await provisionFacts({ packName: user.activePack, count: 12 })
-      // The onSnapshot in FirebaseProvider will naturally update userFacts
-      // and this effect will re-run or the user can just start with what's there.
+      try {
+        const provisionFacts = httpsCallable(functions, 'provisionFacts')
+        await provisionFacts({ packName: user.activePack, count: 12 })
+        // The onSnapshot in FirebaseProvider will naturally update userFacts
+        // and this effect will re-run or the user can just start with what's there.
+      } catch (error) {
+        logger('Error provisioning facts:', extractErrorMessage(error))
+      }
     }
 
     setIsSessionActive(true)
@@ -111,7 +114,7 @@ export function useCardScheduler(
       const newAvgResponseTime =
         fact.avgResponseTime === null || fact.seen === 0
           ? elapsed
-          : (fact.avgResponseTime + elapsed) / 2
+          : (fact.avgResponseTime * fact.seen + elapsed) / (fact.seen + 1)
 
       const updated: UserFact = {
         ...fact,

@@ -29,6 +29,8 @@ import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 import { generateRandomUsername } from '../../utilities/accountHelpers'
+import { extractErrorMessage } from '../../utilities/typeutils'
+import { useNotification } from '../notificationContext/notificationContext'
 
 type Props = {
   children: ReactNode
@@ -58,6 +60,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
   const { app, auth, loadUserFacts } = useFirebaseContext()
+  const { showNotification } = useNotification()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -84,12 +87,23 @@ const UserProvider: FC<Props> = ({ children }) => {
     const db = getFirestore(app)
     const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
 
-    return onSnapshot(metaRef, (snap) => {
-      if (snap.exists()) {
-        setActivePackMeta(snap.data() as PackMeta)
+    return onSnapshot(
+      metaRef,
+      (snap) => {
+        if (snap.exists()) {
+          setActivePackMeta(snap.data() as PackMeta)
+        } else {
+          // Clear state if the packMeta document is missing
+          setActivePackMeta(null)
+        }
+      },
+      (error) => {
+        // Log and reset state on listener errors
+        showNotification(extractErrorMessage(error), 'error')
+        setActivePackMeta(null)
       }
-    })
-  }, [user?.uid, user?.activePack, app])
+    )
+  }, [user?.uid, user?.activePack, app, showNotification])
 
   useEffect(() => {
     if (user?.uid) {
@@ -119,7 +133,7 @@ const UserProvider: FC<Props> = ({ children }) => {
 
     const db = getFirestore(app)
     const userRef = doc(db, 'users', uid)
-    logger('Commiting user updates:', pending)
+    logger('Committing user updates:', pending)
 
     try {
       await updateDoc(userRef, pending)

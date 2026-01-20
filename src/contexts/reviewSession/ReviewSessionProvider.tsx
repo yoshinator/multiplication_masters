@@ -191,16 +191,18 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         setIsSessionActive(true)
       }
 
-      // 3. Update Statistics Refs
+      // 3. Update Statistics Refs. This kind of paints me into a corner for Multiplication.
       const table = fact.operands[0]
-      if (typeof table === 'number' && !statsByTableRef.current[table]) {
-        statsByTableRef.current[table] = { correct: 0, incorrect: 0 }
-      }
+      if (typeof table === 'number') {
+        if (statsByTableRef.current[table]) {
+          statsByTableRef.current[table] = { correct: 0, incorrect: 0 }
+        }
 
-      if (typeof table === 'number' && fact.wasLastReviewCorrect) {
-        statsByTableRef.current[table].correct++
-      } else {
-        statsByTableRef.current[table as number].incorrect++
+        if (fact.wasLastReviewCorrect) {
+          statsByTableRef.current[table].correct++
+        } else {
+          statsByTableRef.current[table].incorrect++
+        }
       }
 
       totalElapsedRef.current += fact.lastElapsedTime
