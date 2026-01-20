@@ -46,7 +46,10 @@ export const provisionFacts = onCall(async (request) => {
   const uid = request.auth?.uid
 
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
-  const masterList = MASTER_FACTS[packName]
+  if (typeof packName !== 'string' || !(packName in MASTER_FACTS)) {
+    throw new HttpsError('not-found', 'Pack name not recognized.')
+  }
+  const masterList = MASTER_FACTS[packName as keyof typeof MASTER_FACTS]
   if (!masterList)
     throw new HttpsError('not-found', 'Pack name not recognized.')
 
