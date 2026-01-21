@@ -38,15 +38,24 @@ export function buildQueue(
   }
 
   // 3. Identify NEW facts (seen = 0) already in Firestore
-  if (sessionFacts.length < sessionLength) {
-    const dailyLimit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
-    const seenToday = user.newCardsSeenToday ?? 0
-    const remainingDaily = Math.max(0, dailyLimit - seenToday)
+  const dailyLimit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
 
+  // Reset count if it's a new day
+  const lastDate = user.lastNewCardDate
+    ? new Date(user.lastNewCardDate).toDateString()
+    : ''
+  const today = new Date(now).toDateString()
+  const seenToday = lastDate === today ? (user.newCardsSeenToday ?? 0) : 0
+
+  const remainingDaily = Math.max(0, dailyLimit - seenToday)
+  let addedNewCount = 0
+
+  if (sessionFacts.length < sessionLength) {
     const newCards = userFacts
       .filter((f) => f.seen === 0)
       .slice(0, Math.min(sessionLength - sessionFacts.length, remainingDaily))
 
+    addedNewCount = newCards.length
     sessionFacts.push(...newCards)
   }
 
@@ -60,6 +69,8 @@ export function buildQueue(
     sessionFacts,
     needsProvisioning:
       sessionFacts.length < sessionLength &&
-      (!activePackMeta || !activePackMeta.isCompleted),
+      activePackMeta &&
+      !activePackMeta?.isCompleted &&
+      addedNewCount < remainingDaily,
   }
 }

@@ -29,9 +29,11 @@ export function useCardScheduler(
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
   const [estimatedReviews, setEstimatedReviews] = useState(0)
   const [estimatedUniqueFacts, setEstimatedUniqueFacts] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
   const { setIsSessionActive, sessionLength } = useSessionStatusContext()
   const sessionLengthRef = useRef(sessionLength)
   const shuffleCountsRef = useRef(new Set<number>())
+  const hasProvisionedRef = useRef(false)
 
   const { app } = useFirebaseContext()
   const functions = app ? getFunctions(app) : null
@@ -39,44 +41,56 @@ export function useCardScheduler(
   const startSession = useCallback(async () => {
     if (!userFacts || !user || !functions) return
 
-    const result = buildQueue(
-      userFacts,
-      user,
-      activePackMeta,
-      sessionLength,
-      logger
-    )
-    if (!result) return
-    console.log('Built queue result:', { result })
-    // JIT Trigger: If we couldn't fill the session, call the Cloud Function
-    if (result.needsProvisioning) {
-      logger('Low card count, provisioning more facts...')
-      try {
-        const provisionFacts = httpsCallable(functions, 'provisionFacts')
-        await provisionFacts({ packName: user.activePack, count: 12 })
-        // The onSnapshot in FirebaseProvider will naturally update userFacts
-        // and this effect will re-run or the user can just start with what's there.
-      } catch (error) {
-        logger('Error provisioning facts:', extractErrorMessage(error))
+    setIsLoading(true)
+    try {
+      const result = buildQueue(
+        userFacts,
+        user,
+        activePackMeta,
+        sessionLength,
+        logger
+      )
+      if (!result) return
+      // JIT Trigger: If we couldn't fill the session, call the Cloud Function
+      if (result.needsProvisioning) {
+        if (!hasProvisionedRef.current) {
+          hasProvisionedRef.current = true
+          logger('Low card count, provisioning more facts...')
+          try {
+            const provisionFacts = httpsCallable(functions, 'provisionFacts')
+            await provisionFacts({ packName: user.activePack, count: 12 })
+            // The onSnapshot in FirebaseProvider will naturally update userFacts
+            // and this effect will re-run or the user can just start with what's there.
+          } catch (error) {
+            logger('Error provisioning facts:', extractErrorMessage(error))
+            hasProvisionedRef.current = false
+          }
+        } else {
+          logger('Provisioning already attempted, skipping to prevent loop.')
+        }
+      } else {
+        hasProvisionedRef.current = false
       }
+
+      setIsSessionActive(true)
+      queueRef.current = result.queue
+
+      const estimates = estimateReviewLoad(result.sessionFacts)
+      setEstimatedReviews(estimates.estimatedReviews)
+      setEstimatedUniqueFacts(estimates.uniqueCards)
+
+      logger('📥 Queue built:', debugQueue(queueRef.current))
+      logger('📏 Queue size:', queueRef.current?.size())
+      logger('📊 Estimated reviews:', estimates)
+
+      const first = queueRef.current?.dequeue() ?? null
+      setCurrentFact(first)
+      setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
+
+      logger('➡️ First fact:', first)
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsSessionActive(true)
-    queueRef.current = result.queue
-
-    const estimates = estimateReviewLoad(result.sessionFacts)
-    setEstimatedReviews(estimates.estimatedReviews)
-    setEstimatedUniqueFacts(estimates.uniqueCards)
-
-    logger('📥 Queue built:', debugQueue(queueRef.current))
-    logger('📏 Queue size:', queueRef.current?.size())
-    logger('📊 Estimated reviews:', estimates)
-
-    const first = queueRef.current?.dequeue() ?? null
-    setCurrentFact(first)
-    setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
-
-    logger('➡️ First fact:', first)
   }, [
     userFacts,
     user,
@@ -200,5 +214,6 @@ export function useCardScheduler(
     isQueueEmpty,
     estimatedReviews,
     estimatedUniqueFacts,
+    isLoading,
   }
 }
