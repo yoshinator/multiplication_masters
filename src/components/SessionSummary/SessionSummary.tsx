@@ -37,9 +37,12 @@ const SessionSummary: FC = () => {
   const fastCorrect = s?.fastCorrect ?? 0
   const slowCorrect = s?.slowCorrect ?? 0
 
-  const restart = () => {
+  const restart = async () => {
+    if (isLoading) {
+      return
+    }
     setIsSessionActive(true)
-    startSession()
+    await startSession()
   }
 
   return (

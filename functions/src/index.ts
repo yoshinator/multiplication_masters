@@ -42,6 +42,7 @@ export const initializeUserMeta = onDocumentCreated(
 )
 
 export const provisionFacts = onCall(async (request) => {
+  // 8 is the smallest number of new facts per day 32 is the max
   const { packName, count = 8 } = request.data
   if (count <= 0 || count > 32) {
     throw new HttpsError('invalid-argument', 'Count must be between 1 and 32.')
@@ -260,6 +261,38 @@ export const migrateUserToFacts = onCall(async (request) => {
       uid,
       error: (err as Error)?.message ?? err,
     })
+
+    // Attempt rollback to ensure no partial state
+    try {
+      logger.info(`Initiating rollback for user ${uid}`)
+      const rollbackBatches: FirebaseFirestore.WriteBatch[] = []
+      let rbBatch = db.batch()
+      let rbCount = 0
+
+      for (const factId of migratedIds) {
+        rbBatch.delete(factsCol.doc(factId))
+        rbCount++
+        if (rbCount >= 450) {
+          rollbackBatches.push(rbBatch)
+          rbBatch = db.batch()
+          rbCount = 0
+        }
+      }
+      // Reset metaInitialized to false to allow retry
+      rbBatch.set(userRef, { metaInitialized: false }, { merge: true })
+      rollbackBatches.push(rbBatch)
+
+      for (const batch of rollbackBatches) {
+        await batch.commit()
+      }
+      logger.info(`Rollback completed for user ${uid}`)
+    } catch (rollbackErr) {
+      logger.error('Rollback failed', {
+        uid,
+        error: (rollbackErr as Error)?.message ?? rollbackErr,
+      })
+    }
+
     throw new HttpsError(
       'internal',
       'Failed to migrate user data. Please try again later.'

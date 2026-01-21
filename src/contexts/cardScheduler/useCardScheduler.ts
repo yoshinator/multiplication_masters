@@ -63,6 +63,7 @@ export function useCardScheduler(
             // and this effect will re-run or the user can just start with what's there.
           } catch (error) {
             logger('Error provisioning facts:', extractErrorMessage(error))
+            hasProvisionedRef.current = false
           }
         } else {
           logger('Provisioning already attempted, skipping to prevent loop.')

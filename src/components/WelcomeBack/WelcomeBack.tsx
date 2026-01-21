@@ -10,6 +10,13 @@ const WelcomeBack: FC = () => {
   const { user } = useUser()
   const isMobile = useIsMobile()
 
+  const handleStartSession = async () => {
+    if (isLoading) {
+      return
+    }
+    await startSession()
+  }
+
   return (
     <Box
       sx={{
@@ -56,7 +63,7 @@ const WelcomeBack: FC = () => {
 
           <Button
             id="start-session-btn"
-            onClick={startSession}
+            onClick={handleStartSession}
             disabled={isLoading}
             variant="contained"
             size="large"
