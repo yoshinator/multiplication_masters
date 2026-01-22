@@ -9,6 +9,7 @@ import {
   Stack,
   useTheme,
   alpha,
+  CircularProgress,
 } from '@mui/material'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useEffect } from 'react'
@@ -17,7 +18,7 @@ import { ROUTES } from '../../constants/routeConstants'
 import { useAuthActions } from '../../hooks/useAuthActions'
 
 export default function HomePage() {
-  const { authStatus } = useUser()
+  const { authStatus, isLoading } = useUser()
   const navigate = useNavigate()
   const { loginAnonymously } = useAuthActions()
   const theme = useTheme()
@@ -32,7 +33,20 @@ export default function HomePage() {
   useEffect(() => {
     if (authStatus === 'signedIn') navigate(ROUTES.TRAIN)
   }, [authStatus, navigate])
-  return (
+
+  return isLoading ? (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        bgcolor: 'background.default',
+      }}
+    >
+      <CircularProgress size={80} role="status" aria-label="Loading" />
+    </Box>
+  ) : (
     <Box
       sx={{
         bgcolor: 'background.default',
