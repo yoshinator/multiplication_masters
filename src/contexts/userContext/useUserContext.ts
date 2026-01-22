@@ -7,6 +7,7 @@ interface UserContextValue {
   setUser: (u: User | null) => void
   updateUser: (fields: Partial<User>) => void
   authStatus: AuthStatus
+  isLoading: boolean
   activePackMeta: PackMeta | null
   activePackFactIds: Set<string>
 }

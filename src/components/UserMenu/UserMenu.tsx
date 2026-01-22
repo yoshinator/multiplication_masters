@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react'
 import {
   Avatar,
+  Box,
   Button,
   Divider,
   Menu,
   MenuItem,
+  Skeleton,
   Typography,
 } from '@mui/material'
 import { useUser } from '../../contexts/userContext/useUserContext'
@@ -107,6 +109,19 @@ const UserMenu = () => {
         </MenuItem>
       </Menu>
     </>
+  )
+}
+
+export const UserMenuSkeleton = () => {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Skeleton
+        variant="text"
+        width={100}
+        sx={{ display: { xs: 'none', sm: 'block' } }}
+      />
+      <Skeleton variant="circular" width={36} height={36} />
+    </Box>
   )
 }
 

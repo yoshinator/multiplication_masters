@@ -1,9 +1,11 @@
 import { type FC } from 'react'
-import { Box, Button, Card, Stack, Typography } from '@mui/material'
+import { Box, Card, Typography, Button, Stack } from '@mui/material'
+
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
+import CardLoadingSkeleton from '../CardLoadingSkeleton/CardLoadingSkeleton'
 
 const WelcomeBack: FC = () => {
   const { startSession, isLoading } = useCardSchedulerContext()
@@ -43,49 +45,53 @@ const WelcomeBack: FC = () => {
           boxShadow: { xs: 'none', sm: undefined },
         }}
       >
-        <Stack spacing={2.25} alignItems="center" textAlign="center">
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 900, letterSpacing: -0.3 }}
-          >
-            Welcome {(user?.totalSessions ?? 0) > 0 ? 'back ' : ''}
-            {user?.username ? `${capitalizeFirstLetter(user.username)},` : ''}
-          </Typography>
+        {isLoading ? (
+          <CardLoadingSkeleton />
+        ) : (
+          <Stack spacing={2.25} alignItems="center" textAlign="center">
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 900, letterSpacing: -0.3 }}
+            >
+              Welcome {(user?.totalSessions ?? 0) > 0 ? 'back ' : ''}
+              {user?.username ? `${capitalizeFirstLetter(user.username)},` : ''}
+            </Typography>
 
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ maxWidth: 440 }}
-          >
-            Ready for a quick session? We'll mix review + new cards to build
-            fast, long-term recall.
-          </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ maxWidth: 440 }}
+            >
+              Ready for a quick session? We'll mix review + new cards to build
+              fast, long-term recall.
+            </Typography>
 
-          <Button
-            id="start-session-btn"
-            onClick={handleStartSession}
-            disabled={isLoading}
-            variant="contained"
-            size="large"
-            aria-label="Start session"
-            sx={{
-              mt: 0.5,
-              px: 6,
-              py: 1.6,
-              fontWeight: 900,
-              fontSize: '1.05rem',
-              borderRadius: 999,
-              textTransform: 'none',
-              boxShadow: (theme) => theme.shadows[4],
-            }}
-          >
-            Start Session
-          </Button>
+            <Button
+              id="start-session-btn"
+              onClick={handleStartSession}
+              disabled={isLoading}
+              variant="contained"
+              size="large"
+              aria-label="Start session"
+              sx={{
+                mt: 0.5,
+                px: 6,
+                py: 1.6,
+                fontWeight: 900,
+                fontSize: '1.05rem',
+                borderRadius: 999,
+                textTransform: 'none',
+                boxShadow: (theme) => theme.shadows[4],
+              }}
+            >
+              Start Session
+            </Button>
 
-          <Typography variant="caption" color="text.secondary">
-            Tip: You can change “Cards per Session” in your profile.
-          </Typography>
-        </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Tip: You can change “Cards per Session” in your profile.
+            </Typography>
+          </Stack>
+        )}
       </Card>
     </Box>
   )

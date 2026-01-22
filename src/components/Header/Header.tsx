@@ -4,13 +4,13 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import LoginModal from '../Login/LoginModal'
-import UserMenu from '../UserMenu/UserMenu'
+import UserMenu, { UserMenuSkeleton } from '../UserMenu/UserMenu'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useModal } from '../../contexts/modalContext/modalContext'
 
 const Header = () => {
-  const { user } = useUser()
+  const { user, isLoading } = useUser()
   const isMobile = useIsMobile()
   const { openModal, closeModal } = useModal()
   const { loginAnonymously } = useAuthActions()
@@ -60,7 +60,9 @@ const Header = () => {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {!user ? (
+          {isLoading ? (
+            <UserMenuSkeleton />
+          ) : !user ? (
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
                 variant="contained"

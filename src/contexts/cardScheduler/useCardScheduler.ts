@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { httpsCallable, getFunctions } from 'firebase/functions'
 import { MinPriorityQueue } from 'datastructures-js'
 import type { PackMeta, User, UserFact } from '../../constants/dataModels'
@@ -39,18 +39,21 @@ export function useCardScheduler(
   const functions = app ? getFunctions(app) : null
 
   const startSession = useCallback(async () => {
-    if (!userFacts || !user || !functions) return
-
+    if (!user || !functions) return
+    const facts = userFacts ?? []
     setIsLoading(true)
     try {
       const result = buildQueue(
-        userFacts,
+        facts,
         user,
         activePackMeta,
         sessionLength,
         logger
       )
-      if (!result) return
+      if (!result) {
+        setIsLoading(false)
+        return
+      }
       // JIT Trigger: If we couldn't fill the session, call the Cloud Function
       if (result.needsProvisioning) {
         if (!hasProvisionedRef.current) {
@@ -59,8 +62,10 @@ export function useCardScheduler(
           try {
             const provisionFacts = httpsCallable(functions, 'provisionFacts')
             await provisionFacts({ packName: user.activePack, count: 12 })
-            // The onSnapshot in FirebaseProvider will naturally update userFacts
-            // and this effect will re-run or the user can just start with what's there.
+            logger('Provisioning complete.')
+            setIsLoading(false)
+            // Stop here. Wait for useEffect to restart us when facts arrive.
+            return
           } catch (error) {
             logger('Error provisioning facts:', extractErrorMessage(error))
             hasProvisionedRef.current = false
@@ -89,7 +94,9 @@ export function useCardScheduler(
 
       logger('➡️ First fact:', first)
     } finally {
-      setIsLoading(false)
+      if (!hasProvisionedRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [
     userFacts,
@@ -205,6 +212,25 @@ export function useCardScheduler(
       updateUser,
     ]
   )
+  const startSessionRef = useRef(startSession)
+
+  /**
+   * These two useEffects handle auto-restarting the session after provisioning.
+   * I'm using a ref to avoid double starting startSession due to dependency changes.
+   * We  normally wouldn't want to run effect to start a session since it should be
+   * user initiated but in this case it's justified if the user started the session
+   * and we didn't have enough cards.
+   * */
+  useEffect(() => {
+    startSessionRef.current = startSession
+  }, [startSession])
+
+  useEffect(() => {
+    if (hasProvisionedRef.current && userFacts.length > 0) {
+      hasProvisionedRef.current = false
+      startSessionRef.current()
+    }
+  }, [userFacts])
 
   return {
     currentFact,

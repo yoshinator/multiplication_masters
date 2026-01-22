@@ -69,8 +69,7 @@ export function buildQueue(
     sessionFacts,
     needsProvisioning:
       sessionFacts.length < sessionLength &&
-      activePackMeta &&
-      !activePackMeta?.isCompleted &&
+      (!activePackMeta || !activePackMeta.isCompleted) &&
       addedNewCount < remainingDaily,
   }
 }

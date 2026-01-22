@@ -78,19 +78,25 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Add this state to UserProvider
   const [activePackMeta, setActivePackMeta] = useState<PackMeta | null>(null)
+  const [isPackMetaLoading, setIsPackMetaLoading] = useState(false)
+
+  const isLoading = authStatus === 'loading' || isPackMetaLoading
 
   useEffect(() => {
     if (!user?.uid || !user?.activePack || !app) {
       setActivePackMeta(null) // Reset if logged out or no pack active
+      setIsPackMetaLoading(false)
       return
     }
 
     const db = getFirestore(app)
     const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
 
+    setIsPackMetaLoading(true)
     return onSnapshot(
       metaRef,
       (snap) => {
+        setIsPackMetaLoading(false)
         if (snap.exists()) {
           setActivePackMeta(snap.data() as PackMeta)
         } else {
@@ -100,6 +106,7 @@ const UserProvider: FC<Props> = ({ children }) => {
       },
       (error) => {
         // Log and reset state on listener errors
+        setIsPackMetaLoading(false)
         showNotification(extractErrorMessage(error), 'error')
         setActivePackMeta(null)
       }
@@ -320,6 +327,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         updateUser,
         authStatus,
         activePackMeta,
+        isLoading,
         activePackFactIds,
       }}
     >
