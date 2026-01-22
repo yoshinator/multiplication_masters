@@ -18,7 +18,7 @@ import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../Login/SaveProgressModal'
 import { useModal } from '../../contexts/modalContext/modalContext'
 
-const UserMenu = () => {
+export const UserMenu = () => {
   const { user } = useUser()
   const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -124,5 +124,3 @@ export const UserMenuSkeleton = () => {
     </Box>
   )
 }
-
-export default UserMenu

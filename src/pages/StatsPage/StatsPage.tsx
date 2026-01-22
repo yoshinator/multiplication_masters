@@ -9,16 +9,23 @@ import {
   DoneAll,
   ErrorOutline,
   HelpOutline,
+  TimerOutlined,
+  HourglassTopOutlined,
 } from '@mui/icons-material'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import StatsCard from '../../components/StatsPanel/StatsCard'
 import MissedFactCard from '../../components/StatsPanel/MissedFactCard'
 import PackMasteryPanel from '../../components/PackMasteryPanel/PackMasteryPanel'
+import { countDueCardsInPack } from '../../contexts/cardScheduler/helpers/srsLogic'
 
 const StatsPage: FC = () => {
-  const { user } = useUser()
+  const { user, activePackFactIds, activePackMeta } = useUser()
   const { userFacts } = useFirebaseContext()
+
+  const { dueToday, dueTomorrow } = useMemo(() => {
+    return countDueCardsInPack(userFacts, activePackMeta, activePackFactIds)
+  }, [userFacts, activePackMeta, activePackFactIds])
 
   const topTenMissedMultiplication = useMemo(
     () =>
@@ -65,6 +72,14 @@ const StatsPage: FC = () => {
             title: 'Performance Metrics',
             description:
               'View detailed stats about your accuracy and sessions.',
+          },
+        },
+        {
+          element: '#cards-due',
+          popover: {
+            title: 'Cards due to clear the queue',
+            description:
+              'The number of cards you have due today and tomorrow. Tomorrow includes todays cards.',
           },
         },
         {
@@ -156,6 +171,28 @@ const StatsPage: FC = () => {
             label="Lifetime Incorrect"
             value={user?.lifetimeIncorrect ?? 0}
             color="error.main"
+          />
+        </Grid>
+      </Grid>
+
+      <Typography variant="h6" gutterBottom fontWeight="bold" sx={{ my: 2 }}>
+        Number of Cards Due To Clear The Queue
+      </Typography>
+      <Grid container spacing={2} id="cards-due">
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <StatsCard
+            icon={<HourglassTopOutlined color="success" />}
+            label="Due Today"
+            value={dueToday}
+            color="success.main"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <StatsCard
+            icon={<TimerOutlined color="warning" />}
+            label="Due Tomorrow"
+            value={dueTomorrow}
+            color="warning.main"
           />
         </Grid>
       </Grid>

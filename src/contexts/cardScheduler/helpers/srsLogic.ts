@@ -52,6 +52,31 @@ export function percentPackMastered(
 }
 
 /**
+ * Calculates the number of cards in a pack that are due for review today
+ * and by tomorrow inclusive of today, returning both metrics as { dueToday, dueTomorrow }.
+ */
+export function countDueCardsInPack(
+  userFacts: UserFact[],
+  meta: PackMeta | null,
+  packFactIds: Set<string>
+) {
+  if (!meta || meta.totalFacts === 0 || !packFactIds || packFactIds.size === 0)
+    return { dueToday: 0, dueTomorrow: 0 }
+
+  const now = Date.now()
+  const dueToday = userFacts.filter(
+    (f) => packFactIds.has(f.id) && f.nextDueTime <= now
+  ).length
+
+  const tomorrow = Date.now() + 24 * 60 * 60 * 1000 // add 24 hours
+  const dueTomorrow = userFacts.filter(
+    (f) => packFactIds.has(f.id) && f.nextDueTime <= tomorrow
+  ).length
+
+  return { dueToday, dueTomorrow }
+}
+
+/**
  * Calculates discovery progress (How much of the pack has been seen at least once)
  */
 export function percentPackDiscovered(
