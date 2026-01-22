@@ -19,7 +19,6 @@ const PackMasteryPanel: FC = () => {
     if (name === 'mul_576') return 'Multiplication 1-24'
     return name
   }
-
   return (
     <Card id="pack-mastery-panel" sx={{ flex: 1, minWidth: 280 }}>
       <Box p={2}>
