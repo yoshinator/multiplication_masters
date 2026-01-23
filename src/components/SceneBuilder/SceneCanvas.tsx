@@ -4,16 +4,18 @@ import { Box } from '@mui/material'
 import { SCENES } from '../../constants/sceneDefinitions'
 import { SceneObjectItem } from './SceneObjectItem'
 import { useSceneBuilder } from './sceneBuilderContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const SceneCanvas: FC = () => {
   const { theme, objects, stageRef, setSelectedId } = useSceneBuilder()
+  const isMobile = useIsMobile()
 
   const sceneDef = SCENES[theme]
 
   return (
     <Box
       sx={{
-        flex: 1,
+        flex: { xs: 'none', md: 1 },
         p: 2,
         display: 'flex',
         justifyContent: 'center',
@@ -31,8 +33,8 @@ const SceneCanvas: FC = () => {
       >
         <Stage
           ref={stageRef}
-          width={700}
-          height={450}
+          width={isMobile ? 340 : 450}
+          height={420}
           style={{ background: sceneDef.backgroundColor }}
           onMouseDown={(e) => {
             if (e.target === e.target.getStage()) setSelectedId(null)

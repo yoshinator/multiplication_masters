@@ -6,6 +6,7 @@ import {
   Collapse,
   IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
@@ -46,19 +47,35 @@ const ScenePalette: FC = () => {
             </Stack>
 
             <Collapse in={open[cat.id]}>
-              <Stack spacing={1} sx={{ mt: 1 }}>
+              <Box display="flex" flexWrap="wrap" gap={1} sx={{ mt: 1 }}>
                 {items.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant="outlined"
-                    size="small"
-                    sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                    onClick={() => addObject(item)}
-                  >
-                    {item.label}
-                  </Button>
+                  <Tooltip title={item.label} key={item.id}>
+                    <Button
+                      variant="outlined"
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        minWidth: 80,
+                        p: 1,
+                        borderColor: 'divider',
+                      }}
+                      onClick={() => addObject(item)}
+                      aria-label={item.label}
+                    >
+                      <Box
+                        component="img"
+                        src={item.image}
+                        alt={item.label}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                        }}
+                      />
+                    </Button>
+                  </Tooltip>
                 ))}
-              </Stack>
+              </Box>
             </Collapse>
           </Box>
         )
