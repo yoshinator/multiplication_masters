@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { httpsCallable, getFunctions } from 'firebase/functions'
 import { MinPriorityQueue } from 'datastructures-js'
 import type { PackMeta, User, UserFact } from '../../constants/dataModels'
-import { BOX_ADVANCE, BOX_STAY, BOX_TIMES } from '../../constants/appConstants'
+import { BOX_TIMES } from '../../constants/appConstants'
 import { useLogger } from '../../hooks/useLogger'
 import { debugQueue } from '../../utilities/debugQueue'
 import { useReviewSession } from '../reviewSession/reviewSessionContext'
@@ -126,10 +126,14 @@ export function useCardScheduler(
       const oldBox = fact.box
       const newBox = computeNewBox(fact, elapsed, correct)
 
-      if (correct && elapsed <= BOX_ADVANCE) {
+      if (oldBox < newBox) {
         setEstimatedReviews((prev) => Math.max(0, prev - 1))
-      } else if (correct && elapsed > BOX_STAY) {
-        setEstimatedReviews((prev) => prev + 2)
+      } else if (oldBox > newBox) {
+        setEstimatedReviews((prev) => {
+          if (oldBox - newBox === 1) {
+            return prev + 1
+          } else return prev + 2
+        })
       }
 
       const newAvgResponseTime =

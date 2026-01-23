@@ -11,6 +11,7 @@ import {
   HelpOutline,
   TimerOutlined,
   HourglassTopOutlined,
+  EmojiEvents,
 } from '@mui/icons-material'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
@@ -18,6 +19,7 @@ import StatsCard from '../../components/StatsPanel/StatsCard'
 import MissedFactCard from '../../components/StatsPanel/MissedFactCard'
 import PackMasteryPanel from '../../components/PackMasteryPanel/PackMasteryPanel'
 import { countDueCardsInPack } from '../../contexts/cardScheduler/helpers/srsLogic'
+import { MASTERY_BOX_THRESHOLD } from '../../constants/appConstants'
 
 const StatsPage: FC = () => {
   const { user, activePackFactIds, activePackMeta } = useUser()
@@ -38,6 +40,11 @@ const StatsPage: FC = () => {
         })
         .slice(0, 10)
         .filter((card) => card.incorrect > 0),
+    [userFacts]
+  )
+
+  const factsMastered = useMemo(
+    () => userFacts.filter((f) => f.box >= MASTERY_BOX_THRESHOLD).length,
     [userFacts]
   )
 
@@ -171,6 +178,14 @@ const StatsPage: FC = () => {
             label="Lifetime Incorrect"
             value={user?.lifetimeIncorrect ?? 0}
             color="error.main"
+          />
+        </Grid>
+        <Grid size={{ xs: 6, sm: 4 }}>
+          <StatsCard
+            icon={<EmojiEvents color="primary" />}
+            label="Facts Mastered"
+            value={factsMastered}
+            color="primary.main"
           />
         </Grid>
       </Grid>
