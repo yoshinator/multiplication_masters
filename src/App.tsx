@@ -13,6 +13,7 @@ import StatsPage from './pages/StatsPage/StatsPage'
 import TimerContextProvider from './contexts/timerContext/TimerProvider'
 import FinishSignin from './components/FinishSignin/FinishSignin'
 import FeedbackButton from './components/FeedbackButton/FeedbackButton'
+import SceneBuilderPage from './pages/SceneBuilderPage/SceneBuilderPage'
 
 const App: FC = () => {
   return (
@@ -54,6 +55,14 @@ const App: FC = () => {
           element={
             <RequireUser>
               <ProfilePage />
+            </RequireUser>
+          }
+        />
+        <Route
+          path={ROUTES.BUILDER}
+          element={
+            <RequireUser>
+              <SceneBuilderPage />
             </RequireUser>
           }
         />

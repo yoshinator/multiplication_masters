@@ -30,15 +30,28 @@ const SceneBuilder: FC<Props> = ({
       initialObjects={initialObjects}
       onLayoutChange={onLayoutChange}
     >
-      <Box sx={{ display: 'flex', height: '100%', gap: 2 }}>
-        {/* LEFT PANEL */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row-reverse' },
+          height: '100%',
+          gap: 2,
+          overflowY: { xs: 'auto', md: 'hidden' },
+        }}
+      >
+        {/* CANVAS */}
+        <SceneCanvas />
+
+        {/* PANEL */}
         <Box
           sx={{
-            width: 260,
+            width: { xs: '100%', md: 260 },
             p: 2,
-            borderRight: 1,
+            borderRight: { xs: 0, md: 1 },
+            borderTop: { xs: 1, md: 0 },
             borderColor: 'divider',
             overflowY: 'auto',
+            flexShrink: 0,
           }}
         >
           <ScenePalette />
@@ -62,9 +75,6 @@ const SceneBuilder: FC<Props> = ({
             <SceneLayerControls />
           </Paper>
         </Box>
-
-        {/* CANVAS */}
-        <SceneCanvas />
       </Box>
     </SceneBuilderProvider>
   )
