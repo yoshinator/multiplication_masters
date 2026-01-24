@@ -3,7 +3,7 @@ import { Stage, Layer } from 'react-konva'
 import { Box } from '@mui/material'
 import { SCENES } from '../../constants/sceneDefinitions'
 import { SceneObjectItem } from './SceneObjectItem'
-import { useSceneBuilder } from './sceneBuilderContext'
+import { useSceneBuilder } from './SceneContext/sceneBuilderContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const SceneCanvas: FC = () => {

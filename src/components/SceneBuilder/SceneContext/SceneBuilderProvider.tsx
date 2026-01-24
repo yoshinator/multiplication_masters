@@ -5,11 +5,11 @@ import { SceneBuilderContext } from './sceneBuilderContext'
 import type {
   SceneItemDefinition,
   SceneTheme,
-} from '../../constants/sceneDefinitions'
+} from '../../../constants/sceneDefinitions'
 
-import { normalizeZ, swapZ, bringToFront, sendToBack } from './sceneUtils'
+import { normalizeZ, swapZ, bringToFront, sendToBack } from '../sceneUtils'
 import type Konva from 'konva'
-import type { SceneObjectInstance } from './sceneBuilderTypes'
+import type { SceneObjectInstance } from '../sceneBuilderTypes'
 
 type Props = {
   theme: SceneTheme

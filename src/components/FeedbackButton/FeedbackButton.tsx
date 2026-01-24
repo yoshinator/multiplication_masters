@@ -14,8 +14,14 @@ const FeedbackButton: FC = () => {
   const isSessionActive = sessionStatus?.isSessionActive ?? false
   const isTrainRoute = location.pathname === ROUTES.TRAIN
 
-  // Hidden when in /train route AND session is active
-  if (isTrainRoute && isSessionActive) {
+  /**
+   *  Hidden when in /train route AND session is active. Hidden on the homepage.
+   *
+   * */
+  const isHidden =
+    (isTrainRoute && isSessionActive) || location.pathname === ROUTES.HOME
+
+  if (isHidden) {
     return null
   }
 
