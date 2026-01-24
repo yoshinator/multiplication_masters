@@ -10,9 +10,8 @@ const SceneControls: FC = () => {
   return (
     <Box
       sx={{
-        width: { xs: '100%', md: 260 },
+        width: { xs: '100%', md: 450 },
         p: 2,
-        borderRight: { xs: 0, md: 1 },
         borderTop: { xs: 1, md: 0 },
         borderColor: 'divider',
         overflowY: 'auto',

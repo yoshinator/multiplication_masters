@@ -41,7 +41,7 @@ const SceneLayerControls: FC = () => {
   return (
     <Box>
       <Typography
-        variant="subtitle2"
+        variant="subtitle1"
         sx={{ fontWeight: 600, mb: 1, opacity: 0.8 }}
       >
         Front/Back
@@ -55,12 +55,11 @@ const SceneLayerControls: FC = () => {
             <Tooltip title="Bring Forward">
               <span>
                 <IconButton
-                  size="small"
                   disabled={disabled}
                   onClick={bringForward}
                   color="primary"
                 >
-                  <ArrowUpwardIcon fontSize="small" />
+                  <ArrowUpwardIcon />
                 </IconButton>
               </span>
             </Tooltip>
@@ -68,12 +67,11 @@ const SceneLayerControls: FC = () => {
             <Tooltip title="Send Backward">
               <span>
                 <IconButton
-                  size="small"
                   disabled={disabled}
                   onClick={sendBackward}
                   color="primary"
                 >
-                  <ArrowDownwardIcon fontSize="small" />
+                  <ArrowDownwardIcon />
                 </IconButton>
               </span>
             </Tooltip>
@@ -84,12 +82,11 @@ const SceneLayerControls: FC = () => {
             <Tooltip title="Bring to Front">
               <span>
                 <IconButton
-                  size="small"
                   disabled={disabled}
                   onClick={bringToFront}
                   color="primary"
                 >
-                  <VerticalAlignTopIcon fontSize="small" />
+                  <VerticalAlignTopIcon />
                 </IconButton>
               </span>
             </Tooltip>
@@ -97,12 +94,11 @@ const SceneLayerControls: FC = () => {
             <Tooltip title="Send to Back">
               <span>
                 <IconButton
-                  size="small"
                   disabled={disabled}
                   onClick={sendToBack}
                   color="primary"
                 >
-                  <VerticalAlignBottomIcon fontSize="small" />
+                  <VerticalAlignBottomIcon />
                 </IconButton>
               </span>
             </Tooltip>
@@ -118,7 +114,6 @@ const SceneLayerControls: FC = () => {
           <Tooltip title="Open Add Layer">
             <span>
               <IconButton
-                size="small"
                 onClick={() =>
                   openModal(
                     <AppModal onClose={closeModal} open title="Add Layer">
@@ -142,12 +137,11 @@ const SceneLayerControls: FC = () => {
           <Tooltip title="Delete Selected Layer">
             <span>
               <IconButton
-                size="small"
                 disabled={objects.length === 0}
                 onClick={deleteSelected}
                 color="error"
               >
-                <DeleteIcon fontSize="small" />
+                <DeleteIcon />
               </IconButton>
             </span>
           </Tooltip>

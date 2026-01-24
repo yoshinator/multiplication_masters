@@ -14,7 +14,7 @@ export const SceneTransformControls: FC = () => {
   return (
     <Box>
       <Typography
-        variant="subtitle2"
+        variant="subtitle1"
         sx={{ fontWeight: 600, mb: 1, opacity: 0.8 }}
       >
         Transform
@@ -24,7 +24,6 @@ export const SceneTransformControls: FC = () => {
       <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
         <Tooltip title="Zoom In">
           <IconButton
-            size="small"
             color="primary"
             disabled={!selected}
             onClick={() =>
@@ -33,13 +32,12 @@ export const SceneTransformControls: FC = () => {
                 : noop
             }
           >
-            <ZoomInIcon fontSize="small" />
+            <ZoomInIcon />
           </IconButton>
         </Tooltip>
 
         <Tooltip title="Zoom Out">
           <IconButton
-            size="small"
             color="primary"
             disabled={!selected}
             onClick={() =>
@@ -51,7 +49,7 @@ export const SceneTransformControls: FC = () => {
                 : noop
             }
           >
-            <ZoomOutIcon fontSize="small" />
+            <ZoomOutIcon />
           </IconButton>
         </Tooltip>
       </Stack>
@@ -60,7 +58,6 @@ export const SceneTransformControls: FC = () => {
       <Stack direction="row" spacing={1}>
         <Tooltip title="Rotate Left">
           <IconButton
-            size="small"
             color="primary"
             disabled={!selected}
             onClick={() =>
@@ -72,13 +69,12 @@ export const SceneTransformControls: FC = () => {
                 : noop
             }
           >
-            <RotateLeftIcon fontSize="small" />
+            <RotateLeftIcon />
           </IconButton>
         </Tooltip>
 
         <Tooltip title="Rotate Right">
           <IconButton
-            size="small"
             color="primary"
             disabled={!selected}
             onClick={() =>
@@ -90,7 +86,7 @@ export const SceneTransformControls: FC = () => {
                 : noop
             }
           >
-            <RotateRightIcon fontSize="small" />
+            <RotateRightIcon />
           </IconButton>
         </Tooltip>
       </Stack>
