@@ -90,15 +90,18 @@ const ScenePalette: FC<Props> = ({
 
       {/* Grid */}
       {currentItems.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          No unlocked items in this tab yet.
-        </Typography>
+        <Box minHeight={440}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            No unlocked items in this tab yet.
+          </Typography>
+        </Box>
       ) : (
         <Box
           display="flex"
           flexWrap="wrap"
           gap={1}
-          sx={{ mt: 1 }}
+          minHeight={440}
+          sx={{ mt: 1, alignContent: 'flex-start' }}
           justifyContent={'center'}
         >
           {currentItems.map((item) => (
