@@ -1,7 +1,7 @@
 import { type FC } from 'react'
 import { Stage, Layer } from 'react-konva'
 import { Box } from '@mui/material'
-import { SCENES } from '../../constants/sceneDefinitions'
+import { SCENE_ITEM_BY_ID, SCENES } from '../../constants/sceneDefinitions'
 import { SceneObjectItem } from './SceneObjectItem'
 import { useSceneBuilder } from './SceneContext/sceneBuilderContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -42,10 +42,7 @@ const SceneCanvas: FC = () => {
         >
           <Layer>
             {objects.map((obj) => {
-              const def = sceneDef.categories
-                .flatMap((c) => c.items)
-                .find((i) => i.id === obj.itemId)
-
+              const def = SCENE_ITEM_BY_ID[obj.itemId]
               if (!def) return null
 
               return (

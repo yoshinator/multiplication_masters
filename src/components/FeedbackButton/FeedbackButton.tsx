@@ -15,11 +15,13 @@ const FeedbackButton: FC = () => {
   const isTrainRoute = location.pathname === ROUTES.TRAIN
 
   /**
-   *  Hidden when in /train route AND session is active. Hidden on the homepage.
+   *  Hidden when in /train route AND session is active. Hidden on the homepage and SceneBuilder page.
    *
    * */
   const isHidden =
-    (isTrainRoute && isSessionActive) || location.pathname === ROUTES.HOME
+    (isTrainRoute && isSessionActive) ||
+    location.pathname === ROUTES.HOME ||
+    location.pathname === ROUTES.BUILDER
 
   if (isHidden) {
     return null
