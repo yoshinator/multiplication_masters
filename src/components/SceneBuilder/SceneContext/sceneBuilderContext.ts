@@ -1,9 +1,9 @@
 import { createContext, useContext, type RefObject } from 'react'
-import type { SceneObjectInstance } from './sceneBuilderTypes'
+import type { SceneObjectInstance } from '../sceneBuilderTypes'
 import type {
   SceneItemDefinition,
   SceneTheme,
-} from '../../constants/sceneDefinitions'
+} from '../../../constants/sceneDefinitions'
 import type Konva from 'konva'
 
 export type SceneBuilderContextValue = {

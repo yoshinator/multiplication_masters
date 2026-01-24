@@ -1,5 +1,4 @@
 import { useState, type FC } from 'react'
-import { useSceneBuilder } from './sceneBuilderContext'
 import {
   Box,
   Button,
@@ -12,10 +11,25 @@ import {
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 
-import { SCENES } from '../../constants/sceneDefinitions'
+import {
+  SCENES,
+  type SceneItemDefinition,
+  type SceneTheme,
+} from '../../../constants/sceneDefinitions'
 
-const ScenePalette: FC = () => {
-  const { theme, unlockedItemIds, addObject } = useSceneBuilder()
+interface Props {
+  theme: SceneTheme
+  unlockedItemIds: string[]
+  addObject: (def: SceneItemDefinition) => void
+  onClickCallBack?: () => void
+}
+
+const ScenePalette: FC<Props> = ({
+  theme,
+  unlockedItemIds,
+  addObject,
+  onClickCallBack,
+}) => {
   const sceneDef = SCENES[theme]
 
   const [open, setOpen] = useState(() =>
@@ -59,7 +73,10 @@ const ScenePalette: FC = () => {
                         p: 1,
                         borderColor: 'divider',
                       }}
-                      onClick={() => addObject(item)}
+                      onClick={() => {
+                        addObject(item)
+                        onClickCallBack?.()
+                      }}
                       aria-label={item.label}
                     >
                       <Box

@@ -4,7 +4,7 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import ZoomOutIcon from '@mui/icons-material/ZoomOut'
 import RotateLeftIcon from '@mui/icons-material/RotateLeft'
 import RotateRightIcon from '@mui/icons-material/RotateRight'
-import { useSceneBuilder } from './sceneBuilderContext'
+import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
 import { noop } from 'framer-motion'
 
 export const SceneTransformControls: FC = () => {

@@ -13,21 +13,28 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop'
 import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom'
 import DeleteIcon from '@mui/icons-material/Delete'
-import ClearAllIcon from '@mui/icons-material/ClearAll'
 
-import { useSceneBuilder } from './sceneBuilderContext'
+import { LibraryAddRounded } from '@mui/icons-material'
+
+import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
+import { useModal } from '../../../contexts/modalContext/modalContext'
+import AppModal from '../../AppModal/AppModal'
+import ScenePalette from './ScenePalette'
 
 const SceneLayerControls: FC = () => {
   const {
+    theme,
+    unlockedItemIds,
+    addObject,
     selectedId,
     bringForward,
     bringToFront,
     sendBackward,
     sendToBack,
     deleteSelected,
-    clearAll,
     objects,
   } = useSceneBuilder()
+  const { openModal, closeModal } = useModal()
 
   const disabled = !selectedId
 
@@ -37,7 +44,7 @@ const SceneLayerControls: FC = () => {
         variant="subtitle2"
         sx={{ fontWeight: 600, mb: 1, opacity: 0.8 }}
       >
-        Layers
+        Front/Back
       </Typography>
 
       <Box display="flex" alignItems="flex-start">
@@ -105,32 +112,42 @@ const SceneLayerControls: FC = () => {
         {/* Vertical divider */}
         <Divider flexItem orientation="vertical" sx={{ mx: 1 }} />
 
-        {/* RIGHT — Delete + Clear All stacked vertically */}
+        {/* RIGHT — Add + Delete Single Layer */}
         <Stack spacing={1}>
-          {/* Delete */}
-          <Tooltip title="Delete Selected">
+          {/* Add */}
+          <Tooltip title="Open Add Layer">
             <span>
               <IconButton
                 size="small"
-                disabled={disabled}
-                onClick={deleteSelected}
-                color="error"
+                onClick={() =>
+                  openModal(
+                    <AppModal onClose={closeModal} open title="Add Layer">
+                      <ScenePalette
+                        theme={theme}
+                        unlockedItemIds={unlockedItemIds}
+                        addObject={addObject}
+                        onClickCallBack={closeModal}
+                      />
+                    </AppModal>
+                  )
+                }
+                color="success"
               >
-                <DeleteIcon fontSize="small" />
+                <LibraryAddRounded />
               </IconButton>
             </span>
           </Tooltip>
 
-          {/* Clear All */}
-          <Tooltip title="Clear All Items">
+          {/* Delete */}
+          <Tooltip title="Delete Selected Layer">
             <span>
               <IconButton
                 size="small"
                 disabled={objects.length === 0}
-                onClick={clearAll}
-                color="warning"
+                onClick={deleteSelected}
+                color="error"
               >
-                <ClearAllIcon fontSize="small" />
+                <DeleteIcon fontSize="small" />
               </IconButton>
             </span>
           </Tooltip>

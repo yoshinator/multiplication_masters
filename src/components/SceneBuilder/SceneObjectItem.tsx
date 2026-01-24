@@ -4,7 +4,7 @@ import useImage from 'use-image'
 
 import { type SceneObjectInstance } from './sceneBuilderTypes'
 import { type SceneItemDefinition } from '../../constants/sceneDefinitions'
-import { useSceneBuilder } from './sceneBuilderContext'
+import { useSceneBuilder } from './SceneContext/sceneBuilderContext'
 
 interface Props {
   instance: SceneObjectInstance
