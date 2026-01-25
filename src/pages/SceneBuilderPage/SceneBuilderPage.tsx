@@ -25,6 +25,9 @@ const mockUnlocked = [
   'garden_Sunbeam6',
   'garden_Rainbow1',
   'garden_Rainbow2',
+  'garden_BlueBird',
+  'garden_RedBird',
+  'garden_GoldenBird',
 ]
 // TODO: load saved layout from Firestore/IndexedDB
 const mockInitial: SceneObjectInstance[] = []
