@@ -10,12 +10,14 @@ import {
 import type { Unsubscribe } from 'firebase/firestore'
 import { noop } from '../../utilities/typeutils'
 import type { UserFact } from '../../constants/dataModels'
+import type { FirebaseStorage } from 'firebase/storage'
 
 export type FirebaseContextValue = {
   app: FirebaseApp | null
   auth: Auth | null
   analytics: Analytics | null
   userFacts: UserFact[]
+  storage: FirebaseStorage | null
   loadUserFacts: (uid?: string) => Unsubscribe
   setUserFacts: Dispatch<SetStateAction<UserFact[]>> | null
 }
@@ -32,6 +34,7 @@ export const useFirebaseContext = (): FirebaseContextValue => {
       auth: null,
       analytics: null,
       userFacts: [],
+      storage: null,
       loadUserFacts() {
         return noop as Unsubscribe
       },

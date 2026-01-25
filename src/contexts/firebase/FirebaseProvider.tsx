@@ -23,6 +23,11 @@ import {
   type Auth,
   type Unsubscribe,
 } from 'firebase/auth'
+import {
+  connectStorageEmulator,
+  getStorage,
+  type FirebaseStorage,
+} from 'firebase/storage'
 import { useLogger } from '../../hooks/useLogger'
 import { type UserFact } from '../../constants/dataModels'
 
@@ -61,6 +66,7 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   const isEmulatorConnectedRef = useRef(false)
   const isAuthEmulatorConnectedRef = useRef(false)
   const isFunctionsEmulatorConnectedRef = useRef(false)
+  const isStorageEmulatorConnectedRef = useRef(false)
 
   const logger = useLogger('Firebase Provider')
 
@@ -137,6 +143,24 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
     logger(`Connected to Functions emulator at ${EMULATOR_HOST}:5001`)
   }, [firebaseFunctions, EMULATOR_HOST, logger])
 
+  const firebaseStorage = useMemo<FirebaseStorage | null>(() => {
+    if (!firebaseApp) return null
+    return getStorage(firebaseApp)
+  }, [firebaseApp])
+
+  useEffect(() => {
+    if (
+      !import.meta.env.DEV ||
+      !firebaseStorage ||
+      isStorageEmulatorConnectedRef.current
+    )
+      return
+
+    connectStorageEmulator(firebaseStorage, EMULATOR_HOST, 9199)
+    isStorageEmulatorConnectedRef.current = true
+    logger(`Connected to Storage emulator at ${EMULATOR_HOST}:9199`)
+  }, [firebaseStorage, EMULATOR_HOST, logger])
+
   /**
    * Gets and sets the updated UserCards collection to be shared in the context
    */
@@ -179,11 +203,19 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
       app: firebaseApp,
       analytics: firebaseAnalytics,
       auth: firebaseAuth,
+      storage: firebaseStorage,
       userFacts,
       loadUserFacts,
       setUserFacts,
     }),
-    [firebaseApp, firebaseAnalytics, firebaseAuth, userFacts, loadUserFacts]
+    [
+      firebaseApp,
+      firebaseAnalytics,
+      firebaseAuth,
+      firebaseStorage,
+      userFacts,
+      loadUserFacts,
+    ]
   )
   return (
     <FirebaseContext.Provider value={value}>
