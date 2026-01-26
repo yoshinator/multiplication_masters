@@ -138,7 +138,7 @@ export const SceneBuilderProvider: FC<Props> = ({
         thumbnailUrl: downloadURL,
         name: `Scene ${new Date().toLocaleDateString()}`,
       })
-      showNotification('Scene saved to successfully', 'success')
+      showNotification('Scene saved successfully', 'success')
     } catch (error) {
       showNotification(
         `Error saving scene to storage: ${extractErrorMessage(error)}`,
