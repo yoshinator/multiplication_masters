@@ -42,10 +42,10 @@ export const initializeUserMeta = onDocumentCreated(
 )
 
 export const provisionFacts = onCall(async (request) => {
-  // 8 is the smallest number of new facts per day 32 is the max
-  const { packName, count = 8 } = request.data
-  if (count <= 0 || count > 32) {
-    throw new HttpsError('invalid-argument', 'Count must be between 1 and 32.')
+  // 5 is the smallest number of new facts per day 30 is the max
+  const { packName, count = 5 } = request.data
+  if (count <= 0 || count > 30) {
+    throw new HttpsError('invalid-argument', 'Count must be between 1 and 30.')
   }
 
   const uid = request.auth?.uid
@@ -300,4 +300,38 @@ export const migrateUserToFacts = onCall(async (request) => {
   }
 
   return { success: true, count: migratedIds.size, pack: packName }
+})
+
+export const saveUserScene = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
+  const { objects, theme, thumbnailUrl, name } = request.data
+
+  if (!objects || !theme || !thumbnailUrl) {
+    throw new HttpsError('invalid-argument', 'Missing scene data.')
+  }
+
+  const userRef = db.collection('users').doc(uid)
+  const savedScenesCol = userRef.collection('savedScenes')
+
+  // Enforce limit of 4 scenes
+  const snapshot = await savedScenesCol.count().get()
+  if (snapshot.data().count >= 4) {
+    throw new HttpsError(
+      'resource-exhausted',
+      'You can only save up to 4 scenes.'
+    )
+  }
+
+  const newScene = {
+    name: name || 'Untitled Scene',
+    theme,
+    thumbnailUrl,
+    objects,
+    createdAt: Date.now(),
+  }
+
+  const docRef = await savedScenesCol.add(newScene)
+  return { success: true, id: docRef.id }
 })

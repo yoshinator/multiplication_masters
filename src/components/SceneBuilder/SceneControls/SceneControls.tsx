@@ -1,12 +1,13 @@
 import { type FC } from 'react'
-import { Box, Divider, Paper } from '@mui/material'
+import { Box, Divider, Paper, Button } from '@mui/material'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import SceneLayerControls from './SceneLayerControls'
 import ScenePalette from './ScenePalette'
 import SceneTransformControls from './SceneTransformControls'
 import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
 
 const SceneControls: FC = () => {
-  const { theme, unlockedItemIds, addObject } = useSceneBuilder()
+  const { theme, unlockedItemIds, addObject, saveToStorage } = useSceneBuilder()
   return (
     <Box
       sx={{
@@ -36,13 +37,23 @@ const SceneControls: FC = () => {
           border: '1px solid',
           borderColor: 'divider',
           mb: 2,
-          display: 'flex',
-          justifyContent: 'space-around',
         }}
       >
-        <SceneTransformControls />
+        <Box sx={{ display: 'flex', justifyContent: 'space-around' }}>
+          <SceneTransformControls />
 
-        <SceneLayerControls />
+          <SceneLayerControls />
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          startIcon={<CloudUploadIcon />}
+          onClick={saveToStorage}
+          sx={{ borderRadius: 0.5 }}
+        >
+          Save
+        </Button>
       </Paper>
     </Box>
   )
