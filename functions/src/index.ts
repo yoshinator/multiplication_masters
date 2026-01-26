@@ -324,10 +324,48 @@ export const saveUserScene = onCall(async (request) => {
   }
 
   // consider checking the base path to ensure it matches expected user storage path would need to swap based on dev/prod
-  if (
-    typeof thumbnailUrl !== 'string' ||
-    !thumbnailUrl.includes(`/users/${uid}/scenes/`)
-  ) {
+  let isValidThumbnail = false
+  if (typeof thumbnailUrl === 'string') {
+    try {
+      const url = new URL(thumbnailUrl)
+
+      // 1. Validate Domain
+      if (url.hostname !== 'firebasestorage.googleapis.com') {
+        throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl domain.')
+      }
+
+      // 2. Validate Bucket matches current project (dev vs prod)
+      // Path format: /v0/b/<bucket>/o/...
+      const projectId = process.env.GCLOUD_PROJECT
+      const bucketName = url.pathname.split('/')[3]
+
+      if (
+        bucketName !== `${projectId}.firebasestorage.app` &&
+        bucketName !== `${projectId}.appspot.com`
+      ) {
+        throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl bucket.')
+      }
+
+      try {
+        // Decode pathname to safely check the path structure without worrying about encoding (e.g. %2F)
+        if (
+          decodeURIComponent(url.pathname).includes(`/users/${uid}/scenes/`)
+        ) {
+          isValidThumbnail = true
+        }
+      } catch {
+        throw new HttpsError(
+          'invalid-argument',
+          'Invalid thumbnailUrl encoding.'
+        )
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e
+      // Invalid URL
+    }
+  }
+
+  if (!isValidThumbnail) {
     throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl.')
   }
   const userRef = db.collection('users').doc(uid)
