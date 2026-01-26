@@ -14,6 +14,7 @@ import { normalizeZ, swapZ, bringToFront, sendToBack } from '../sceneUtils'
 import type Konva from 'konva'
 import type { SceneObjectInstance } from '../sceneBuilderTypes'
 import { useNotification } from '../../../contexts/notificationContext/notificationContext'
+import { extractErrorMessage } from '../../../utilities/typeutils'
 
 type Props = {
   theme: SceneTheme
@@ -137,8 +138,12 @@ export const SceneBuilderProvider: FC<Props> = ({
         thumbnailUrl: downloadURL,
         name: `Scene ${new Date().toLocaleDateString()}`,
       })
-    } catch {
-      showNotification('Error saving scene to storage:', 'error')
+      showNotification('Scene saved to successfully', 'success')
+    } catch (error) {
+      showNotification(
+        `Error saving scene to storage: ${extractErrorMessage(error)}`,
+        'error'
+      )
     }
   }
 

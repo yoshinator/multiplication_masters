@@ -29,12 +29,18 @@ const SavedScenesGallery: FC = () => {
       collection(db, 'users', user.uid, 'savedScenes'),
       orderBy('createdAt', 'desc')
     )
-    return onSnapshot(q, (snapshot) => {
-      setSavedScenes(
-        snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as SavedScene[]
-      )
-    })
-  }, [user?.uid, app])
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        setSavedScenes(
+          snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as SavedScene[]
+        )
+      },
+      () => {
+        showNotification('Failed to load saved scenes', 'error')
+      }
+    )
+  }, [user?.uid, app, showNotification])
 
   const handleDeleteScene = async (e: React.MouseEvent, scene: SavedScene) => {
     e.stopPropagation()
@@ -43,8 +49,16 @@ const SavedScenesGallery: FC = () => {
     try {
       const imageRef = ref(storage, scene.thumbnailUrl)
       await deleteObject(imageRef)
-    } catch {
-      showNotification('Failed to delete scene image', 'error')
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code !== 'storage/object-not-found'
+      ) {
+        showNotification('Failed to delete scene image', 'error')
+        return
+      }
     }
 
     try {
@@ -112,6 +126,7 @@ const SavedScenesGallery: FC = () => {
                 }}
               />
               <IconButton
+                aria-label="Delete Scene"
                 size="small"
                 onClick={(e) => handleDeleteScene(e, scene)}
                 sx={{

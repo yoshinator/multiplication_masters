@@ -308,10 +308,28 @@ export const saveUserScene = onCall(async (request) => {
 
   const { objects, theme, thumbnailUrl, name } = request.data
 
-  if (!objects || !theme || !thumbnailUrl) {
+  if (!theme || !thumbnailUrl) {
     throw new HttpsError('invalid-argument', 'Missing scene data.')
   }
+  if (!Array.isArray(objects)) {
+    throw new HttpsError('invalid-argument', "'objects' must be an array.")
+  }
+  if (
+    objects.some((item: unknown) => item === null || typeof item !== 'object')
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      "Each item in 'objects' must be a non-null object."
+    )
+  }
 
+  // consider checking the base path to ensure it matches expected user storage path would need to swap based on dev/prod
+  if (
+    typeof thumbnailUrl !== 'string' ||
+    !thumbnailUrl.includes(`/users/${uid}/scenes/`)
+  ) {
+    throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl.')
+  }
   const userRef = db.collection('users').doc(uid)
   const savedScenesCol = userRef.collection('savedScenes')
 
