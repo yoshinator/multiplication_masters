@@ -346,9 +346,18 @@ export const saveUserScene = onCall(async (request) => {
         throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl bucket.')
       }
 
-      // Decode pathname to safely check the path structure without worrying about encoding (e.g. %2F)
-      if (decodeURIComponent(url.pathname).includes(`/users/${uid}/scenes/`)) {
-        isValidThumbnail = true
+      try {
+        // Decode pathname to safely check the path structure without worrying about encoding (e.g. %2F)
+        if (
+          decodeURIComponent(url.pathname).includes(`/users/${uid}/scenes/`)
+        ) {
+          isValidThumbnail = true
+        }
+      } catch {
+        throw new HttpsError(
+          'invalid-argument',
+          'Invalid thumbnailUrl encoding.'
+        )
       }
     } catch (e) {
       if (e instanceof HttpsError) throw e
