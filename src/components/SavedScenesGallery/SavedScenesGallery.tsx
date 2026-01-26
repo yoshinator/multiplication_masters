@@ -15,7 +15,6 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { type SavedScene } from '../../constants/dataModels'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
-import { extractErrorMessage } from '../../utilities/typeutils'
 
 const SavedScenesGallery: FC = () => {
   const { user, updateUser } = useUser()
