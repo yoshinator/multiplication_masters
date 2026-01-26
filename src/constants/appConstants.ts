@@ -42,7 +42,7 @@ export const BOX_REGRESS = 9000
 export const DEFAULT_SESSION_LENGTH = 20
 export const FIRST_SESSION_LENGTH = 4
 
-export const MAX_NEW_CARDS_PER_DAY = 16
-export const NEW_CARDS_PER_DAY_OPTIONS = [8, 16, 24, 32]
+export const MAX_NEW_CARDS_PER_DAY = 10
+export const NEW_CARDS_PER_DAY_OPTIONS = [5, 10, 15, 30]
 
 export const MASTERY_BOX_THRESHOLD = 9 // Boxes 9 and above are considered mastered. Days until next review is 7 days or more.

@@ -22,6 +22,7 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
 import { useModal } from '../../contexts/modalContext/modalContext'
+import SavedScenesGallery from '../../components/SavedScenesGallery/SavedScenesGallery'
 
 const gridContainerStyle = {
   display: 'grid',
@@ -307,6 +308,10 @@ const ProfilePage: FC = () => {
           })}
         </Box>
       </Box>
+
+      {/* Saved Scenes */}
+      <SavedScenesGallery />
+
       {/* Theme Preference */}
       <Box sx={{ mt: 4 }}>
         <Typography id="appearance-label" variant="subtitle2" sx={{ mb: 1 }}>

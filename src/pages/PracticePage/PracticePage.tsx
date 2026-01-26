@@ -1,4 +1,4 @@
-import { useEffect, type FC, useRef } from 'react'
+import { useEffect, type FC, useRef, useState } from 'react'
 import { Box, LinearProgress } from '@mui/material'
 import { driver, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
@@ -15,6 +15,9 @@ import { useKeyboardOpen } from '../../hooks/useKeyboardOpen'
 import { DailyGoalPanel } from '../../components/DailyGoalPanel/DailyGoalPanel'
 import { useTimerActions } from '../../contexts/timerContext/timerContext'
 import { DEFAULT_SESSION_LENGTH } from '../../constants/appConstants'
+import { doc, getDoc, getFirestore } from 'firebase/firestore'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
+import { type SavedScene } from '../../constants/dataModels'
 
 const INITIAL_TOUR_STATE = {
   welcome: false,
@@ -32,6 +35,8 @@ const PracticePage: FC = () => {
   const { stopTimer } = useTimerActions()
   const driverRef = useRef<Driver | null>(null)
   const tourListenersRef = useRef<Array<() => void>>([])
+  const { app } = useFirebaseContext()
+  const [sceneUrl, setSceneUrl] = useState<string | null>(null)
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
@@ -239,6 +244,34 @@ const PracticePage: FC = () => {
     }
   }, [isKeyboardOpen])
 
+  useEffect(() => {
+    if (!user?.uid || !user?.activeSavedSceneId || !app) {
+      setSceneUrl(null)
+      return
+    }
+
+    const fetchScene = async () => {
+      try {
+        const db = getFirestore(app)
+        const ref = doc(
+          db,
+          'users',
+          user.uid,
+          'savedScenes',
+          user.activeSavedSceneId!
+        )
+        const snap = await getDoc(ref)
+        if (snap.exists()) {
+          const data = snap.data() as SavedScene
+          setSceneUrl(data.thumbnailUrl)
+        }
+      } catch (error) {
+        console.error('Error fetching scene:', error)
+      }
+    }
+    fetchScene()
+  }, [user?.uid, user?.activeSavedSceneId, app])
+
   return (
     <Box
       sx={{
@@ -288,7 +321,7 @@ const PracticePage: FC = () => {
         happened after the last login display the summary if you just logged in and 
         have not played a session display the welcome back component*/}
         {isSessionActive ? (
-          <MultiplicationCard />
+          <MultiplicationCard backgroundImageUrl={sceneUrl} />
         ) : isPlayedSession ? (
           <SessionSummary />
         ) : (

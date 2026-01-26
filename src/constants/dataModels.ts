@@ -71,6 +71,7 @@ export interface User {
   enabledPacks?: PackKey[] // what they’re allowed to practice
   activePack?: PackKey // what PracticePage uses right now
   metaInitialized?: boolean // server-side init done
+  activeSavedSceneId?: string | null
 }
 
 export type SessionRecord = {
@@ -189,4 +190,13 @@ export const getPackFactIds = (packName: PackKey): Set<string> => {
 
   packFactIdsCache.set(packName, ids)
   return ids
+}
+
+export interface SavedScene {
+  id: string
+  name: string
+  theme: SceneTheme
+  thumbnailUrl: string
+  objects: SceneObjectInstance[]
+  createdAt: number
 }

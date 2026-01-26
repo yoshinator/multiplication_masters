@@ -1,6 +1,9 @@
 import { type FC, type ReactNode, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { SceneBuilderContext } from './sceneBuilderContext'
+import { useFirebaseContext } from '../../../contexts/firebase/firebaseContext'
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import type {
   SceneItemDefinition,
@@ -10,6 +13,8 @@ import type {
 import { normalizeZ, swapZ, bringToFront, sendToBack } from '../sceneUtils'
 import type Konva from 'konva'
 import type { SceneObjectInstance } from '../sceneBuilderTypes'
+import { useNotification } from '../../../contexts/notificationContext/notificationContext'
+import { extractErrorMessage } from '../../../utilities/typeutils'
 
 type Props = {
   theme: SceneTheme
@@ -26,11 +31,13 @@ export const SceneBuilderProvider: FC<Props> = ({
   onLayoutChange,
   children,
 }) => {
+  const { storage, auth, app } = useFirebaseContext()
   const stageRef = useRef<Konva.Stage>(null)
   const [objects, setObjects] = useState<SceneObjectInstance[]>(
     normalizeZ(initialObjects)
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { showNotification } = useNotification()
 
   const updateObjects = (next: SceneObjectInstance[]) => {
     const normalized = normalizeZ(next)
@@ -98,6 +105,48 @@ export const SceneBuilderProvider: FC<Props> = ({
     }
   }
 
+  const saveToStorage = async () => {
+    const stage = stageRef.current
+    if (!stage || !storage || !auth?.currentUser || !app) return
+
+    try {
+      const blob = await new Promise<Blob | null>((resolve) => {
+        stage.toBlob({
+          callback: resolve,
+          mimeType: 'image/png',
+        })
+      })
+
+      if (!blob) throw new Error('Failed to generate image blob')
+
+      const filename = `${uuidv4()}.png`
+      const storageRef = ref(
+        storage,
+        `users/${auth.currentUser.uid}/scenes/${filename}`
+      )
+
+      const snapshot = await uploadBytes(storageRef, blob)
+      const downloadURL = await getDownloadURL(snapshot.ref)
+
+      // Call Cloud Function to save scene data
+      const functions = getFunctions(app)
+      const saveSceneFn = httpsCallable(functions, 'saveUserScene')
+
+      await saveSceneFn({
+        objects,
+        theme,
+        thumbnailUrl: downloadURL,
+        name: `Scene ${new Date().toLocaleDateString()}`,
+      })
+      showNotification('Scene saved to successfully', 'success')
+    } catch (error) {
+      showNotification(
+        `Error saving scene to storage: ${extractErrorMessage(error)}`,
+        'error'
+      )
+    }
+  }
+
   const value = {
     theme,
     stageRef,
@@ -114,6 +163,7 @@ export const SceneBuilderProvider: FC<Props> = ({
     bringToFront: bringToFrontFn,
     sendToBack: sendToBackFn,
     exportImage,
+    saveToStorage,
   }
 
   return (
