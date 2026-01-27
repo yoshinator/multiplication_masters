@@ -9,15 +9,10 @@ import {
   Typography,
   Divider,
 } from '@mui/material'
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  serverTimestamp,
-} from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { useLocation } from 'react-router-dom'
 import AppModal from '../AppModal/AppModal'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useLogger } from '../../hooks/useLogger'
 import { extractErrorMessage } from '../../utilities/typeutils'
@@ -51,6 +46,7 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ onClose }) => {
   const [type, setType] = useState<FeedbackType>('bug')
   const logger = useLogger('FeedbackModal')
 
+  const { auth, db } = useFirebaseContext()
   // Guided fields
   const [summary, setSummary] = useState('')
   const [details, setDetails] = useState('')
@@ -70,11 +66,10 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ onClose }) => {
 
   // Prefill email when modal opens (if available)
   useEffect(() => {
-    const auth = getAuth()
-    const user = auth.currentUser
+    const user = auth?.currentUser
     const candidate = user?.email ?? ''
     setEmail((prev) => prev || candidate)
-  }, [])
+  }, [auth])
 
   const prompt = useMemo(() => {
     switch (type) {
@@ -141,9 +136,8 @@ const FeedbackModal: FC<FeedbackModalProps> = ({ onClose }) => {
 
     setIsSubmitting(true)
     try {
-      const auth = getAuth()
-      const user = auth.currentUser
-      const db = getFirestore()
+      const user = auth?.currentUser
+      if (!db) throw new Error('Database not ready')
 
       const isAnonymous = user?.isAnonymous ?? true
       const providers = isAnonymous

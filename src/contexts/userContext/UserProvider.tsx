@@ -16,7 +16,6 @@ import { type AuthStatus, UserContext } from './useUserContext'
 import {
   doc,
   getDoc,
-  getFirestore,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -29,9 +28,8 @@ import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
 import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 import { generateRandomUsername } from '../../utilities/accountHelpers'
-import { extractErrorMessage } from '../../utilities/typeutils'
-import { useNotification } from '../notificationContext/notificationContext'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
+import { useFirestoreDoc } from '../../hooks/useFirestore'
 
 type Props = {
   children: ReactNode
@@ -60,8 +58,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
-  const { app, auth, loadUserFacts } = useFirebaseContext()
-  const { showNotification } = useNotification()
+  const { app, auth, db, loadUserFacts } = useFirebaseContext()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -77,43 +74,17 @@ const UserProvider: FC<Props> = ({ children }) => {
   }, [user?.uid])
 
   // Add this state to UserProvider
-  const [activePackMeta, setActivePackMeta] = useState<PackMeta | null>(null)
-  const [isPackMetaLoading, setIsPackMetaLoading] = useState(false)
+  const packMetaRef = useMemo(() => {
+    if (!user?.uid || !user?.activePack || !db) return null
+    return doc(db, 'users', user.uid, 'packMeta', user.activePack)
+  }, [user?.uid, user?.activePack, db])
+
+  const { data: activePackMeta, loading: isPackMetaLoading } =
+    useFirestoreDoc<PackMeta>(packMetaRef)
 
   const { execute: migrateUserToFacts } = useCloudFunction('migrateUserToFacts')
 
   const isLoading = authStatus === 'loading' || isPackMetaLoading
-
-  useEffect(() => {
-    if (!user?.uid || !user?.activePack || !app) {
-      setActivePackMeta(null) // Reset if logged out or no pack active
-      setIsPackMetaLoading(false)
-      return
-    }
-
-    const db = getFirestore(app)
-    const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
-
-    setIsPackMetaLoading(true)
-    return onSnapshot(
-      metaRef,
-      (snap) => {
-        setIsPackMetaLoading(false)
-        if (snap.exists()) {
-          setActivePackMeta(snap.data() as PackMeta)
-        } else {
-          // Clear state if the packMeta document is missing
-          setActivePackMeta(null)
-        }
-      },
-      (error) => {
-        // Log and reset state on listener errors
-        setIsPackMetaLoading(false)
-        showNotification(extractErrorMessage(error), 'error')
-        setActivePackMeta(null)
-      }
-    )
-  }, [user?.uid, user?.activePack, app, showNotification])
 
   useEffect(() => {
     if (user?.uid) {
@@ -148,7 +119,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {
     const uid = uidRef.current
-    if (!app || !uid) return
+    if (!db || !uid) return
 
     // save and clear the buffer
     const pending = omitUndefined(pendingUpdateRef.current)
@@ -157,7 +128,6 @@ const UserProvider: FC<Props> = ({ children }) => {
     // Avoid calling updateDoc({}) which can be a no-op.
     if (Object.keys(pending).length === 0) return
 
-    const db = getFirestore(app)
     const userRef = doc(db, 'users', uid)
     logger('Committing user updates:', pending)
 
@@ -167,7 +137,7 @@ const UserProvider: FC<Props> = ({ children }) => {
     } catch (error) {
       logger(`Error updating user ${error}`)
     }
-  }, [app, logger])
+  }, [db, logger])
 
   // Used in context to update user in a debounced way.
   const updateUser = useCallback(
@@ -196,9 +166,8 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Create user or set user if exists effect
   useEffect(() => {
-    if (!auth || !app) return
+    if (!auth || !db) return
 
-    const db = getFirestore(app)
     let userUnsubscribe: Unsubscribe | null = null
     let isCancelled = false
 
@@ -306,7 +275,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         userUnsubscribe()
       }
     }
-  }, [auth, app, logger])
+  }, [auth, db, logger])
 
   // Clean up effect no implicit return for readability.
   useEffect(() => {

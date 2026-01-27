@@ -1,50 +1,32 @@
-import { type FC, useEffect, useState } from 'react'
+import { type FC, useMemo } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getFirestore,
-  onSnapshot,
-  orderBy,
-  query,
-} from 'firebase/firestore'
+import { collection, deleteDoc, doc, orderBy, query } from 'firebase/firestore'
 import { deleteObject, ref } from 'firebase/storage'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { type SavedScene } from '../../constants/dataModels'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import { useFirestoreQuery } from '../../hooks/useFirestore'
 
 const SavedScenesGallery: FC = () => {
   const { user, updateUser } = useUser()
-  const { app, storage } = useFirebaseContext()
-  const [savedScenes, setSavedScenes] = useState<SavedScene[]>([])
+  const { db, storage } = useFirebaseContext()
   const { showNotification } = useNotification()
 
-  useEffect(() => {
-    if (!user?.uid || !app) return
-    const db = getFirestore(app)
-    const q = query(
+  const scenesQuery = useMemo(() => {
+    if (!user?.uid || !db) return null
+    return query(
       collection(db, 'users', user.uid, 'savedScenes'),
       orderBy('createdAt', 'desc')
     )
-    return onSnapshot(
-      q,
-      (snapshot) => {
-        setSavedScenes(
-          snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as SavedScene[]
-        )
-      },
-      () => {
-        showNotification('Failed to load saved scenes', 'error')
-      }
-    )
-  }, [user?.uid, app, showNotification])
+  }, [user?.uid, db])
+
+  const { data: savedScenes } = useFirestoreQuery<SavedScene>(scenesQuery)
 
   const handleDeleteScene = async (e: React.MouseEvent, scene: SavedScene) => {
     e.stopPropagation()
-    if (!app || !user?.uid || !storage) return
+    if (!db || !user?.uid || !storage) return
 
     try {
       const imageRef = ref(storage, scene.thumbnailUrl)
@@ -62,7 +44,6 @@ const SavedScenesGallery: FC = () => {
     }
 
     try {
-      const db = getFirestore(app)
       await deleteDoc(doc(db, 'users', user.uid, 'savedScenes', scene.id))
 
       if (user.activeSavedSceneId === scene.id) {
