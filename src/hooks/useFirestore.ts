@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore'
 import { useLogger } from './useLogger'
 import { extractErrorMessage } from '../utilities/typeutils'
+import { useNotification } from '../contexts/notificationContext/notificationContext'
 
 export function useFirestoreQuery<T = DocumentData>(
   queryRef: Query | null | undefined,
@@ -17,6 +18,7 @@ export function useFirestoreQuery<T = DocumentData>(
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const logger = useLogger('useFirestoreQuery')
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     if (!queryRef) {
@@ -38,6 +40,10 @@ export function useFirestoreQuery<T = DocumentData>(
       },
       (err) => {
         logger('Error fetching query:', err)
+        showNotification(
+          'Error fetching data from Firestore: ' + extractErrorMessage(err),
+          'error'
+        )
         setError(extractErrorMessage(err))
         setLoading(false)
       }
@@ -59,6 +65,7 @@ export function useFirestoreDoc<T = DocumentData>(
   const [exists, setExists] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const logger = useLogger('useFirestoreDoc')
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     if (!docRef) {
@@ -83,6 +90,10 @@ export function useFirestoreDoc<T = DocumentData>(
         setError(null)
       },
       (err) => {
+        showNotification(
+          'Error fetching document from Firestore: ' + extractErrorMessage(err),
+          'error'
+        )
         logger('Error fetching doc:', err)
         setError(extractErrorMessage(err))
         setLoading(false)
