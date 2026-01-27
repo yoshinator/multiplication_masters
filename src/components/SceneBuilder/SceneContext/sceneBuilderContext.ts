@@ -27,6 +27,7 @@ export type SceneBuilderContextValue = {
 
   exportImage: () => void
   saveToStorage: () => Promise<void>
+  isSaving: boolean
 }
 
 export const SceneBuilderContext =
