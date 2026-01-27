@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { SceneBuilderContext } from './sceneBuilderContext'
 import { useFirebaseContext } from '../../../contexts/firebase/firebaseContext'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import type {
   SceneItemDefinition,
@@ -15,6 +14,7 @@ import type Konva from 'konva'
 import type { SceneObjectInstance } from '../sceneBuilderTypes'
 import { useNotification } from '../../../contexts/notificationContext/notificationContext'
 import { extractErrorMessage } from '../../../utilities/typeutils'
+import { useCloudFunction } from '../../../hooks/useCloudFunction'
 
 type Props = {
   theme: SceneTheme
@@ -38,6 +38,8 @@ export const SceneBuilderProvider: FC<Props> = ({
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { showNotification } = useNotification()
+  const { execute: saveUserScene, isPending: isSaving } =
+    useCloudFunction('saveUserScene')
 
   const updateObjects = (next: SceneObjectInstance[]) => {
     const normalized = normalizeZ(next)
@@ -129,10 +131,7 @@ export const SceneBuilderProvider: FC<Props> = ({
       const downloadURL = await getDownloadURL(snapshot.ref)
 
       // Call Cloud Function to save scene data
-      const functions = getFunctions(app)
-      const saveSceneFn = httpsCallable(functions, 'saveUserScene')
-
-      await saveSceneFn({
+      await saveUserScene({
         objects,
         theme,
         thumbnailUrl: downloadURL,
@@ -164,6 +163,7 @@ export const SceneBuilderProvider: FC<Props> = ({
     sendToBack: sendToBackFn,
     exportImage,
     saveToStorage,
+    isSaving,
   }
 
   return (

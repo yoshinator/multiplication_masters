@@ -1,7 +1,11 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { httpsCallable, getFunctions } from 'firebase/functions'
 import { MinPriorityQueue } from 'datastructures-js'
-import type { PackMeta, User, UserFact } from '../../constants/dataModels'
+import type {
+  PackKey,
+  PackMeta,
+  User,
+  UserFact,
+} from '../../constants/dataModels'
 import { BOX_TIMES } from '../../constants/appConstants'
 import { useLogger } from '../../hooks/useLogger'
 import { debugQueue } from '../../utilities/debugQueue'
@@ -14,7 +18,12 @@ import { buildQueue } from './helpers/queueBuilder'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import { extractErrorMessage } from '../../utilities/typeutils'
+import { useCloudFunction } from '../../hooks/useCloudFunction'
 
+type CFParams = {
+  packName?: PackKey
+  count: number
+}
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(
   userFacts: UserFact[],
@@ -29,75 +38,66 @@ export function useCardScheduler(
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
   const [estimatedReviews, setEstimatedReviews] = useState(0)
   const [estimatedUniqueFacts, setEstimatedUniqueFacts] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
   const { setIsSessionActive, sessionLength } = useSessionStatusContext()
   const sessionLengthRef = useRef(sessionLength)
   const shuffleCountsRef = useRef(new Set<number>())
   const hasProvisionedRef = useRef(false)
 
   const { app } = useFirebaseContext()
-  const functions = app ? getFunctions(app) : null
+  const { execute: provisionFacts, isPending: isProvisioning } =
+    useCloudFunction<CFParams, void>('provisionFacts')
 
   const startSession = useCallback(async () => {
-    if (!user || !functions) return
+    if (!user || !app) return
     const facts = userFacts ?? []
-    setIsLoading(true)
-    try {
-      const result = buildQueue(
-        facts,
-        user,
-        activePackMeta,
-        sessionLength,
-        logger
-      )
-      if (!result) {
-        setIsLoading(false)
-        return
-      }
-      // JIT Trigger: If we couldn't fill the session, call the Cloud Function
-      if (result.needsProvisioning) {
-        if (!hasProvisionedRef.current) {
-          hasProvisionedRef.current = true
-          logger('Low card count, provisioning more facts...')
-          try {
-            const provisionFacts = httpsCallable(functions, 'provisionFacts')
-            await provisionFacts({ packName: user.activePack, count: 12 })
-            logger('Provisioning complete.')
-            setIsLoading(false)
-            // Stop here. Wait for useEffect to restart us when facts arrive.
-            return
-          } catch (error) {
-            logger('Error provisioning facts:', extractErrorMessage(error))
-            hasProvisionedRef.current = false
-          }
-        } else {
-          logger('Provisioning already attempted, skipping to prevent loop.')
+
+    const result = buildQueue(
+      facts,
+      user,
+      activePackMeta,
+      sessionLength,
+      logger
+    )
+    if (!result) {
+      return
+    }
+    // JIT Trigger: If we couldn't fill the session, call the Cloud Function
+    if (result.needsProvisioning) {
+      if (!hasProvisionedRef.current) {
+        hasProvisionedRef.current = true
+        logger('Low card count, provisioning more facts...')
+        try {
+          await provisionFacts({ packName: user.activePack, count: 12 })
+          logger('Provisioning complete.')
+          // Stop here. Wait for useEffect to restart us when facts arrive.
+          return
+        } catch (error) {
+          logger('Error provisioning facts:', extractErrorMessage(error))
+          hasProvisionedRef.current = false
         }
       } else {
-        hasProvisionedRef.current = false
+        logger('Provisioning already attempted, skipping to prevent loop.')
       }
-
-      setIsSessionActive(true)
-      queueRef.current = result.queue
-
-      const estimates = estimateReviewLoad(result.sessionFacts)
-      setEstimatedReviews(estimates.estimatedReviews)
-      setEstimatedUniqueFacts(estimates.uniqueCards)
-
-      logger('📥 Queue built:', debugQueue(queueRef.current))
-      logger('📏 Queue size:', queueRef.current?.size())
-      logger('📊 Estimated reviews:', estimates)
-
-      const first = queueRef.current?.dequeue() ?? null
-      setCurrentFact(first)
-      setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
-
-      logger('➡️ First fact:', first)
-    } finally {
-      if (!hasProvisionedRef.current) {
-        setIsLoading(false)
-      }
+    } else {
+      hasProvisionedRef.current = false
     }
+
+    setIsSessionActive(true)
+    queueRef.current = result.queue
+
+    const estimates = estimateReviewLoad(result.sessionFacts)
+    setEstimatedReviews(estimates.estimatedReviews)
+    setEstimatedUniqueFacts(estimates.uniqueCards)
+
+    logger('📥 Queue built:', debugQueue(queueRef.current))
+    logger('📏 Queue size:', queueRef.current?.size())
+    logger('📊 Estimated reviews:', estimates)
+
+    const first = queueRef.current?.dequeue() ?? null
+    setCurrentFact(first)
+    setIsQueueEmpty((queueRef.current?.size() ?? 0) === 0)
+
+    logger('➡️ First fact:', first)
   }, [
     userFacts,
     user,
@@ -105,7 +105,8 @@ export function useCardScheduler(
     setIsSessionActive,
     sessionLength,
     activePackMeta,
-    functions,
+    app,
+    provisionFacts,
   ])
 
   const getNextFact = useCallback(() => {
@@ -244,6 +245,6 @@ export function useCardScheduler(
     isQueueEmpty,
     estimatedReviews,
     estimatedUniqueFacts,
-    isLoading,
+    isLoading: isProvisioning,
   }
 }

@@ -36,7 +36,7 @@ export type UserCard = {
   lastElapsedTime: number
 }
 
-type PackKey = 'mul_36' | 'mul_144' | 'mul_576'
+export type PackKey = 'mul_36' | 'mul_144' | 'mul_576'
 
 export interface User {
   uid: string

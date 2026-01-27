@@ -24,7 +24,6 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 import { useLogger } from '../../hooks/useLogger'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
@@ -32,6 +31,7 @@ import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 import { generateRandomUsername } from '../../utilities/accountHelpers'
 import { extractErrorMessage } from '../../utilities/typeutils'
 import { useNotification } from '../notificationContext/notificationContext'
+import { useCloudFunction } from '../../hooks/useCloudFunction'
 
 type Props = {
   children: ReactNode
@@ -80,6 +80,8 @@ const UserProvider: FC<Props> = ({ children }) => {
   const [activePackMeta, setActivePackMeta] = useState<PackMeta | null>(null)
   const [isPackMetaLoading, setIsPackMetaLoading] = useState(false)
 
+  const { execute: migrateUserToFacts } = useCloudFunction('migrateUserToFacts')
+
   const isLoading = authStatus === 'loading' || isPackMetaLoading
 
   useEffect(() => {
@@ -126,17 +128,15 @@ const UserProvider: FC<Props> = ({ children }) => {
     if (!app || !user?.uid || user.metaInitialized === true) {
       return
     }
-    const functions = getFunctions(app)
-    const migrate = httpsCallable(functions, 'migrateUserToFacts')
     logger('User not initialized. Attempting migration...')
-    migrate()
+    migrateUserToFacts()
       .then((result) => {
-        logger('Migration result:', result.data)
+        logger('Migration result:', result?.data)
         // The function updates the user doc, which triggers onSnapshot,
         // updating 'user' -> 'metaInitialized: true', stopping this loop.
       })
       .catch((err) => logger('Migration failed:', err))
-  }, [app, user?.uid, user?.metaInitialized, logger])
+  }, [app, user?.uid, user?.metaInitialized, logger, migrateUserToFacts])
 
   const activePackFactIds = useMemo(() => {
     if (!user?.activePack) return new Set<string>()

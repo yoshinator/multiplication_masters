@@ -1,5 +1,5 @@
 import { type FC } from 'react'
-import { Box, Divider, Paper, Button } from '@mui/material'
+import { Box, Divider, Paper, Button, CircularProgress } from '@mui/material'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import SceneLayerControls from './SceneLayerControls'
 import ScenePalette from './ScenePalette'
@@ -7,7 +7,8 @@ import SceneTransformControls from './SceneTransformControls'
 import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
 
 const SceneControls: FC = () => {
-  const { theme, unlockedItemIds, addObject, saveToStorage } = useSceneBuilder()
+  const { theme, unlockedItemIds, addObject, saveToStorage, isSaving } =
+    useSceneBuilder()
   return (
     <Box
       sx={{
@@ -46,9 +47,10 @@ const SceneControls: FC = () => {
         </Box>
         <Button
           variant="contained"
+          disabled={isSaving}
           color="primary"
           fullWidth
-          startIcon={<CloudUploadIcon />}
+          startIcon={isSaving ? <CircularProgress /> : <CloudUploadIcon />}
           onClick={saveToStorage}
           sx={{ borderRadius: 0.5 }}
         >
