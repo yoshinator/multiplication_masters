@@ -50,7 +50,9 @@ const SceneControls: FC = () => {
           disabled={isSaving}
           color="primary"
           fullWidth
-          startIcon={isSaving ? <CircularProgress /> : <CloudUploadIcon />}
+          startIcon={
+            isSaving ? <CircularProgress size={20} /> : <CloudUploadIcon />
+          }
           onClick={saveToStorage}
           sx={{ borderRadius: 0.5 }}
         >
