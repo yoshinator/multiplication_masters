@@ -50,7 +50,7 @@ export function useFirestoreQuery<T = DocumentData>(
     )
 
     return () => unsubscribe()
-  }, [queryRef, idField, logger])
+  }, [queryRef, idField, logger, showNotification])
 
   return { data, loading, error }
 }
@@ -101,7 +101,7 @@ export function useFirestoreDoc<T = DocumentData>(
     )
 
     return () => unsubscribe()
-  }, [docRef, idField, logger])
+  }, [docRef, idField, logger, showNotification])
 
   return { data, loading, exists, error }
 }
