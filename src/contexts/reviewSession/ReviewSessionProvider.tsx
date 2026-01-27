@@ -5,16 +5,15 @@ import {
   type FC,
   type ReactNode,
   useEffect,
+  useMemo,
 } from 'react'
 import {
-  getFirestore,
   doc,
   writeBatch,
   collection,
   query,
   orderBy,
   limit,
-  onSnapshot,
   increment,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
@@ -32,6 +31,7 @@ import { useLogger } from '../../hooks/useLogger'
 import { useSessionStatusContext } from '../SessionStatusContext/sessionStatusContext'
 import { percentPackMastered } from '../cardScheduler/helpers/srsLogic'
 import { useNotification } from '../notificationContext/notificationContext'
+import { useFirestoreQuery } from '../../hooks/useFirestore'
 
 interface Props {
   children: ReactNode
@@ -42,11 +42,9 @@ const SAVE_THRESHOLD = 5 // <--- Auto-save every 5 facts
 const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
   const { showNotification } = useNotification()
-  const { app, setUserFacts, userFacts } = useFirebaseContext()
-  const [latestSession, setLatestSession] = useState<SessionRecord | null>(null)
+  const { db, setUserFacts, userFacts } = useFirebaseContext()
   const { user, updateUser, activePackMeta, activePackFactIds } = useUser()
   const [percentageMastered, setPercentageMastered] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const { setIsSessionActive } = useSessionStatusContext()
 
@@ -91,41 +89,22 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     setPercentageMastered(getLatestMastery())
   }, [getLatestMastery])
 
-  useEffect(() => {
-    if (!app || !user?.uid) {
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-    const db = getFirestore(app)
-    const sessionsCol = collection(db, 'users', user.uid, 'Sessions')
-    // Get the last session
-    const q = query(sessionsCol, orderBy('endedAt', 'desc'), limit(1))
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snap) => {
-        setIsLoading(false)
-        if (snap.empty) {
-          setLatestSession(null)
-          return
-        }
-        setLatestSession(snap.docs[0].data() as SessionRecord)
-      },
-      (error) => {
-        setIsLoading(false)
-        showNotification(extractErrorMessage(error), 'error')
-        logger('Error loading session', error)
-      }
+  const latestSessionQuery = useMemo(() => {
+    if (!db || !user?.uid) return null
+    return query(
+      collection(db, 'users', user.uid, 'Sessions'),
+      orderBy('endedAt', 'desc'),
+      limit(1)
     )
+  }, [db, user?.uid])
 
-    return () => unsubscribe()
-  }, [app, user?.uid, logger, showNotification])
+  const { data: sessions, loading: isLoading } =
+    useFirestoreQuery<SessionRecord>(latestSessionQuery)
+  const latestSession = sessions[0] || null
 
   // 1. Helper to push pending facts and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
-    if (!app || !user?.uid || isSaving) return
+    if (!db || !user?.uid || isSaving) return
     // Snapshot pending facts to handle concurrency and partial retries
     const factsToSave = { ...pendingUserFactsRef.current }
     const factIds = Object.keys(factsToSave)
@@ -135,7 +114,6 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     setIsSaving(true)
 
-    const db = getFirestore(app)
     const batch = writeBatch(db)
 
     // A. Update Facts
@@ -172,7 +150,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     // Note: We do NOT reset sessionCorrectCount state here,
     // because the session is still active visually.
-  }, [app, user, logger, showNotification, isSaving])
+  }, [db, user, logger, showNotification, isSaving])
 
   const addUpdatedFactToSession = useCallback(
     (fact: UserFact, oldBox: number) => {
@@ -247,7 +225,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       sessionLength: number,
       sessionType: SessionRecord['sessionType'] = 'multiplication'
     ) => {
-      if (!app || !user?.uid) return
+      if (!db || !user?.uid) return
 
       if (!sessionStartRef.current) {
         resetSessionState()
@@ -298,14 +276,11 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       // Capture pending facts before reset
       const pendingFacts = Object.values(pendingUserFactsRef.current)
 
-      // Optimistic UI Updates
-      setLatestSession(sessionRecord)
       resetSessionState()
 
       setIsSaving(true)
 
       // Background Database Updates
-      const db = getFirestore(app)
       const batch = writeBatch(db)
 
       // A. Pending Facts
@@ -345,7 +320,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         setIsSaving(false)
       }
     },
-    [app, user, updateUser, resetSessionState, logger, showNotification]
+    [db, user, updateUser, resetSessionState, logger, showNotification]
   )
 
   return (
