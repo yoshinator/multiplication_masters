@@ -6,6 +6,7 @@ import {
 } from 'firebase/functions'
 import { useFirebaseContext } from '../contexts/firebase/firebaseContext'
 import { extractErrorMessage } from '../utilities/typeutils'
+import { useLogger } from './useLogger'
 
 type CloudFunctionStatus = 'idle' | 'pending' | 'success' | 'error'
 
@@ -16,6 +17,7 @@ export function useCloudFunction<RequestData = unknown, ResponseData = unknown>(
   const [status, setStatus] = useState<CloudFunctionStatus>('idle')
   const [data, setData] = useState<ResponseData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const logger = useLogger('useCloudFunction')
 
   const execute = useCallback(
     async (
@@ -23,7 +25,7 @@ export function useCloudFunction<RequestData = unknown, ResponseData = unknown>(
     ): Promise<HttpsCallableResult<ResponseData> | undefined> => {
       if (!app) {
         const msg = 'Firebase app not initialized'
-        console.warn(msg, functionName)
+        logger(msg, functionName)
         setError(msg)
         setStatus('error')
         return undefined
@@ -51,7 +53,7 @@ export function useCloudFunction<RequestData = unknown, ResponseData = unknown>(
         throw err
       }
     },
-    [app, functionName]
+    [app, functionName, logger]
   )
 
   const reset = useCallback(() => {
