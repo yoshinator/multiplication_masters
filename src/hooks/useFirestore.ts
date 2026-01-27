@@ -63,6 +63,9 @@ export function useFirestoreDoc<T = DocumentData>(
   useEffect(() => {
     if (!docRef) {
       setLoading(false)
+      setExists(false)
+      setData(null)
+      setError(null)
       return
     }
 
