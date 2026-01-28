@@ -67,10 +67,9 @@ const Timer: FC = () => {
           px: isMobile ? 1.5 : 3,
           fontSize: isMobile ? '0.75rem' : '0.875rem',
           minWidth: isMobile ? 64 : 88,
-          visibility: isRunning ? 'visible' : 'hidden',
           pointerEvents: isRunning ? 'auto' : 'none',
           opacity: isRunning ? 1 : 0,
-          transition: 'opacity 150ms ease',
+          transition: 'opacity 750ms ease',
         }}
       >
         End Session
