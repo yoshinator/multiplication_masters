@@ -236,6 +236,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
               zIndex: 2,
               width: '100%',
               display: 'flex',
+              minHeight: 0,
               flexDirection: 'column',
               alignItems: 'center',
               gap: 2,
@@ -442,15 +443,37 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
               </Typography>
             </Grid>
 
-            <Grid size={12} sx={{ minHeight: isMobile ? 90 : 150 }}>
+            <Grid size={12} sx={{ minHeight: isMobile ? 95 : 150 }}>
               {isShowingAnswer ? (
                 <Box textAlign="center">
-                  <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
+                  <Typography
+                    variant={isMobile ? 'h6' : 'h5'}
+                    sx={{
+                      opacity: 0.9,
+                      mt: { xs: 0, sm: 1 },
+                      lineHeight: isMobile ? 1.2 : 1.5,
+                    }}
+                  >
                     Correct: <strong>{value}</strong>
                   </Typography>
-                  <Typography variant="h5" mt={2} sx={{ opacity: 0.9 }}>
+                  <Typography
+                    variant={isMobile ? 'h6' : 'h5'}
+                    sx={{
+                      opacity: 0.9,
+                      mt: { xs: 0, sm: 1 },
+                      mx: { xs: 1, sm: undefined },
+                      lineHeight: isMobile ? 1.2 : 1.5,
+                    }}
+                  >
                     Your answer:{' '}
-                    <strong>{answer.length ? answer : '(Blank)'}</strong>
+                    <Box
+                      component="span"
+                      textAlign="left"
+                      display="inline-block"
+                      minWidth="7ch"
+                    >
+                      <strong>{answer.length ? answer : '(Blank)'}</strong>
+                    </Box>
                   </Typography>
 
                   <Button
@@ -459,8 +482,8 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
                     fullWidth
                     onClick={handleResume}
                     sx={{
-                      mt: 1.5,
-                      py: isMobile ? 1 : 1.5,
+                      mt: isMobile ? 0.5 : 1,
+                      py: isMobile ? 0.5 : 1,
                       fontSize: isMobile ? '1rem' : '1.2rem',
                     }}
                   >
@@ -501,7 +524,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
                       },
                       '& .MuiOutlinedInput-input': {
                         fontSize: isMobile ? '2.25rem' : '3.8rem',
-                        paddingY: isMobile ? 1.25 : 2,
+                        paddingY: 1.25,
                         textAlign: 'center',
                       },
                     }}
