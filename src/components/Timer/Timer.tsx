@@ -12,8 +12,8 @@ const Timer: FC = () => {
   const { isRunning } = useTimerActions()
   const { finishSession } = useReviewSession()
   const isMobile = useIsMobile()
-  const circleSize = isMobile ? 40 : 150
-  const borderSize = isMobile ? 3 : 6
+  const circleSize = isMobile ? 40 : 110
+  const borderSize = isMobile ? 3 : 5
 
   // convert ms → whole seconds
   const seconds = Math.ceil(time / 1000)
@@ -58,20 +58,23 @@ const Timer: FC = () => {
       </Box>
 
       {/* CONTROLS */}
-      {isRunning && (
-        <Button
-          variant="contained"
-          color="error"
-          onClick={() => finishSession(0)}
-          sx={{
-            px: isMobile ? 1.5 : 3,
-            fontSize: isMobile ? '0.75rem' : '0.875rem',
-            minWidth: isMobile ? 64 : 88,
-          }}
-        >
-          End Session
-        </Button>
-      )}
+
+      <Button
+        variant="contained"
+        color="error"
+        onClick={() => finishSession(0)}
+        sx={{
+          px: isMobile ? 1.5 : 3,
+          fontSize: isMobile ? '0.75rem' : '0.875rem',
+          minWidth: isMobile ? 64 : 88,
+          visibility: isRunning ? 'visible' : 'hidden',
+          pointerEvents: isRunning ? 'auto' : 'none',
+          opacity: isRunning ? 1 : 0,
+          transition: 'opacity 150ms ease',
+        }}
+      >
+        End Session
+      </Button>
     </Box>
   )
 }
