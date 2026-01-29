@@ -7,8 +7,7 @@ import SceneTransformControls from './SceneTransformControls'
 import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
 
 const SceneControls: FC = () => {
-  const { theme, unlockedItemIds, addObject, saveToStorage, isSaving } =
-    useSceneBuilder()
+  const { saveToStorage, isSaving, sceneId } = useSceneBuilder()
   return (
     <Box
       sx={{
@@ -21,11 +20,7 @@ const SceneControls: FC = () => {
       }}
     >
       <Box display={{ xs: 'none', md: 'block' }}>
-        <ScenePalette
-          theme={theme}
-          unlockedItemIds={unlockedItemIds}
-          addObject={addObject}
-        />
+        <ScenePalette />
       </Box>
       <Divider sx={{ my: 2 }} />
 
@@ -56,7 +51,7 @@ const SceneControls: FC = () => {
           onClick={saveToStorage}
           sx={{ borderRadius: 0.5 }}
         >
-          Save
+          {sceneId ? 'Update' : 'Save'}
         </Button>
       </Paper>
     </Box>

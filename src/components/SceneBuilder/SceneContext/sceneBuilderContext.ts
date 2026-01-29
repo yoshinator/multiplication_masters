@@ -7,14 +7,17 @@ import type {
 import type Konva from 'konva'
 
 export type SceneBuilderContextValue = {
+  sceneId: string | null
   theme: SceneTheme
   stageRef: RefObject<Konva.Stage | null>
 
   objects: SceneObjectInstance[]
   selectedId: string | null
+  backgroundId: string | null
 
   unlockedItemIds: string[]
   addObject: (def: SceneItemDefinition) => void
+  setBackground: (def: SceneItemDefinition) => void
   updateObject: (obj: SceneObjectInstance) => void
   deleteSelected: () => void
   clearAll: () => void

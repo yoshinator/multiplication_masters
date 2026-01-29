@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   getFunctions,
   httpsCallable,
@@ -19,6 +19,11 @@ export function useCloudFunction<RequestData = unknown, ResponseData = unknown>(
   const [error, setError] = useState<string | null>(null)
   const logger = useLogger('useCloudFunction')
 
+  const functions = useMemo(() => {
+    if (!app) return null
+    return getFunctions(app)
+  }, [app])
+
   const execute = useCallback(
     async (
       requestData?: RequestData
@@ -36,7 +41,10 @@ export function useCloudFunction<RequestData = unknown, ResponseData = unknown>(
       setData(null)
 
       try {
-        const functions = getFunctions(app)
+        if (!functions) {
+          throw new Error('Firebase functions not initialized')
+        }
+
         const callable = httpsCallable<RequestData, ResponseData>(
           functions,
           functionName
@@ -53,7 +61,7 @@ export function useCloudFunction<RequestData = unknown, ResponseData = unknown>(
         throw err
       }
     },
-    [app, functionName, logger]
+    [app, functions, functionName, logger]
   )
 
   const reset = useCallback(() => {

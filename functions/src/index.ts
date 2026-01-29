@@ -306,7 +306,9 @@ export const saveUserScene = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
-  const { objects, theme, thumbnailUrl, name } = request.data
+  const { objects, theme, thumbnailUrl, name, backgroundId, id, sceneId } =
+    request.data
+  const docId = id || sceneId
 
   if (!theme || !thumbnailUrl) {
     throw new HttpsError('invalid-argument', 'Missing scene data.')
@@ -329,8 +331,14 @@ export const saveUserScene = onCall(async (request) => {
     try {
       const url = new URL(thumbnailUrl)
 
-      // 1. Validate Domain
-      if (url.hostname !== 'firebasestorage.googleapis.com') {
+      // 1. Validate Domain (Allow localhost/127.0.0.1 only in emulator mode)
+      const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true'
+      const isValidHost =
+        url.hostname === 'firebasestorage.googleapis.com' ||
+        (isEmulator &&
+          (url.hostname === 'localhost' || url.hostname === '127.0.0.1'))
+
+      if (!isValidHost) {
         throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl domain.')
       }
 
@@ -371,6 +379,24 @@ export const saveUserScene = onCall(async (request) => {
   const userRef = db.collection('users').doc(uid)
   const savedScenesCol = userRef.collection('savedScenes')
 
+  const sceneData = {
+    name: name || 'Untitled Scene',
+    theme,
+    thumbnailUrl,
+    objects,
+    backgroundId: backgroundId || null,
+  }
+
+  if (docId) {
+    const docRef = savedScenesCol.doc(docId)
+    const docSnap = await docRef.get()
+    if (!docSnap.exists) {
+      throw new HttpsError('not-found', 'Scene not found.')
+    }
+    await docRef.set(sceneData, { merge: true })
+    return { success: true, id: docId }
+  }
+
   // Enforce limit of 4 scenes
   const snapshot = await savedScenesCol.count().get()
   if (snapshot.data().count >= 4) {
@@ -380,14 +406,9 @@ export const saveUserScene = onCall(async (request) => {
     )
   }
 
-  const newScene = {
-    name: name || 'Untitled Scene',
-    theme,
-    thumbnailUrl,
-    objects,
+  const docRef = await savedScenesCol.add({
+    ...sceneData,
     createdAt: Date.now(),
-  }
-
-  const docRef = await savedScenesCol.add(newScene)
+  })
   return { success: true, id: docRef.id }
 })

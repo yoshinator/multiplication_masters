@@ -109,7 +109,7 @@ const ProfilePage: FC = () => {
     setMode(event.target.value as 'light' | 'dark' | 'system')
   }
 
-  const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+  const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       e.currentTarget.click()
@@ -195,8 +195,9 @@ const ProfilePage: FC = () => {
 
           return (
             <Box
-              component="button"
-              type="button"
+              component="div"
+              role="button"
+              tabIndex={0}
               key={option.label}
               onClick={() =>
                 updateUser({ userDefaultSessionLength: option.value })
@@ -282,8 +283,9 @@ const ProfilePage: FC = () => {
               option.value
             return (
               <Box
-                component="button"
-                type="button"
+                component="div"
+                role="button"
+                tabIndex={0}
                 key={option.value}
                 onClick={() => updateUser({ maxNewCardsPerDay: option.value })}
                 onKeyDown={handleChoiceKeyDown}
