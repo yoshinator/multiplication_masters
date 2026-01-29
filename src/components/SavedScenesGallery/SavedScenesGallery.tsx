@@ -1,6 +1,7 @@
 import { type FC, useMemo } from 'react'
-import { Box, Typography, IconButton } from '@mui/material'
+import { Box, Typography, IconButton, Stack } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import { collection, deleteDoc, doc, orderBy, query } from 'firebase/firestore'
 import { deleteObject, ref } from 'firebase/storage'
 import { useUser } from '../../contexts/userContext/useUserContext'
@@ -8,11 +9,13 @@ import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { type SavedScene } from '../../constants/dataModels'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useFirestoreQuery } from '../../hooks/useFirestore'
+import { useNavigate } from 'react-router-dom'
 
 const SavedScenesGallery: FC = () => {
   const { user, updateUser } = useUser()
   const { db, storage } = useFirebaseContext()
   const { showNotification } = useNotification()
+  const navigate = useNavigate()
 
   const scenesQuery = useMemo(() => {
     if (!user?.uid || !db) return null
@@ -54,6 +57,18 @@ const SavedScenesGallery: FC = () => {
     }
   }
 
+  const handleEditScene = (e: React.MouseEvent, scene: SavedScene) => {
+    e.stopPropagation()
+    navigate(`/builder?id=${scene.id}`)
+  }
+
+  const handleChoiceKeyDown = (e: React.KeyboardEvent, sceneId: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      updateUser({ activeSavedSceneId: sceneId })
+    }
+  }
+
   if (savedScenes.length === 0) return null
 
   return (
@@ -67,11 +82,12 @@ const SavedScenesGallery: FC = () => {
           return (
             <Box
               key={scene.id}
-              component="button"
-              type="button"
+              component="div"
+              role="button"
+              tabIndex={0}
               onClick={() => updateUser({ activeSavedSceneId: scene.id })}
+              onKeyDown={(e) => handleChoiceKeyDown(e, scene.id)}
               sx={{
-                all: 'unset',
                 cursor: 'pointer',
                 position: 'relative',
                 width: 112,
@@ -106,20 +122,38 @@ const SavedScenesGallery: FC = () => {
                   borderRadius: 1,
                 }}
               />
-              <IconButton
-                aria-label="Delete Scene"
-                size="small"
-                onClick={(e) => handleDeleteScene(e, scene)}
+              <Stack
+                direction="row"
+                spacing={0.5}
                 sx={{
                   position: 'absolute',
                   top: 4,
                   right: 4,
-                  bgcolor: 'rgba(255,255,255,0.8)',
-                  '&:hover': { bgcolor: 'white' },
                 }}
               >
-                <DeleteIcon fontSize="small" color="error" />
-              </IconButton>
+                <IconButton
+                  aria-label="Edit Scene"
+                  size="small"
+                  onClick={(e) => handleEditScene(e, scene)}
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    '&:hover': { bgcolor: 'white' },
+                  }}
+                >
+                  <EditIcon fontSize="small" color="primary" />
+                </IconButton>
+                <IconButton
+                  aria-label="Delete Scene"
+                  size="small"
+                  onClick={(e) => handleDeleteScene(e, scene)}
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    '&:hover': { bgcolor: 'white' },
+                  }}
+                >
+                  <DeleteIcon fontSize="small" color="error" />
+                </IconButton>
+              </Stack>
             </Box>
           )
         })}

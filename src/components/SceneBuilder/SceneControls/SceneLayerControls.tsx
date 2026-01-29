@@ -13,19 +13,19 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop'
 import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom'
 import DeleteIcon from '@mui/icons-material/Delete'
+import LibraryAddRoundedIcon from '@mui/icons-material/LibraryAddRounded'
 
-import { LibraryAddRounded } from '@mui/icons-material'
-
-import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
+import {
+  useSceneBuilder,
+  SceneBuilderContext,
+} from '../SceneContext/sceneBuilderContext'
 import { useModal } from '../../../contexts/modalContext/modalContext'
 import AppModal from '../../AppModal/AppModal'
 import ScenePalette from './ScenePalette'
 
 const SceneLayerControls: FC = () => {
+  const sceneContext = useSceneBuilder()
   const {
-    theme,
-    unlockedItemIds,
-    addObject,
     selectedId,
     bringForward,
     bringToFront,
@@ -33,7 +33,7 @@ const SceneLayerControls: FC = () => {
     sendToBack,
     deleteSelected,
     objects,
-  } = useSceneBuilder()
+  } = sceneContext
   const { openModal, closeModal } = useModal()
 
   const disabled = !selectedId
@@ -116,19 +116,20 @@ const SceneLayerControls: FC = () => {
               <IconButton
                 onClick={() =>
                   openModal(
-                    <AppModal onClose={closeModal} open title="Add Layer">
-                      <ScenePalette
-                        theme={theme}
-                        unlockedItemIds={unlockedItemIds}
-                        addObject={addObject}
-                        onClickCallBack={closeModal}
-                      />
-                    </AppModal>
+                    <SceneBuilderContext.Provider value={sceneContext}>
+                      <AppModal
+                        onClose={closeModal}
+                        open
+                        title={`Add ${sceneContext.theme} Item`}
+                      >
+                        <ScenePalette onClickCallBack={closeModal} />
+                      </AppModal>
+                    </SceneBuilderContext.Provider>
                   )
                 }
                 color="success"
               >
-                <LibraryAddRounded />
+                <LibraryAddRoundedIcon />
               </IconButton>
             </span>
           </Tooltip>

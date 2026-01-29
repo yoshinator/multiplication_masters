@@ -5,19 +5,11 @@ import {
   SCENES,
   SCENE_ITEMS,
   type SceneItemDefinition,
-  type SceneTheme,
   type SceneTab,
 } from '../../../constants/sceneDefinitions'
+import { useSceneBuilder } from '../SceneContext/sceneBuilderContext'
 
 interface Props {
-  theme: SceneTheme
-  unlockedItemIds: string[]
-
-  // For non-background items
-  addObject: (def: SceneItemDefinition) => void
-
-  setBackground?: (def: SceneItemDefinition) => void
-
   onClickCallBack?: () => void
 }
 
@@ -29,13 +21,8 @@ const TAB_LABEL: Record<SceneTab, string> = {
   effects: 'Effects',
 }
 
-const ScenePalette: FC<Props> = ({
-  theme,
-  unlockedItemIds,
-  addObject,
-  setBackground,
-  onClickCallBack,
-}) => {
+const ScenePalette: FC<Props> = ({ onClickCallBack }) => {
+  const { theme, unlockedItemIds, addObject, setBackground } = useSceneBuilder()
   const sceneDef = SCENES[theme]
 
   const [activeTab, setActiveTab] = useState<SceneTab>('stuff')
@@ -120,7 +107,7 @@ const ScenePalette: FC<Props> = ({
                 onClick={() => {
                   if (item.tab === 'background') {
                     // Background items should not become draggable objects
-                    setBackground?.(item)
+                    setBackground(item)
                   } else {
                     addObject(item)
                   }

@@ -9,23 +9,35 @@ import type { SceneObjectInstance } from './sceneBuilderTypes'
 import SceneControls from './SceneControls/SceneControls'
 
 type Props = {
+  sceneId?: string
   theme: SceneTheme
   unlockedItemIds: string[]
   initialObjects?: SceneObjectInstance[]
+  initialBackgroundId?: string
+  initialThumbnailUrl?: string
+  initialName?: string
   onLayoutChange?: (objects: SceneObjectInstance[]) => void
 }
 
 const SceneBuilder: FC<Props> = ({
+  sceneId,
   theme,
   unlockedItemIds,
   initialObjects = [],
+  initialBackgroundId,
+  initialThumbnailUrl,
+  initialName,
   onLayoutChange,
 }) => {
   return (
     <SceneBuilderProvider
+      sceneId={sceneId}
       theme={theme}
       unlockedItemIds={unlockedItemIds}
       initialObjects={initialObjects}
+      initialBackgroundId={initialBackgroundId}
+      initialThumbnailUrl={initialThumbnailUrl}
+      initialName={initialName}
       onLayoutChange={onLayoutChange}
     >
       <Box
