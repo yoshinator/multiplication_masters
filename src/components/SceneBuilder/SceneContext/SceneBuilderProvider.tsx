@@ -17,35 +17,37 @@ import {
 
 import { normalizeZ, swapZ, bringToFront, sendToBack } from '../sceneUtils'
 import type Konva from 'konva'
-import type { SceneObjectInstance } from '../sceneBuilderTypes'
+import { type SceneObjectInstance } from '../sceneBuilderTypes'
 import { useNotification } from '../../../contexts/notificationContext/notificationContext'
 import { extractErrorMessage } from '../../../utilities/typeutils'
 import { useCloudFunction } from '../../../hooks/useCloudFunction'
+import { type SavedScene } from '../../../constants/dataModels'
 
 type Props = {
   sceneId?: string
-  theme: SceneTheme
+  savedScene?: SavedScene | null
   unlockedItemIds: string[]
-  initialObjects?: SceneObjectInstance[]
-  initialBackgroundId?: string
-  initialThumbnailUrl?: string
-  initialName?: string
   onLayoutChange?: (objects: SceneObjectInstance[]) => void
   children: ReactNode
 }
 
 export const SceneBuilderProvider: FC<Props> = ({
   sceneId,
-  theme,
   unlockedItemIds,
-  initialObjects = [],
-  initialBackgroundId,
-  initialThumbnailUrl,
-  initialName,
   onLayoutChange,
   children,
+  savedScene,
 }) => {
+  const initialObjects = savedScene?.objects || []
+  const initialBackgroundId = savedScene?.backgroundId
+  const initialThumbnailUrl = savedScene?.thumbnailUrl
+  const initialName = savedScene?.name
+  const theme = savedScene?.theme || ('garden' as SceneTheme)
+
   const { storage, auth, app } = useFirebaseContext()
+  const [currentThumbnailUrl, setCurrentThumbnailUrl] =
+    useState(initialThumbnailUrl)
+
   const stageRef = useRef<Konva.Stage>(null)
   const [objects, setObjects] = useState<SceneObjectInstance[]>(() => {
     const normalized = normalizeZ(initialObjects)
@@ -160,6 +162,7 @@ export const SceneBuilderProvider: FC<Props> = ({
     const stage = stageRef.current
     if (!stage || !storage || !auth?.currentUser || !app) return
 
+    const previousUrl = currentThumbnailUrl
     try {
       const blob = await new Promise<Blob | null>((resolve) => {
         stage.toBlob({
@@ -178,7 +181,6 @@ export const SceneBuilderProvider: FC<Props> = ({
 
       const snapshot = await uploadBytes(storageRef, blob)
       const downloadURL = await getDownloadURL(snapshot.ref)
-      console.log({ sceneId })
       // Call Cloud Function to save scene data
       await saveUserScene({
         id: sceneId, // Pass the ID to update existing scene
@@ -190,12 +192,16 @@ export const SceneBuilderProvider: FC<Props> = ({
         name: initialName || `Scene ${new Date().toLocaleDateString()}`,
       })
 
-      if (sceneId && initialThumbnailUrl) {
+      setCurrentThumbnailUrl(downloadURL)
+
+      if (sceneId && previousUrl && previousUrl !== downloadURL) {
         try {
-          const oldRef = ref(storage, initialThumbnailUrl)
-          await deleteObject(oldRef)
+          await deleteObject(ref(storage, previousUrl))
         } catch (error) {
-          console.error('Error deleting old thumbnail:', error)
+          showNotification(
+            'Error deleting old thumbnail: ' + extractErrorMessage(error),
+            'error'
+          )
         }
       }
 

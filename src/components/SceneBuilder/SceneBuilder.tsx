@@ -4,41 +4,29 @@ import { Box } from '@mui/material'
 import { SceneBuilderProvider } from './SceneContext/SceneBuilderProvider'
 import SceneCanvas from './SceneCanvas'
 
-import type { SceneTheme } from '../../constants/sceneDefinitions'
 import type { SceneObjectInstance } from './sceneBuilderTypes'
 import SceneControls from './SceneControls/SceneControls'
+import type { SavedScene } from '../../constants/dataModels'
 
 type Props = {
   sceneId?: string
-  theme: SceneTheme
   unlockedItemIds: string[]
-  initialObjects?: SceneObjectInstance[]
-  initialBackgroundId?: string
-  initialThumbnailUrl?: string
-  initialName?: string
   onLayoutChange?: (objects: SceneObjectInstance[]) => void
+  savedScene?: SavedScene | null
 }
 
 const SceneBuilder: FC<Props> = ({
   sceneId,
-  theme,
   unlockedItemIds,
-  initialObjects = [],
-  initialBackgroundId,
-  initialThumbnailUrl,
-  initialName,
   onLayoutChange,
+  savedScene,
 }) => {
   return (
     <SceneBuilderProvider
       sceneId={sceneId}
-      theme={theme}
       unlockedItemIds={unlockedItemIds}
-      initialObjects={initialObjects}
-      initialBackgroundId={initialBackgroundId}
-      initialThumbnailUrl={initialThumbnailUrl}
-      initialName={initialName}
       onLayoutChange={onLayoutChange}
+      savedScene={savedScene}
     >
       <Box
         sx={{

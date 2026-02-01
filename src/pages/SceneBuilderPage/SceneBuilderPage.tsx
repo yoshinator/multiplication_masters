@@ -1,10 +1,9 @@
 // src/pages/SceneBuilderPage.tsx
 
 import { type FC, useMemo } from 'react'
-import { Box, CircularProgress } from '@mui/material'
+import { Box, CircularProgress, Typography } from '@mui/material'
 import { type SceneObjectInstance } from '../../components/SceneBuilder/sceneBuilderTypes'
 import SceneBuilder from '../../components/SceneBuilder/SceneBuilder'
-import { type SceneTheme } from '../../constants/sceneDefinitions'
 import { useSearchParams } from 'react-router-dom'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { doc } from 'firebase/firestore'
@@ -66,23 +65,26 @@ const SceneBuilderPage: FC = () => {
     )
   }
 
-  // Prepare initial props from loaded data or defaults
-  const initialObjects = savedScene?.objects || []
-  const activeTheme = (savedScene?.theme as SceneTheme) || 'garden'
-  const initialBackgroundId = savedScene?.backgroundId || undefined
-  const initialThumbnailUrl = savedScene?.thumbnailUrl
-  const initialName = savedScene?.name
+  // If we have a sceneId but no data was found after loading completes
+  if (sceneId && !loading && !savedScene) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100%"
+      >
+        <Typography variant="h5">Scene not found</Typography>
+      </Box>
+    )
+  }
 
   return (
     <Box sx={{ p: 2, height: '100%' }}>
       <SceneBuilder
         sceneId={sceneId || undefined}
-        theme={activeTheme}
         unlockedItemIds={mockUnlocked}
-        initialObjects={initialObjects}
-        initialBackgroundId={initialBackgroundId}
-        initialThumbnailUrl={initialThumbnailUrl}
-        initialName={initialName}
+        savedScene={savedScene}
         onLayoutChange={handleLayoutChange}
       />
     </Box>
