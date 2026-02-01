@@ -44,6 +44,12 @@ export const SCENE_ITEMS: SceneItemDefinition[] = [
   // Or create a few simple "background" swatches (still images) later.
   // item('garden', 'GardenBg1.png', 'background', 1, { isBackground: true }),
 
+  // ---------- BACKGROUNDS ----------
+  // item('garden', 'Background1.jpg', 'background', 1, {
+  //   isBackground: true,
+  //   zHint: 'back',
+  // }),
+
   // ---------- CHARACTERS ----------
   item('garden', 'BlueBird.png', 'characters'),
   item('garden', 'RedBird.png', 'characters'),

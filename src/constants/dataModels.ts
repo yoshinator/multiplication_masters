@@ -198,5 +198,6 @@ export interface SavedScene {
   theme: SceneTheme
   thumbnailUrl: string
   objects: SceneObjectInstance[]
+  backgroundId?: string | null
   createdAt: number
 }
