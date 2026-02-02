@@ -125,9 +125,10 @@ const getSessionText = (isTooltip: boolean) => (
 /**
  * Mapping of pack IDs to their display labels.
  */
-const PACK_LABELS: Record<string, string> = {
+const PACK_LABELS: Partial<Record<PackKey, string>> = {
   mul_144: 'Multiplication to 144',
   mul_36: 'Multiplication to 36',
+  mul_576: 'Multiplication to 576',
 }
 
 /**
