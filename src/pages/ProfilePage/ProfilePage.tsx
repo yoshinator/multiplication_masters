@@ -151,8 +151,8 @@ const ProfilePage: FC = () => {
     }
   }
 
-  const handlePackChange = (event: SelectChangeEvent) => {
-    updateUser({ activePack: event.target.value as PackKey })
+  const handlePackChange = (event: SelectChangeEvent<PackKey>) => {
+    updateUser({ activePack: event.target.value })
   }
 
   const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
