@@ -13,7 +13,7 @@ interface LevelUpAnimationProps {
 const LevelUpAnimation: FC<LevelUpAnimationProps> = ({
   color = '#FFD700',
   isVisible,
-  title = '⭐LEVEL UP!⭐',
+  title = '⭐ LEVEL UP! ⭐',
 }) => {
   return createPortal(
     <AnimatePresence>
