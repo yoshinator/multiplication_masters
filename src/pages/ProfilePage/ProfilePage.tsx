@@ -366,7 +366,7 @@ const ProfilePage: FC = () => {
           Active Fact Pack
         </Typography>
         <FormControl fullWidth size="small" sx={{ maxWidth: 300 }}>
-          <InputLabel id="active-pack-label">Select Pack</InputLabel>
+          <InputLabel id="active-pack-label">Select Fact Pack</InputLabel>
           <Select
             label="Select Fact Pack"
             labelId="active-pack-label"
