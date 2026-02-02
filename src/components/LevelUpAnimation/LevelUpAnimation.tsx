@@ -32,7 +32,8 @@ const LevelUpAnimation: FC<LevelUpAnimationProps> = ({
             pointerEvents: 'none',
             position: 'fixed',
             right: 0,
-            top: '40%',
+            top: 0,
+            bottom: 0,
             zIndex: 9999,
           }}
           transition={{ damping: 20, stiffness: 200, type: 'spring' }}
