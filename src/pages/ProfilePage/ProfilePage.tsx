@@ -1,30 +1,39 @@
 import { type FC } from 'react'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   Box,
   Button,
-  Typography,
-  Tooltip,
   FormControl,
-  RadioGroup,
   FormControlLabel,
+  InputLabel,
+  MenuItem,
   Radio,
+  RadioGroup,
+  Select,
+  type SelectChangeEvent,
+  Tooltip,
+  Typography,
 } from '@mui/material'
-import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { useIsMobile } from '../../hooks/useIsMobile'
-import { useThemeContext } from '../../contexts/themeContext/themeContext'
+
+import SaveProgressModal from '../../components/Login/SaveProgressModal'
+import SavedScenesGallery from '../../components/SavedScenesGallery/SavedScenesGallery'
 import {
   DEFAULT_SESSION_LENGTH,
   MAX_NEW_CARDS_PER_DAY,
   NEW_CARDS_PER_DAY_OPTIONS,
 } from '../../constants/appConstants'
-import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
-import SaveProgressModal from '../../components/Login/SaveProgressModal'
 import { useModal } from '../../contexts/modalContext/modalContext'
-import SavedScenesGallery from '../../components/SavedScenesGallery/SavedScenesGallery'
+import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
+import { useThemeContext } from '../../contexts/themeContext/themeContext'
+import { useUser } from '../../contexts/userContext/useUserContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
+import type { PackKey } from '../../constants/dataModels'
 
-const gridContainerStyle = {
+/**
+ * Style object for the grid container used in the profile page.
+ */
+const GRID_CONTAINER_STYLE = {
   display: 'grid',
   gridTemplateColumns: {
     xs: 'repeat(2, 1fr)',
@@ -33,7 +42,13 @@ const gridContainerStyle = {
   gap: 1,
 }
 
-const optionButtonStyle = (selected: boolean) => ({
+/**
+ * Returns the styles for an option button based on its selection state.
+ *
+ * @param selected - Whether the option is currently selected.
+ * @returns The style object for the button.
+ */
+const getOptionButtonStyle = (selected: boolean) => ({
   all: 'unset',
   px: 1,
   py: 1.5,
@@ -63,6 +78,12 @@ const optionButtonStyle = (selected: boolean) => ({
   },
 })
 
+/**
+ * Returns the descriptive text for the new cards per day setting.
+ *
+ * @param isTooltip - Whether the text is being displayed in a tooltip.
+ * @returns The rendered typography component.
+ */
 const getNewCardText = (isTooltip: boolean) => (
   <Typography
     variant="caption"
@@ -78,6 +99,12 @@ const getNewCardText = (isTooltip: boolean) => (
   </Typography>
 )
 
+/**
+ * Returns the descriptive text for the session intensity setting.
+ *
+ * @param isTooltip - Whether the text is being displayed in a tooltip.
+ * @returns The rendered typography component.
+ */
 const getSessionText = (isTooltip: boolean) => (
   <Typography
     variant="caption"
@@ -95,19 +122,28 @@ const getSessionText = (isTooltip: boolean) => (
   </Typography>
 )
 
+/**
+ * Mapping of pack IDs to their display labels.
+ */
+const PACK_LABELS: Partial<Record<PackKey, string>> = {
+  mul_144: 'Multiplication to 144',
+  mul_36: 'Multiplication to 36',
+  mul_576: 'Multiplication to 576',
+}
+
+/**
+ * Component for the user profile page, allowing users to manage their session settings,
+ * theme preferences, and active learning packs.
+ *
+ * @returns The rendered ProfilePage component.
+ */
 const ProfilePage: FC = () => {
-  const { sessionLength } = useSessionStatusContext()
+  const { auth } = useFirebaseContext()
+  const { closeModal, openModal } = useModal()
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
-  const { user, updateUser } = useUser()
-  const { auth } = useFirebaseContext()
-  const { openModal, closeModal } = useModal()
-
-  const isAnonymous = auth?.currentUser?.isAnonymous
-
-  const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setMode(event.target.value as 'light' | 'dark' | 'system')
-  }
+  const { sessionLength } = useSessionStatusContext()
+  const { updateUser, user } = useUser()
 
   const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -115,6 +151,16 @@ const ProfilePage: FC = () => {
       e.currentTarget.click()
     }
   }
+
+  const handlePackChange = (event: SelectChangeEvent<PackKey>) => {
+    updateUser({ activePack: event.target.value })
+  }
+
+  const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setMode(event.target.value as 'light' | 'dark' | 'system')
+  }
+
+  const isAnonymous = auth?.currentUser?.isAnonymous
 
   return (
     <Box
@@ -180,7 +226,11 @@ const ProfilePage: FC = () => {
         )}
       </Box>
       {/* Choices */}
-      <Box role="group" aria-label="Session Intensity" sx={gridContainerStyle}>
+      <Box
+        role="group"
+        aria-label="Session Intensity"
+        sx={GRID_CONTAINER_STYLE}
+      >
         {[
           { value: 10, label: 'Quick', reviews: 'about 30' },
           {
@@ -205,7 +255,7 @@ const ProfilePage: FC = () => {
               onKeyDown={handleChoiceKeyDown}
               aria-label={`Set session to ${option.label}`}
               aria-pressed={selected}
-              sx={optionButtonStyle(selected)}
+              sx={getOptionButtonStyle(selected)}
             >
               <Typography
                 variant="body2"
@@ -254,7 +304,7 @@ const ProfilePage: FC = () => {
         <Box
           role="group"
           aria-label="New Cards Per Day"
-          sx={gridContainerStyle}
+          sx={GRID_CONTAINER_STYLE}
         >
           {[
             {
@@ -291,7 +341,7 @@ const ProfilePage: FC = () => {
                 onKeyDown={handleChoiceKeyDown}
                 aria-label={`Set new cards limit to ${option.label}`}
                 aria-pressed={selected}
-                sx={optionButtonStyle(selected)}
+                sx={getOptionButtonStyle(selected)}
               >
                 <Typography
                   variant="body2"
@@ -309,6 +359,30 @@ const ProfilePage: FC = () => {
             )
           })}
         </Box>
+      </Box>
+
+      {/* Active Fact Pack */}
+      <Box sx={{ mt: 4 }}>
+        <Typography sx={{ mb: 1 }} variant="subtitle2">
+          Active Fact Pack
+        </Typography>
+        <FormControl fullWidth size="small" sx={{ maxWidth: 300 }}>
+          <InputLabel id="active-pack-label">Select Fact Pack</InputLabel>
+          <Select
+            label="Select Fact Pack"
+            labelId="active-pack-label"
+            onChange={handlePackChange}
+            value={user?.activePack || ''}
+          >
+            {(user?.enabledPacks || []).map((packId) => {
+              return (
+                <MenuItem key={packId} value={packId}>
+                  {PACK_LABELS[packId] || packId}
+                </MenuItem>
+              )
+            })}
+          </Select>
+        </FormControl>
       </Box>
 
       {/* Saved Scenes */}

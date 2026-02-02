@@ -59,10 +59,6 @@ export interface User {
 
   unlockedScenes?: SceneTheme[]
   activeScene?: SceneTheme
-  placedScenes?: {
-    [sceneId in SceneTheme]?: SceneObjectInstance[]
-  }
-
   newCardsSeenToday?: number
   lastNewCardDate?: number
   maxNewCardsPerDay?: number
@@ -200,4 +196,11 @@ export interface SavedScene {
   objects: SceneObjectInstance[]
   backgroundId?: string | null
   createdAt: number
+}
+
+export type UserSceneMeta = {
+  sceneId: SceneTheme
+  xp: number // total XP earned for THIS scene
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
