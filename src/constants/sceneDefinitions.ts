@@ -16,8 +16,6 @@ export type SceneItemDefinition = {
    */
   isBackground?: boolean
 
-  // Optional future hooks
-  tags?: string[]
   zHint?: 'back' | 'mid' | 'front'
 }
 
