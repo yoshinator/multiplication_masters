@@ -29,11 +29,7 @@ import { useThemeContext } from '../../contexts/themeContext/themeContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import type { PackKey } from '../../constants/dataModels'
-import {
-  SCENES,
-  SCENE_ITEMS,
-  type SceneTheme,
-} from '../../constants/sceneDefinitions'
+import { SCENES, SCENE_ITEMS } from '../../constants/sceneDefinitions'
 
 /**
  * Style object for the grid container used in the profile page.
@@ -148,7 +144,7 @@ const ProfilePage: FC = () => {
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
   const { sessionLength } = useSessionStatusContext()
-  const { updateUser, user, selectScene } = useUser() as any
+  const { updateUser, user, selectScene } = useUser()
 
   const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -379,7 +375,7 @@ const ProfilePage: FC = () => {
             onChange={handlePackChange}
             value={user?.activePack || ''}
           >
-            {(user?.enabledPacks || []).map((packId) => {
+            {(user?.enabledPacks || []).map((packId: PackKey) => {
               return (
                 <MenuItem key={packId} value={packId}>
                   {PACK_LABELS[packId] || packId}
