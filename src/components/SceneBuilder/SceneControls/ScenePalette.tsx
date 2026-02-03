@@ -13,11 +13,11 @@ interface Props {
   onClickCallBack?: () => void
 }
 
-const TAB_ORDER: SceneTab[] = ['background', 'stuff', 'characters', 'effects']
+const TAB_ORDER: SceneTab[] = ['background', 'stuff', 'friends', 'effects']
 const TAB_LABEL: Record<SceneTab, string> = {
   background: 'Scene',
   stuff: 'Stuff',
-  characters: 'Friends',
+  friends: 'Friends',
   effects: 'Effects',
 }
 
@@ -38,7 +38,7 @@ const ScenePalette: FC<Props> = ({ onClickCallBack }) => {
     return {
       background: base.filter((it) => it.tab === 'background'),
       stuff: base.filter((it) => it.tab === 'stuff'),
-      characters: base.filter((it) => it.tab === 'characters'),
+      friends: base.filter((it) => it.tab === 'friends'),
       effects: base.filter((it) => it.tab === 'effects'),
     } satisfies Record<SceneTab, SceneItemDefinition[]>
   }, [theme, unlockedItemIds])

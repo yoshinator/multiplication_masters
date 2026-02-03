@@ -11,6 +11,7 @@ import {
   type PackMeta,
   type User,
   getPackFactIds,
+  type UserSceneMeta,
 } from '../../constants/dataModels'
 import { type AuthStatus, UserContext } from './useUserContext'
 import {
@@ -30,6 +31,7 @@ import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
 import { generateRandomUsername } from '../../utilities/accountHelpers'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
 import { useFirestoreDoc } from '../../hooks/useFirestore'
+import { type SceneTheme } from '../../constants/sceneDefinitions'
 
 type Props = {
   children: ReactNode
@@ -162,6 +164,34 @@ const UserProvider: FC<Props> = ({ children }) => {
       debounceTimerRef.current = setTimeout(commitUserUpdates, 300)
     },
     [commitUserUpdates]
+  )
+
+  const selectScene = useCallback(
+    async (sceneId: SceneTheme) => {
+      if (!db || !user?.uid) return
+
+      const sceneMetaRef = doc(db, 'users', user.uid, 'sceneMeta', sceneId)
+
+      try {
+        const snap = await getDoc(sceneMetaRef)
+        if (!snap.exists()) {
+          const newMeta: Partial<UserSceneMeta> = {
+            sceneId,
+            xp: 0,
+          }
+          await setDoc(sceneMetaRef, {
+            newMeta,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+        }
+
+        updateUser({ activeSavedSceneId: sceneId })
+      } catch (err) {
+        logger('Error selecting scene:', err)
+      }
+    },
+    [db, user?.uid, updateUser, logger]
   )
 
   // Create user or set user if exists effect
@@ -298,6 +328,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         activePackMeta,
         isLoading,
         activePackFactIds,
+        selectScene,
       }}
     >
       {children}

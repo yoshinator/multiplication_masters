@@ -1,6 +1,6 @@
 export type SceneTheme = 'garden' | 'spaceport' | 'farm' | 'garage'
 
-export type SceneTab = 'background' | 'stuff' | 'characters' | 'effects'
+export type SceneTab = 'background' | 'stuff' | 'friends' | 'effects'
 
 export type SceneItemDefinition = {
   id: string
@@ -23,109 +23,65 @@ export type SceneDefinition = {
   id: SceneTheme
   label: string
   backgroundColor: string
+  unlock?: number // questions answered correctly to unlock
 }
 
 export const SCENES: Record<SceneTheme, SceneDefinition> = {
-  garden: { id: 'garden', label: 'Garden', backgroundColor: '#97d7f3ff' },
+  garden: {
+    id: 'garden',
+    label: 'Garden',
+    backgroundColor: '#97d7f3ff',
+    unlock: 0,
+  },
+  farm: { id: 'farm', label: 'Farm', backgroundColor: '#e9f3ff', unlock: 450 },
+  garage: {
+    id: 'garage',
+    label: 'Garage',
+    backgroundColor: '#e0e0e0',
+    unlock: 800,
+  },
   spaceport: {
     id: 'spaceport',
     label: 'Spaceport',
     backgroundColor: '#050814',
+    unlock: 1500,
   },
-  farm: { id: 'farm', label: 'Farm', backgroundColor: '#e9f3ff' },
-  garage: { id: 'garage', label: 'Garage', backgroundColor: '#e0e0e0' },
 }
 
 export const SCENE_ITEMS: SceneItemDefinition[] = [
-  // ---------- BACKGROUND (optional for now) ----------
-  // If you don't have background images yet, you can skip these entirely.
-  // Or create a few simple "background" swatches (still images) later.
-  // item('garden', 'GardenBg1.png', 'background', 1, { isBackground: true }),
-
-  // ---------- BACKGROUNDS ----------
-  // item('garden', 'Background1.jpg', 'background', 1, {
-  //   isBackground: true,
-  //   zHint: 'back',
-  // }),
-
-  // ---------- CHARACTERS ----------
-  item('garden', 'BlueBird.png', 'characters'),
-  item('garden', 'RedBird.png', 'characters'),
-  item('garden', 'GoldenBird.png', 'characters'),
-
-  // ---------- STUFF ----------
-  // Flowers & Plants
-  item('garden', 'FlowerPatch.png', 'stuff'),
-  item('garden', 'FlowerPatch1.png', 'stuff'),
-  item('garden', 'FlowerPatch2.png', 'stuff'),
-  item('garden', 'FlowerPatch3.png', 'stuff'),
-  item('garden', 'FlowerPatch4.png', 'stuff'),
-  item('garden', 'FlowerPatch5.png', 'stuff'),
-  item('garden', 'MushroomPatch.png', 'stuff'),
-  item('garden', 'MushroomPatch2.png', 'stuff'),
-  item('garden', 'WateringCanPot1.png', 'stuff'),
-  item('garden', 'WateringCanPot2.png', 'stuff'),
-
-  // Trees
-  item('garden', 'ColorTree.png', 'stuff'),
-  item('garden', 'TreeSwing.png', 'stuff'),
-
-  // Water Features
-  item('garden', 'BirdBath.png', 'stuff'),
-  item('garden', 'BirdBath2.png', 'stuff'),
-  item('garden', 'BlueJaysBath.png', 'stuff'),
-  item('garden', 'DuckPond.png', 'stuff'),
-
-  // Decor
-  item('garden', 'BirdHouse.png', 'stuff'),
-  item('garden', 'BirdHouse2.png', 'stuff'),
-  item('garden', 'TeaPot.png', 'stuff'),
-  item('garden', 'RockBed.png', 'stuff'),
-
-  // Paths & Walkways
-  item('garden', 'RockPath.png', 'stuff'),
-  item('garden', 'WalkPath.png', 'stuff'),
-  item('garden', 'WalkWay.png', 'stuff'),
-  item('garden', 'WalkWay1.png', 'stuff'),
-  item('garden', 'WalkWay2.png', 'stuff'),
-  item('garden', 'WalkWay3.png', 'stuff'),
-  item('garden', 'WalkWay4.png', 'stuff'),
-  item('garden', 'WalkWay5.png', 'stuff'),
-  item('garden', 'WalkWay6.png', 'stuff'),
-  item('garden', 'WalkWay7.png', 'stuff'),
-  item('garden', 'WalkWay8.png', 'stuff'),
-  item('garden', 'WalkWay9.png', 'stuff'),
-  item('garden', 'WalkWay10.png', 'stuff'),
-  item('garden', 'WalkWay11.png', 'stuff'),
-
-  // ---------- EFFECTS ----------
-  // Colored Clouds
-  item('garden', 'ColoredCloud.png', 'effects'),
-  item('garden', 'ColoredCloud1.png', 'effects'),
-  item('garden', 'ColoredCloud2.png', 'effects'),
-  item('garden', 'ColoredCloud3.png', 'effects'),
-  item('garden', 'ColoredCloud4.png', 'effects'),
-  item('garden', 'ColoredCloud5.png', 'effects'),
-  item('garden', 'ColoredCloud6.png', 'effects'),
-
-  // Sky Views
-  item('garden', 'SkyView1.png', 'effects'),
-  item('garden', 'SkyView2.png', 'effects'),
-  item('garden', 'SkyView3.png', 'effects'),
-
-  // Sun Beams
-  item('garden', 'Sunbeam.png', 'effects'),
-  item('garden', 'Sunbeam1.png', 'effects'),
-  item('garden', 'Sunbeam2.png', 'effects'),
-  item('garden', 'Sunbeam3.png', 'effects'),
-  item('garden', 'Sunbeam4.png', 'effects'),
-  item('garden', 'Sunbeam5.png', 'effects'),
-  item('garden', 'Sunbeam6.png', 'effects'),
-
-  // Rainbows
-  item('garden', 'Rainbow1.png', 'effects'),
-  item('garden', 'Rainbow2.png', 'effects'),
+  // ---------- GARDEN THEME ----------
+  ...range('garden', 'Background', 5, 'background', 1, {
+    isBackground: true,
+    zHint: 'back',
+  }),
+  ...range('garden', 'Friends', 13, 'friends'),
+  ...range('garden', 'Stuff', 15, 'stuff'),
+  ...range('garden', 'Effects', 13, 'effects'),
 ]
+
+// -------------- SPACEPORT THEME --------------
+SCENE_ITEMS.push(
+  ...range('spaceport', 'Background', 1, 'background', 1, {
+    isBackground: true,
+    zHint: 'back',
+  })
+)
+
+// -------------- FARM THEME --------------
+SCENE_ITEMS.push(
+  ...range('farm', 'Background', 3, 'background', 1, {
+    isBackground: true,
+    zHint: 'back',
+  })
+)
+
+// -------------- GARAGE THEME --------------
+SCENE_ITEMS.push(
+  ...range('garage', 'Background', 3, 'background', 1, {
+    isBackground: true,
+    zHint: 'back',
+  })
+)
 
 export const SCENE_ITEM_BY_ID: Record<string, SceneItemDefinition> =
   Object.fromEntries(SCENE_ITEMS.map((i) => [i.id, i]))
@@ -133,7 +89,9 @@ export const SCENE_ITEM_BY_ID: Record<string, SceneItemDefinition> =
 function makeLabel(fileOrId: string) {
   return fileOrId
     .replace(/\.[^/.]+$/, '')
+    .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 
@@ -154,4 +112,17 @@ function item(
     tab,
     ...extra,
   }
+}
+
+function range(
+  theme: SceneTheme,
+  prefix: string,
+  count: number,
+  tab: SceneTab,
+  scale = 0.2,
+  extra?: Partial<SceneItemDefinition>
+): SceneItemDefinition[] {
+  return Array.from({ length: count }, (_, i) =>
+    item(theme, `${prefix}_${i + 1}.png`, tab, scale, extra)
+  )
 }
