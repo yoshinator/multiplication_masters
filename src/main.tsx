@@ -19,8 +19,8 @@ createRoot(document.getElementById('root')!).render(
       <FirebaseProvider>
         <ThemeContextProvider>
           <NotificationProvider>
-            <ModalProvider>
-              <UserProvider>
+            <UserProvider>
+              <ModalProvider>
                 <SessionStatusProvider>
                   <ReviewSessionProvider>
                     <CardSchedulerProvider>
@@ -28,8 +28,8 @@ createRoot(document.getElementById('root')!).render(
                     </CardSchedulerProvider>
                   </ReviewSessionProvider>
                 </SessionStatusProvider>
-              </UserProvider>
-            </ModalProvider>
+              </ModalProvider>
+            </UserProvider>
           </NotificationProvider>
         </ThemeContextProvider>
       </FirebaseProvider>
