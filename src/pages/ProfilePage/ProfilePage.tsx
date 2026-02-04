@@ -394,7 +394,7 @@ const ProfilePage: FC = () => {
         <Box sx={GRID_CONTAINER_STYLE}>
           {Object.values(SCENES).map((scene) => {
             const isLocked = (user?.lifetimeCorrect ?? 0) < (scene.unlock ?? 0)
-            const isSelected = user?.activeSavedSceneId === scene.id
+            const isSelected = user?.activeScene === scene.id
             const bgImage = SCENE_ITEMS.find(
               (it) => it.theme === scene.id && it.tab === 'background'
             )?.image

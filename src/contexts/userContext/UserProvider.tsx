@@ -54,6 +54,7 @@ const initialUser: Omit<User, 'uid' | 'username'> = {
   maxNewCardsPerDay: MAX_NEW_CARDS_PER_DAY,
   enabledPacks: ['mul_36', 'mul_144'],
   activePack: 'mul_36',
+  activeScene: 'garden',
 }
 
 const UserProvider: FC<Props> = ({ children }) => {
@@ -180,13 +181,13 @@ const UserProvider: FC<Props> = ({ children }) => {
             xp: 0,
           }
           await setDoc(sceneMetaRef, {
-            newMeta,
+            ...newMeta,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           })
         }
 
-        updateUser({ activeSavedSceneId: sceneId })
+        updateUser({ activeScene: sceneId })
       } catch (err) {
         logger('Error selecting scene:', err)
       }
