@@ -512,8 +512,6 @@ Note: Ensure Firestore security rules (`firestore.rules`) and Storage rules (`st
 
 ---
 
-## Key Features and Use Cases
-
 ## License and Terms of Use
 
 This project is licensed under a **Source Available License** (see [LICENSE](LICENSE) for full details).
