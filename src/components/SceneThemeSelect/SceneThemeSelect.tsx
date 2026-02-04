@@ -45,18 +45,16 @@ const SceneThemeSelect: FC<Props> = ({
               tabIndex={isLocked ? -1 : 0}
               onClick={() => !isLocked && selectScene(scene.id)}
               onKeyDown={(e) => !isLocked && handleChoiceKeyDown(e)}
-              sx={[
-                getOptionButtonStyle(isSelected),
-                {
-                  position: 'relative',
-                  overflow: 'hidden',
-                  opacity: isLocked ? 0.6 : 1,
-                  filter: isLocked ? 'grayscale(1)' : 'none',
-                  cursor: isLocked ? 'default' : 'pointer',
-                  minHeight: 100,
-                  p: 0,
-                },
-              ]}
+              sx={{
+                ...getOptionButtonStyle(isSelected),
+                position: 'relative',
+                overflow: 'hidden',
+                opacity: isLocked ? 0.6 : 1,
+                filter: isLocked ? 'grayscale(1)' : 'none',
+                cursor: isLocked ? 'default' : 'pointer',
+                minHeight: 100,
+                p: 0,
+              }}
             >
               {bgImage && (
                 <Box
