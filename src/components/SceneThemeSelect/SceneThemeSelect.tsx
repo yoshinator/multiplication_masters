@@ -41,6 +41,7 @@ const SceneThemeSelect: FC<Props> = ({
               key={scene.id}
               component="div"
               role="button"
+              aria-disabled={isLocked}
               tabIndex={isLocked ? -1 : 0}
               onClick={() => !isLocked && selectScene(scene.id)}
               onKeyDown={(e) => !isLocked && handleChoiceKeyDown(e)}
