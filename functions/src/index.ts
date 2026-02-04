@@ -1,7 +1,7 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
 import { initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { MASTER_FACTS, PackMeta, UserFact } from './masterCards'
 
@@ -25,6 +25,15 @@ export const initializeUserMeta = onDocumentCreated(
 
     const batch = db.batch()
 
+    // Create default scene meta for 'garden'
+    const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
+    batch.set(sceneMetaRef, {
+      sceneId: 'garden',
+      xp: 0,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
     // Ensure user has active/enabled pack if client didn’t set it (defensive)
     batch.set(
       userRef,
@@ -32,6 +41,7 @@ export const initializeUserMeta = onDocumentCreated(
         metaInitialized: true,
         enabledPacks: ['mul_36', 'mul_144'], // New users start with the free pack
         activePack: 'mul_36',
+        activeScene: 'garden',
       },
       { merge: true }
     )

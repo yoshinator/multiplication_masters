@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { PackMeta, User } from '../../constants/dataModels'
+import type { SceneTheme } from '../../constants/sceneDefinitions'
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
 interface UserContextValue {
@@ -10,6 +11,7 @@ interface UserContextValue {
   isLoading: boolean
   activePackMeta: PackMeta | null
   activePackFactIds: Set<string>
+  selectScene: (sceneId: SceneTheme) => Promise<void>
 }
 
 export const UserContext = createContext<UserContextValue | undefined>(
