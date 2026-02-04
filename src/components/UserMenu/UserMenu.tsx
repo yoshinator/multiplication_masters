@@ -98,6 +98,14 @@ export const UserMenu = () => {
           Train
         </MenuItem>
         <MenuItem
+          onClick={() => {
+            handleClose()
+            navigate(ROUTES.BUILDER)
+          }}
+        >
+          Build
+        </MenuItem>
+        <MenuItem
           sx={{ color: 'error.main' }}
           onClick={async () => {
             handleClose()
