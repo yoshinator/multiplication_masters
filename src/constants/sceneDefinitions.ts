@@ -17,6 +17,11 @@ export type SceneItemDefinition = {
   isBackground?: boolean
 
   zHint?: 'back' | 'mid' | 'front'
+
+  /**
+   * Questions answered correctly to unlock this item.
+   */
+  unlock?: number
 }
 
 export type SceneDefinition = {
@@ -122,7 +127,22 @@ function range(
   scale = 0.2,
   extra?: Partial<SceneItemDefinition>
 ): SceneItemDefinition[] {
+  const baseUnlock = SCENES[theme].unlock ?? 0
+
+  // Define increments based on rarity request
+  const increments: Record<SceneTab, number> = {
+    background: 200, // Rare: Backgrounds take longer to unlock
+    friends: 80, // Rare: Friends are special unlocks
+    stuff: 15, // Free: Stuff is given out frequently
+    effects: 20, // Free: Effects are given out frequently
+  }
+
+  const step = increments[tab]
+
   return Array.from({ length: count }, (_, i) =>
-    item(theme, `${prefix}_${i + 1}.png`, tab, scale, extra)
+    item(theme, `${prefix}_${i + 1}.png`, tab, scale, {
+      unlock: baseUnlock + i * step,
+      ...extra,
+    })
   )
 }
