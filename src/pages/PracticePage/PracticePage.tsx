@@ -19,6 +19,7 @@ import { doc } from 'firebase/firestore'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { type SavedScene } from '../../constants/dataModels'
 import { useFirestoreDoc } from '../../hooks/useFirestore'
+import SceneXPDisplay from '../../contexts/cardScheduler/SceneXPDisplay'
 
 const INITIAL_TOUR_STATE = {
   welcome: false,
@@ -285,6 +286,7 @@ const PracticePage: FC = () => {
       >
         {isSessionActive ? !isMobile && <StatsPanel /> : <DailyGoalPanel />}
       </Box>
+      <SceneXPDisplay />
 
       {/* MAIN GAME */}
       <Box

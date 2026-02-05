@@ -151,6 +151,7 @@ export type UserFact = {
   seen: number
   correct: number
   incorrect: number
+  streak: number
 
   // UI convenience
   expression?: string

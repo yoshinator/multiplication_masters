@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 export const useThresholdAnimation = (
   value: number,
   threshold: number,
-  onThresholdCrossed?: () => void,
-  duration: number = 3000
+  duration: number = 3000,
+  onThresholdCrossed?: () => void
 ) => {
   const [showAnimation, setShowAnimation] = useState(false)
   const prevValueRef = useRef(value)
@@ -19,10 +19,15 @@ export const useThresholdAnimation = (
       if (onThresholdCrossed) {
         onThresholdCrossed()
       }
+    }
+  }, [value, threshold, onThresholdCrossed])
+
+  useEffect(() => {
+    if (showAnimation) {
       const timer = setTimeout(() => setShowAnimation(false), duration)
       return () => clearTimeout(timer)
     }
-  }, [value, threshold, duration, onThresholdCrossed])
+  }, [showAnimation, duration])
 
   return showAnimation
 }

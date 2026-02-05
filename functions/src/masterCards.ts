@@ -24,6 +24,7 @@ export type UserFact = {
   seen: number
   correct: number
   incorrect: number
+  streak: number
 
   // UI convenience
   expression?: string
@@ -70,6 +71,7 @@ export const generateMulPack = (start: number, end: number): UserFact[] => {
         operands: [i, j],
         answer: i * j,
         level: i,
+        streak: 0,
         difficulty: i <= 7 ? 'basic' : i <= 12 ? 'advanced' : 'elite',
         expression: `${i} × ${j}`,
         ...defaultSrs(),

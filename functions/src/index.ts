@@ -200,6 +200,7 @@ export const migrateUserToFacts = onCall(async (request) => {
       seen: data.seen || 0,
       correct: data.correct || 0,
       incorrect: data.incorrect || 0,
+      streak: data.streak || 0,
 
       expression: `${op1} × ${op2}`,
     }

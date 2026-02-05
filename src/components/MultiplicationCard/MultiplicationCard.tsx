@@ -19,6 +19,7 @@ import {
 import { useTimerActions } from '../../contexts/timerContext/timerContext'
 import Timer from '../Timer/Timer'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
+import LevelUpAnimation from '../LevelUpAnimation/LevelUpAnimation'
 import {
   BOX_ADVANCE,
   BOX_REGRESS,
@@ -46,9 +47,11 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
   const [cardColor, setCardColor] = useState('background.paper')
   const { isShowingAnswer, showAnswer, hideAnswer } = useReviewSession()
   const [limitIncreased, setLimitIncreased] = useState(false)
+  const [showBonusAnimation, setShowBonusAnimation] = useState(false)
 
   // REFS
   const timeoutRef = useRef<number | null>(null)
+  const bonusTimeoutRef = useRef<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -79,6 +82,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      if (bonusTimeoutRef.current) clearTimeout(bonusTimeoutRef.current)
     }
   }, [])
 
@@ -118,6 +122,17 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
     let color: string = 'background.paper'
 
     if (correct) {
+      const isBonusRecovery =
+        !currentFact.wasLastReviewCorrect && currentFact.seen > 0
+
+      if (isBonusRecovery) {
+        setShowBonusAnimation(true)
+        if (bonusTimeoutRef.current) clearTimeout(bonusTimeoutRef.current)
+        bonusTimeoutRef.current = window.setTimeout(() => {
+          setShowBonusAnimation(false)
+        }, 3000)
+      }
+
       if (elapsed <= BOX_ADVANCE) color = 'success.main'
       else if (elapsed <= BOX_STAY) color = 'warning.light'
       else color = 'warning.main'
@@ -148,6 +163,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
     setAnswer,
     showAnswer,
     stopTimer,
+    setShowBonusAnimation,
     submitAnswer,
   ])
 
@@ -476,6 +492,32 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
                     </Box>
                   </Typography>
 
+                  {cardColor === 'error.main' && (
+                    <>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: 'warning.main',
+                          fontWeight: 800,
+                          mt: 1,
+                          textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                        }}
+                      >
+                        ⭐️ Bonus Token 2XP.
+                      </Typography>
+
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 800,
+                          textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+                        }}
+                      >
+                        Get it by answering this correctly next time
+                      </Typography>
+                    </>
+                  )}
+
                   <Button
                     ref={buttonRef}
                     variant="contained"
@@ -533,6 +575,11 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
               )}
             </Grid>
           </Grid>
+          <LevelUpAnimation
+            isVisible={showBonusAnimation}
+            title="✨ Bonus XP Success! ✨"
+            color="#FFD700"
+          />
         </Box>
       </Card>
     </Box>
