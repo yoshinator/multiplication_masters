@@ -18,7 +18,10 @@ const SceneBackground: FC<{
   if (!image) return null
 
   // "Cover" logic: fill the stage while maintaining aspect ratio
-  const scale = Math.max(width / image.width, height / image.height)
+  const scale =
+    image.width > 0 && image.height > 0
+      ? Math.max(width / image.width, height / image.height)
+      : 1
   const imgWidth = image.width * scale
   const imgHeight = image.height * scale
 

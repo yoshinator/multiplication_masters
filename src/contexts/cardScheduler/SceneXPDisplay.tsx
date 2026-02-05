@@ -27,10 +27,11 @@ const SceneXPDisplay: FC = () => {
     return unlockedItems[0]?.unlock ?? 0
   }, [activeScene, currentXP])
 
-  const progress = nextUnlock
-    ? ((currentXP - prevUnlockXP) / ((nextUnlock.unlock ?? 0) - prevUnlockXP)) *
-      100
-    : 100
+  const denominator = (nextUnlock?.unlock ?? 0) - prevUnlockXP
+  const progress =
+    nextUnlock && denominator > 0
+      ? ((currentXP - prevUnlockXP) / denominator) * 100
+      : 100
 
   /**
    * Triggers the "New Item Unlocked" animation using a milestone-based threshold.

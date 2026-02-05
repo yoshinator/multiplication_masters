@@ -49,6 +49,7 @@ const defaultSrs = () => ({
   seen: 0,
   correct: 0,
   incorrect: 0,
+  streak: 0,
 })
 
 const createFactId = (type: FactType, operands: (number | string)[]) =>
@@ -71,7 +72,6 @@ export const generateMulPack = (start: number, end: number): UserFact[] => {
         operands: [i, j],
         answer: i * j,
         level: i,
-        streak: 0,
         difficulty: i <= 7 ? 'basic' : i <= 12 ? 'advanced' : 'elite',
         expression: `${i} × ${j}`,
         ...defaultSrs(),
