@@ -159,7 +159,7 @@ export function useCardScheduler(
       }
 
       if (correct) {
-        // Award 5XP if this was a "recovery" correct answer (Bonus Token logic)
+        // Award 2XP if this was a "recovery" correct answer (Bonus Token logic)
         const isBonusRecovery = !fact.wasLastReviewCorrect && fact.seen > 0
         const xpAmount = isBonusRecovery ? 2 : 1
         incrementSceneXP(xpAmount)
@@ -225,6 +225,7 @@ export function useCardScheduler(
       finishSession,
       user,
       updateUser,
+      incrementSceneXP,
     ]
   )
   const startSessionRef = useRef(startSession)

@@ -179,19 +179,22 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   const incrementSceneXP = useCallback(
     async (amount = 1) => {
-      if (!db || !user?.uid || !user?.activeScene) return
-      const sceneMetaRef = doc(
-        db,
-        'users',
-        user.uid,
-        'sceneMeta',
-        user.activeScene
-      )
+      if (!db || !user?.uid) return
+      const sceneId = user.activeScene || 'garden'
+      const sceneMetaRef = doc(db, 'users', user.uid, 'sceneMeta', sceneId)
+
       try {
-        await updateDoc(sceneMetaRef, {
-          xp: increment(amount),
-          updatedAt: serverTimestamp(),
-        })
+        // Use setDoc with merge: true to ensure the document exists.
+        // updateDoc fails if the document is missing.
+        await setDoc(
+          sceneMetaRef,
+          {
+            sceneId,
+            xp: increment(amount),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
       } catch (err) {
         logger('Error incrementing scene XP:', err)
       }

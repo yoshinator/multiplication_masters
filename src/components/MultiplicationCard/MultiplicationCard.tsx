@@ -513,7 +513,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
                           textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
                         }}
                       >
-                        Get it by answering this correctly next time
+                        Get it right next time for bonus XP!
                       </Typography>
                     </>
                   )}

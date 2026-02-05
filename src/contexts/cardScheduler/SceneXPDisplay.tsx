@@ -19,6 +19,7 @@ const SceneXPDisplay: FC = () => {
   }, [activeScene, currentXP])
 
   const xpToNext = nextUnlock ? (nextUnlock.unlock ?? 0) - currentXP : 0
+
   const prevUnlockXP = useMemo(() => {
     const unlockedItems = SCENE_ITEMS.filter(
       (it) => it.theme === activeScene && (it.unlock ?? 0) <= currentXP
@@ -31,8 +32,23 @@ const SceneXPDisplay: FC = () => {
       100
     : 100
 
-  // Trigger animation when currentXP reaches the threshold of the most recently unlocked item
-  const showAnimation = useThresholdAnimation(currentXP, prevUnlockXP, 200)
+  /**
+   * Triggers the "New Item Unlocked" animation using a milestone-based threshold.
+   *
+   * Logic:
+   * 1. prevUnlockXP is the XP requirement of the highest item currently unlocked.
+   * 2. When currentXP reaches a new milestone (e.g., 200 XP), prevUnlockXP jumps to 200.
+   * 3. useThresholdAnimation compares the previous XP (e.g., 199) against the new
+   *    threshold (200). Since 199 < 200 and 200 >= 200, the animation triggers.
+   * 4. On the next XP gain (201), the hook sees 200 < 200 is false, preventing
+   *    repeated animations for the same milestone.
+   */
+  const showAnimation = useThresholdAnimation(
+    currentXP,
+    prevUnlockXP,
+    null,
+    2000
+  )
 
   return (
     <Box
