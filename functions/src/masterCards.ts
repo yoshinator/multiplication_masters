@@ -24,6 +24,7 @@ export type UserFact = {
   seen: number
   correct: number
   incorrect: number
+  streak: number
 
   // UI convenience
   expression?: string
@@ -48,6 +49,7 @@ const defaultSrs = () => ({
   seen: 0,
   correct: 0,
   incorrect: 0,
+  streak: 0,
 })
 
 const createFactId = (type: FactType, operands: (number | string)[]) =>

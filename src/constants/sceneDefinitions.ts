@@ -132,9 +132,9 @@ function range(
   // Define increments based on rarity request
   const increments: Record<SceneTab, number> = {
     background: 200, // Rare: Backgrounds take longer to unlock
-    friends: 80, // Rare: Friends are special unlocks
-    stuff: 15, // Free: Stuff is given out frequently
-    effects: 20, // Free: Effects are given out frequently
+    friends: 90, // Rare: Friends are special unlocks
+    stuff: 25, // Free: Stuff is given out frequently
+    effects: 40, // Free: Effects are given out frequently
   }
 
   const step = increments[tab]

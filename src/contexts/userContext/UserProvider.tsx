@@ -17,6 +17,7 @@ import { type AuthStatus, UserContext } from './useUserContext'
 import {
   doc,
   getDoc,
+  increment,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -85,9 +86,18 @@ const UserProvider: FC<Props> = ({ children }) => {
   const { data: activePackMeta, loading: isPackMetaLoading } =
     useFirestoreDoc<PackMeta>(packMetaRef)
 
+  const activeSceneMetaRef = useMemo(() => {
+    if (!user?.uid || !user?.activeScene || !db) return null
+    return doc(db, 'users', user.uid, 'sceneMeta', user.activeScene)
+  }, [user?.uid, user?.activeScene, db])
+
+  const { data: activeSceneMeta, loading: isSceneMetaLoading } =
+    useFirestoreDoc<UserSceneMeta>(activeSceneMetaRef)
+
   const { execute: migrateUserToFacts } = useCloudFunction('migrateUserToFacts')
 
-  const isLoading = authStatus === 'loading' || isPackMetaLoading
+  const isLoading =
+    authStatus === 'loading' || isPackMetaLoading || isSceneMetaLoading
 
   useEffect(() => {
     if (user?.uid) {
@@ -165,6 +175,31 @@ const UserProvider: FC<Props> = ({ children }) => {
       debounceTimerRef.current = setTimeout(commitUserUpdates, 300)
     },
     [commitUserUpdates]
+  )
+
+  const incrementSceneXP = useCallback(
+    async (amount = 1) => {
+      if (!db || !user?.uid) return
+      const sceneId = user.activeScene || 'garden'
+      const sceneMetaRef = doc(db, 'users', user.uid, 'sceneMeta', sceneId)
+
+      try {
+        // Use setDoc with merge: true to ensure the document exists.
+        // updateDoc fails if the document is missing.
+        await setDoc(
+          sceneMetaRef,
+          {
+            sceneId,
+            xp: increment(amount),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
+      } catch (err) {
+        logger('Error incrementing scene XP:', err)
+      }
+    },
+    [db, user?.uid, user?.activeScene, logger]
   )
 
   const selectScene = useCallback(
@@ -329,6 +364,8 @@ const UserProvider: FC<Props> = ({ children }) => {
         activePackMeta,
         isLoading,
         activePackFactIds,
+        activeSceneMeta,
+        incrementSceneXP,
         selectScene,
       }}
     >

@@ -10,6 +10,7 @@ import { BOX_TIMES } from '../../constants/appConstants'
 import { useLogger } from '../../hooks/useLogger'
 import { debugQueue } from '../../utilities/debugQueue'
 import { useReviewSession } from '../reviewSession/reviewSessionContext'
+import { useUser } from '../userContext/useUserContext'
 
 import { computeNewBox, estimateReviewLoad } from './helpers/srsLogic'
 
@@ -33,6 +34,7 @@ export function useCardScheduler(
 ) {
   const logger = useLogger('Scheduler')
   const { addUpdatedFactToSession, finishSession } = useReviewSession()
+  const { incrementSceneXP } = useUser()
   const queueRef = useRef<MinPriorityQueue<UserFact> | null>(null)
   const [currentFact, setCurrentFact] = useState<UserFact | null>(null)
   const [isQueueEmpty, setIsQueueEmpty] = useState(false)
@@ -144,6 +146,7 @@ export function useCardScheduler(
 
       const updated: UserFact = {
         ...fact,
+        streak: correct ? (fact.streak || 0) + 1 : 0,
         box: newBox,
         seen: fact.seen + 1,
         correct: fact.correct + (correct ? 1 : 0),
@@ -153,6 +156,13 @@ export function useCardScheduler(
         lastElapsedTime: elapsed,
         lastReviewed: now,
         avgResponseTime: newAvgResponseTime,
+      }
+
+      if (correct) {
+        // Award 2XP if this was a "recovery" correct answer (Bonus Token logic)
+        const isBonusRecovery = !fact.wasLastReviewCorrect && fact.seen > 0
+        const xpAmount = isBonusRecovery ? 2 : 1
+        incrementSceneXP(xpAmount)
       }
 
       if (fact.seen === 0 && user) {
@@ -215,6 +225,7 @@ export function useCardScheduler(
       finishSession,
       user,
       updateUser,
+      incrementSceneXP,
     ]
   )
   const startSessionRef = useRef(startSession)

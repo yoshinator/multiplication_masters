@@ -30,7 +30,8 @@ const REGRESS_WIDTH =
   (DURATION_REGRESS_MS / TOTAL_THRESHOLD_MS) * AVAILABLE_PERCENT
 const ZoneTimer: FC<Props> = ({ maxTime }) => {
   const time = useTimerValue()
-  const progressPercent = Math.min(Math.max((time / maxTime) * 100, 0), 100)
+  const progressPercent =
+    maxTime > 0 ? Math.min(Math.max((time / maxTime) * 100, 0), 100) : 0
 
   //   The transition is disabled only when the bar is visually full
   const isResetting = progressPercent >= 99.99
