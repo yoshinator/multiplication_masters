@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
+import SetPinModal from '../../components/Login/SetPinModal'
 import SavedScenesGallery from '../../components/SavedScenesGallery/SavedScenesGallery'
 import {
   DEFAULT_SESSION_LENGTH,
@@ -141,7 +142,7 @@ const PACK_LABELS: Partial<Record<PackKey, string>> = {
  */
 const ProfilePage: FC = () => {
   const { auth } = useFirebaseContext()
-  const { closeModal, openModal } = useModal()
+  const { openModal, closeModal } = useModal()
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
   const { sessionLength } = useSessionStatusContext()
@@ -163,6 +164,14 @@ const ProfilePage: FC = () => {
   }
 
   const isAnonymous = auth?.currentUser?.isAnonymous
+  const providerIds =
+    auth?.currentUser?.providerData?.map((p) => p.providerId) || []
+  const canEnablePinSignIn =
+    Boolean(auth?.currentUser) &&
+    !isAnonymous &&
+    (providerIds.includes('google.com') || providerIds.includes('password'))
+
+  const hasPinSignIn = Boolean(user?.hasUsernamePin)
 
   return (
     <Box
@@ -189,6 +198,17 @@ const ProfilePage: FC = () => {
       >
         {user?.username ?? 'Student Profile'}
       </Typography>
+
+      {canEnablePinSignIn && !hasPinSignIn ? (
+        <Button
+          variant="outlined"
+          onClick={() => openModal(<SetPinModal onClose={closeModal} />)}
+          sx={{ mb: 2 }}
+        >
+          Enable Username + PIN sign-in
+        </Button>
+      ) : null}
+
       {isAnonymous && (
         <Button
           variant="outlined"

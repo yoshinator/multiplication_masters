@@ -25,9 +25,16 @@ import CoppaPage from './pages/CoppaPage/CoppaPage'
 import FerpaPage from './pages/FerpaPage/FerpaPage'
 import TermsOfServicePage from './pages/TermsOfServicePage/TermsOfServicePage'
 import Footer from './components/Footer/Footer'
+import { useUser } from './contexts/userContext/useUserContext'
+import { useAuthActions } from './hooks/useAuthActions'
+import { useInactivityLogout } from './hooks/useInactivityLogout'
+import { useNotification } from './contexts/notificationContext/notificationContext'
 
 const App: FC = () => {
   const location = useLocation()
+  const { user, authStatus } = useUser()
+  const { signOut } = useAuthActions()
+  const { showNotification } = useNotification()
 
   const shouldShowFooter =
     matchPath({ path: ROUTES.HOME, end: true }, location.pathname) != null ||
@@ -35,6 +42,18 @@ const App: FC = () => {
     matchPath({ path: ROUTES.COPPA, end: true }, location.pathname) != null ||
     matchPath({ path: ROUTES.FERPA, end: true }, location.pathname) != null ||
     matchPath({ path: ROUTES.TERMS, end: true }, location.pathname) != null
+
+  const isUsernamePinSession =
+    authStatus === 'signedIn' && user?.lastSignInMethod === 'usernamePin'
+
+  useInactivityLogout({
+    enabled: Boolean(isUsernamePinSession),
+    timeoutMs: 5 * 60 * 1000,
+    onTimeout: async () => {
+      await signOut()
+      showNotification('Signed out due to inactivity.', 'info')
+    },
+  })
 
   return (
     <Box

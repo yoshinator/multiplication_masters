@@ -20,7 +20,7 @@ type SaveProgressModalProps = {
 }
 
 const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
-  const [isEmailMode, setIsEmailMode] = useState(false)
+  const [mode, setMode] = useState<'menu' | 'email'>('menu')
   const [email, setEmail] = useState('')
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [showTermsError, setShowTermsError] = useState(false)
@@ -55,7 +55,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
       </Box>
 
       <Stack spacing={2} sx={{ mb: 2 }}>
-        {!isEmailMode ? (
+        {mode === 'menu' ? (
           <>
             <Button
               variant="contained"
@@ -69,7 +69,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
             <Button
               variant="outlined"
               size="large"
-              onClick={() => setIsEmailMode(true)}
+              onClick={() => setMode('email')}
               fullWidth
             >
               Email me a link
@@ -96,7 +96,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
             <Button
               onClick={() => {
                 setEmail('')
-                setIsEmailMode(false)
+                setMode('menu')
                 setShowTermsError(false)
               }}
               fullWidth
@@ -139,7 +139,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
         <Button
           onClick={() => {
             setEmail('')
-            setIsEmailMode(false)
+            setMode('menu')
             setAcceptedTerms(false)
             setShowTermsError(false)
             onClose()
@@ -152,7 +152,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
         <Button
           onClick={() => {
             setEmail('')
-            setIsEmailMode(false)
+            setMode('menu')
             setAcceptedTerms(false)
             setShowTermsError(false)
             handleSnooze()
