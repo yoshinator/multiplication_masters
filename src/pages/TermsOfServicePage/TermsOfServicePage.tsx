@@ -231,6 +231,7 @@ const TermsOfServicePage = () => {
           law and venue with counsel.
         </Typography>
 
+        <Divider sx={{ my: 3 }} />
         <Typography variant="h6" gutterBottom>
           13) Contact
         </Typography>
