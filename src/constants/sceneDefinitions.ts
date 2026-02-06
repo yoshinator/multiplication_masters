@@ -59,9 +59,9 @@ export const SCENE_ITEMS: SceneItemDefinition[] = [
     isBackground: true,
     zHint: 'back',
   }),
-  ...range('garden', 'Friends', 13, 'friends'),
-  ...range('garden', 'Stuff', 15, 'stuff'),
-  ...range('garden', 'Effects', 13, 'effects'),
+  ...range('garden', 'Friends', 14, 'friends'),
+  ...range('garden', 'Stuff', 17, 'stuff'),
+  ...range('garden', 'Effects', 12, 'effects'),
 ]
 
 // -------------- SPACEPORT THEME --------------
