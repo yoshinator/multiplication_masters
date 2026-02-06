@@ -5,4 +5,8 @@ export const ROUTES = {
   PROFILE: '/profile',
   STATS: '/stats',
   SIGNIN: '/finish-signin',
+  PRIVACY: '/privacy',
+  COPPA: '/coppa',
+  FERPA: '/ferpa',
+  TERMS: '/terms',
 }
