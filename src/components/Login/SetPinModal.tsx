@@ -3,6 +3,7 @@ import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
 import AppModal from '../AppModal/AppModal'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useUser } from '../../contexts/userContext/useUserContext'
+import { useNotification } from '../../contexts/notificationContext/notificationContext'
 
 type SetPinModalProps = {
   onClose: () => void
@@ -11,6 +12,7 @@ type SetPinModalProps = {
 const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
   const { user } = useUser()
   const { setUsernamePin } = useAuthActions()
+  const { showNotification } = useNotification()
 
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
@@ -29,6 +31,7 @@ const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
     setIsSubmitting(true)
     try {
       await setUsernamePin(pin)
+      showNotification('PIN sign-in enabled!', 'success')
       onClose()
     } finally {
       setIsSubmitting(false)
@@ -58,11 +61,12 @@ const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
           onChange={(e) =>
             setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
           }
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{ htmlInput: { inputMode: 'numeric' } }}
           error={Boolean(pin) && !pinOk}
           helperText={pin ? 'Enter a 6-digit PIN' : ' '}
           fullWidth
           autoFocus
+          autoComplete="off"
         />
 
         <TextField
@@ -72,10 +76,11 @@ const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
           onChange={(e) =>
             setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))
           }
-          inputProps={{ inputMode: 'numeric' }}
+          slotProps={{ htmlInput: { inputMode: 'numeric' } }}
           error={Boolean(confirmPin) && !confirmOk}
           helperText={confirmPin ? 'Re-enter your PIN' : ' '}
           fullWidth
+          autoComplete="off"
         />
 
         <Button

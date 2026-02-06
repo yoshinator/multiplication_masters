@@ -14,6 +14,11 @@ export const useInactivityLogout = ({
   const lastActivityAtRef = useRef<number>(Date.now())
   const timeoutIdRef = useRef<number | null>(null)
   const lastMarkAtRef = useRef<number>(0)
+  const onTimeoutRef = useRef<Options['onTimeout']>(onTimeout)
+
+  useEffect(() => {
+    onTimeoutRef.current = onTimeout
+  }, [onTimeout])
 
   const events = useMemo(
     () =>
@@ -42,7 +47,7 @@ export const useInactivityLogout = ({
         async () => {
           const elapsedNow = Date.now() - lastActivityAtRef.current
           if (elapsedNow >= timeoutMs) {
-            await onTimeout()
+            await onTimeoutRef.current()
             return
           }
           schedule()
@@ -65,7 +70,7 @@ export const useInactivityLogout = ({
       if (document.visibilityState === 'visible') {
         const elapsedNow = Date.now() - lastActivityAtRef.current
         if (elapsedNow >= timeoutMs) {
-          void onTimeout()
+          void onTimeoutRef.current()
           return
         }
         schedule()
@@ -91,5 +96,5 @@ export const useInactivityLogout = ({
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [enabled, timeoutMs, onTimeout, events])
+  }, [enabled, timeoutMs, events])
 }

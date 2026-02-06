@@ -56,6 +56,7 @@ export const useAuthActions = () => {
       )
     } catch (error: unknown) {
       logger('Error setting lastSignInMethod', error)
+      throw error
     }
   }
 
