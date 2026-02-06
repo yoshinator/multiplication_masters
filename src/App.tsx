@@ -1,6 +1,12 @@
 import { type FC } from 'react'
 import { Box, Toolbar } from '@mui/material'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  matchPath,
+} from 'react-router-dom'
 
 import { ROUTES } from './constants/routeConstants'
 
@@ -14,8 +20,22 @@ import TimerContextProvider from './contexts/timerContext/TimerProvider'
 import FinishSignin from './components/FinishSignin/FinishSignin'
 import FeedbackButton from './components/FeedbackButton/FeedbackButton'
 import SceneBuilderPage from './pages/SceneBuilderPage/SceneBuilderPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage/PrivacyPolicyPage'
+import CoppaPage from './pages/CoppaPage/CoppaPage'
+import FerpaPage from './pages/FerpaPage/FerpaPage'
+import TermsOfServicePage from './pages/TermsOfServicePage/TermsOfServicePage'
+import Footer from './components/Footer/Footer'
 
 const App: FC = () => {
+  const location = useLocation()
+
+  const shouldShowFooter =
+    matchPath({ path: ROUTES.HOME, end: true }, location.pathname) != null ||
+    matchPath({ path: ROUTES.PRIVACY, end: true }, location.pathname) != null ||
+    matchPath({ path: ROUTES.COPPA, end: true }, location.pathname) != null ||
+    matchPath({ path: ROUTES.FERPA, end: true }, location.pathname) != null ||
+    matchPath({ path: ROUTES.TERMS, end: true }, location.pathname) != null
+
   return (
     <Box
       sx={{
@@ -68,10 +88,15 @@ const App: FC = () => {
         />
 
         <Route path={ROUTES.SIGNIN} element={<FinishSignin />} />
+        <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
+        <Route path={ROUTES.COPPA} element={<CoppaPage />} />
+        <Route path={ROUTES.FERPA} element={<FerpaPage />} />
+        <Route path={ROUTES.TERMS} element={<TermsOfServicePage />} />
 
         <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
       </Routes>
       <FeedbackButton />
+      {shouldShowFooter ? <Footer /> : null}
     </Box>
   )
 }
