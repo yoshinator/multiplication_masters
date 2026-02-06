@@ -279,6 +279,7 @@ const PrivacyPolicyPage = () => {
           App if required.
         </Typography>
 
+        <Divider sx={{ my: 3 }} />
         <Typography variant="h6" gutterBottom>
           11) Contact
         </Typography>
