@@ -4,7 +4,29 @@ service cloud.firestore {
 
     // User root doc
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      // Prevent clients from marking username as immutable or changing it once immutable.
+      // The server (Cloud Functions) can set `usernameSetByUser: true` and `hasUsernamePin: true`.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+
+        // If the username has been locked, it cannot change.
+        && (resource.data.usernameSetByUser == true
+            ? request.resource.data.username == resource.data.username
+            : true)
+
+        // Clients cannot flip usernameSetByUser from non-true to true.
+        && (resource.data.usernameSetByUser == true
+            ? request.resource.data.usernameSetByUser == true
+            : request.resource.data.usernameSetByUser != true)
+
+        // Clients cannot flip hasUsernamePin from non-true to true.
+        && (resource.data.hasUsernamePin == true
+            ? request.resource.data.hasUsernamePin == true
+            : request.resource.data.hasUsernamePin != true);
     }
 
     // Any subcollections under the user
@@ -24,6 +46,15 @@ service cloud.firestore {
         && (!('details' in request.resource.data) || request.resource.data.details == null || request.resource.data.details.size() <= 4000);
 
       allow read, update, delete: if false;
+    }
+
+    // Prevent username enumeration and protect PIN secrets.
+    match /usernameIndex/{usernameKey} {
+      allow read, write: if false;
+    }
+
+    match /userSecrets/{uid} {
+      allow read, write: if false;
     }
   }
 }

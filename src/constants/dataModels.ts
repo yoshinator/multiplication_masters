@@ -38,9 +38,14 @@ export type UserCard = {
 
 export type PackKey = 'mul_36' | 'mul_144' | 'mul_576'
 
+export type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
+
 export interface User {
   uid: string
   username: string
+  usernameSetByUser?: boolean
+  hasUsernamePin?: boolean
+  lastSignInMethod?: SignInMethod
   userRole: 'student' | 'teacher' | 'parent'
   createdAt: Timestamp | null
   lastLogin: Timestamp | null

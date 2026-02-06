@@ -43,7 +43,7 @@ Multiplication Masters is a modern web application designed to help students mas
 ## Repository Structure
 
 ```
-multiplication_masters/
+.
 ├── src/                    # Frontend source code
 ├── functions/              # Firebase Cloud Functions (backend)
 ├── public/                 # Static assets
@@ -82,10 +82,14 @@ Reusable UI components organized by feature:
 - **CardLoadingSkeleton** - Loading state for flash cards
 - **DailyGoalPanel** - Daily learning goals and progress tracking
 - **FeedbackButton/FeedbackModal** - User feedback collection system
-- **FinishSignin** - OAuth authentication completion handler
+- **FinishSignin** - Email-link authentication completion handler
 - **Header** - Application navigation bar
 - **LevelUpAnimation** - Achievement celebration animations
-- **Login** - Username authentication with progress saving
+- **Login** - Sign-in and account upgrade flows:
+  - Google sign-in
+  - Email-link sign-in
+  - Username + 6-digit PIN sign-in (if enabled)
+  - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance)
 - **MultiplicationCard** - Flash card interface with timer and zones
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection for authenticated users
@@ -120,6 +124,7 @@ Custom React hooks for shared logic:
 - **useFirestore** - Firestore query helpers
 - **useIsMobile** - Responsive breakpoint detection
 - **useKeyboardOpen** - Mobile keyboard visibility detection
+- **useInactivityLogout** - Inactivity timeout handler (used to auto-logout username+PIN sessions)
 - **useLogger** - Error logging and debugging utilities
 - **useSaveProgress** - Session data persistence
 - **useThresholdAnimation** - Performance-based visual feedback
@@ -132,6 +137,10 @@ Top-level route components:
 - **ProfilePage** - User profile and settings management
 - **SceneBuilderPage** - Scene customization interface
 - **StatsPage** - Comprehensive performance analytics dashboard
+- **PrivacyPolicyPage** - Privacy policy
+- **TermsOfServicePage** - Terms of service
+- **CoppaPage** - COPPA notice
+- **FerpaPage** - FERPA notice
 
 ### Constants (`src/constants/`)
 Type definitions and configuration:
@@ -166,6 +175,13 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 - Creates default scene metadata (garden theme with 0 XP)
 - Sets up initial pack configuration (mul_36 and mul_144)
 - Marks user as initialized to prevent re-runs
+
+#### Username + PIN auth (callables)
+- **`signInWithUsernamePin`**: Validates username + 6-digit PIN, enforces lockout (5 failed attempts → 1 hour), and returns a Firebase custom token.
+- **`setUsernamePin`**: Enables username+PIN sign-in for an existing account by storing a bcrypt hash server-side and marking `hasUsernamePin`.
+  - Eligibility is enforced server-side: the user must have signed in with Google or an email link (anonymous users cannot enable a PIN).
+  - The username is taken from the existing `users/{uid}.username` field.
+- **`resetUsernamePinLockout`**: Clears temporary lockout state after successful non-PIN sign-in.
 
 #### `provisionFacts`
 **Trigger**: HTTPS callable function  
@@ -244,7 +260,12 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 - **Dark/Light Themes**: User-preference theme switching
 - **Real-Time Feedback**: Color-coded zones (green/yellow/red) based on response speed
 - **Offline Preparation**: Firebase emulator support for offline development
-- **Authentication**: Username-based login with progress saving across devices
+- **Authentication**:
+  - Anonymous sessions for quick start
+  - Google sign-in
+  - Email-link sign-in
+  - Optional username + 6-digit PIN sign-in (enabled from Profile after Google/email-link sign-in)
+  - Username+PIN sessions auto-logout after 5 minutes of inactivity
 
 ### Educational Use Cases
 - **Individual Learning**: Self-paced fact mastery for students
@@ -344,8 +365,19 @@ The architecture separates concerns between frontend (React/TypeScript) and back
 - Add routes for Profile, Homepage, Training, Scene Builder.
 
 ### User Authentication
-- Basic username login flow implemented.
-- Auth state management and routing integration.
+- Firebase Auth supports Anonymous, Google, and Email-link sign-in.
+- Username + PIN is implemented via Cloud Functions minting Firebase custom tokens.
+- PIN setup is only allowed from Profile after a user has authenticated via Google or email-link.
+- PIN security controls:
+  - 6-digit numeric PIN
+  - Server-side bcrypt hashing (no plaintext PIN stored)
+  - 5 failed attempts triggers a 1-hour lockout
+  - Lockout is reset after successful Google/email-link sign-in
+- App behavior: username+PIN sessions auto-logout after 5 minutes of inactivity.
+
+Legal & compliance routes:
+- `/privacy`, `/terms`, `/coppa`, `/ferpa`
+- The `Footer` is intentionally shown only on Home + legal pages.
 
 
 ---
@@ -385,14 +417,17 @@ The architecture separates concerns between frontend (React/TypeScript) and back
 - Add proper licensing.
 
 ### User Sign Up and Auth
-- Add email/password signup.
-- Add Google sign-in.
+- (Optional) Add email/password signup (currently uses email-link).
+- (Optional) Add additional providers / account management UX.
 - Add Parent / Teacher - Dashboard
 
 ### Security and Privacy
 - Audit repository for any exposed sensitive keys.
-- Add privacy policy and terms of use.
-- Ensure compliance with Firebase rules.
+- Privacy Policy, Terms, COPPA, and FERPA pages are implemented and linked from the UI.
+- Firestore rules isolate user data and block client access to sensitive auth collections (`usernameIndex`, `userSecrets`).
+
+## Legal Pages
+The app includes in-app legal pages for Privacy, Terms, COPPA, and FERPA. These are accessible from the `Footer` and are routed under `/privacy`, `/terms`, `/coppa`, and `/ferpa`.
 
 
 

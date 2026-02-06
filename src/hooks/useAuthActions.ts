@@ -9,17 +9,56 @@ import {
   signInWithEmailLink,
   EmailAuthProvider,
   linkWithCredential,
+  signInWithCustomToken,
 } from 'firebase/auth'
-import { getFirestore, doc, updateDoc, Timestamp } from 'firebase/firestore'
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  updateDoc,
+  Timestamp,
+} from 'firebase/firestore'
 import { useFirebaseContext } from '../contexts/firebase/firebaseContext'
 import { useLogger } from './useLogger'
 import { useNotification } from '../contexts/notificationContext/notificationContext'
 import { extractErrorMessage } from '../utilities/typeutils'
+import { useCloudFunction } from './useCloudFunction'
+import type { SignInMethod } from '../constants/dataModels'
 
 export const useAuthActions = () => {
   const { auth, app } = useFirebaseContext()
   const logger = useLogger('useAuthActions')
   const { showNotification } = useNotification()
+
+  const { execute: signInWithUsernamePinFn } = useCloudFunction<
+    { username: string; pin: string },
+    { customToken: string }
+  >('signInWithUsernamePin')
+
+  const { execute: setUsernamePinFn } = useCloudFunction<
+    { pin: string },
+    { success: true }
+  >('setUsernamePin')
+
+  const { execute: resetUsernamePinLockoutFn } = useCloudFunction<
+    undefined,
+    { success: true }
+  >('resetUsernamePinLockout')
+
+  const setLastSignInMethod = async (uid: string, method: SignInMethod) => {
+    try {
+      if (!app) return
+      const db = getFirestore(app)
+      await setDoc(
+        doc(db, 'users', uid),
+        { lastSignInMethod: method },
+        { merge: true }
+      )
+    } catch (error: unknown) {
+      logger('Error setting lastSignInMethod', error)
+      throw error
+    }
+  }
 
   // #region Actions
   const loginAnonymously = async () => {
@@ -30,6 +69,8 @@ export const useAuthActions = () => {
       }
 
       const credential = await signInAnonymously(auth)
+
+      await setLastSignInMethod(credential.user.uid, 'anonymous')
 
       return credential
     } catch (error: unknown) {
@@ -53,7 +94,18 @@ export const useAuthActions = () => {
     try {
       if (!auth) throw new Error('Firebase not ready')
       const provider = new GoogleAuthProvider()
-      return await signInWithPopup(auth, provider)
+      const credential = await signInWithPopup(auth, provider)
+      await setLastSignInMethod(credential.user.uid, 'google')
+
+      // If the user also has username+PIN configured, signing in with another
+      // method should clear any temporary PIN lockout.
+      try {
+        await resetUsernamePinLockoutFn()
+      } catch {
+        // non-fatal
+      }
+
+      return credential
     } catch (error: unknown) {
       logger('Error logging in with Google', error)
       showNotification(extractErrorMessage(error), 'error')
@@ -128,15 +180,60 @@ export const useAuthActions = () => {
       if (auth.currentUser?.isAnonymous) {
         const cred = EmailAuthProvider.credentialWithLink(email, url)
         const result = await linkWithCredential(auth.currentUser, cred)
+        await setLastSignInMethod(result.user.uid, 'emailLink')
+
+        try {
+          await resetUsernamePinLockoutFn()
+        } catch {
+          // non-fatal
+        }
         showNotification('Account upgraded!', 'success')
         return result
       }
 
       const result = await signInWithEmailLink(auth, email, url)
+      await setLastSignInMethod(result.user.uid, 'emailLink')
+
+      try {
+        await resetUsernamePinLockoutFn()
+      } catch {
+        // non-fatal
+      }
       showNotification('Successfully signed in!', 'success')
       return result
     } catch (error: unknown) {
       logger('Error finishing email sign in', error)
+      showNotification(extractErrorMessage(error), 'error')
+      throw error
+    }
+  }
+
+  const loginWithUsernamePin = async (username: string, pin: string) => {
+    try {
+      if (!auth) throw new Error('Firebase not ready')
+
+      const result = await signInWithUsernamePinFn({ username, pin })
+      const customToken = result?.data?.customToken
+      if (!customToken) {
+        throw new Error('No custom token returned')
+      }
+
+      const credential = await signInWithCustomToken(auth, customToken)
+      await setLastSignInMethod(credential.user.uid, 'usernamePin')
+
+      return credential
+    } catch (error: unknown) {
+      logger('Error logging in with username+PIN', error)
+      showNotification(extractErrorMessage(error), 'error')
+      throw error
+    }
+  }
+
+  const setUsernamePin = async (pin: string) => {
+    try {
+      await setUsernamePinFn({ pin })
+    } catch (error: unknown) {
+      logger('Error setting username+PIN', error)
       showNotification(extractErrorMessage(error), 'error')
       throw error
     }
@@ -165,5 +262,7 @@ export const useAuthActions = () => {
     sendLoginLink,
     isEmailLink,
     finishEmailSignIn,
+    loginWithUsernamePin,
+    setUsernamePin,
   }
 }

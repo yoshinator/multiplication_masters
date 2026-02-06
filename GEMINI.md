@@ -32,7 +32,7 @@
 ## Repository Structure
 
 ```
-multiplication_masters/
+.
 ├── src/
 │   ├── components/       # Reusable UI components
 │   ├── contexts/         # React Context providers for state
@@ -96,6 +96,12 @@ Routes:
 - `/profile` - ProfilePage (user settings) - requires auth
 - `/builder` - SceneBuilderPage (scene customization) - requires auth
 - `/finish-signin` - FinishSignin (email link authentication handler)
+- `/privacy` - PrivacyPolicyPage
+- `/terms` - TermsOfServicePage
+- `/coppa` - CoppaPage
+- `/ferpa` - FerpaPage
+
+**Layout note**: `Footer` is intentionally shown only on Home + legal routes.
 
 Protected routes use the `RequireUser` component wrapper.
 
@@ -111,7 +117,11 @@ Organized by feature, key components include:
 - **FinishSignin** - OAuth authentication completion handler
 - **Header** - Application navigation bar with user menu
 - **LevelUpAnimation** - Achievement celebration animations
-- **Login** - Username authentication with progress saving
+- **Login** - Sign-in and account upgrade flows:
+  - `LoginModal` for Google / email-link / username+PIN sign-in
+  - `SaveProgressModal` for upgrading anonymous accounts (requires Terms acceptance)
+  - `UsernamePinLogin` for kid-friendly username + 6-digit PIN sign-in
+  - `SetPinModal` (opened from Profile) to enable username+PIN sign-in
 - **MultiplicationCard** - Flash card interface with timer and zones (correct/incorrect/skip)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection HOC for authenticated users
@@ -182,6 +192,7 @@ Custom React hooks for shared logic:
 - **useFirestore** - Firestore query/doc subscription hooks (`useFirestoreQuery`, `useFirestoreDoc`)
 - **useIsMobile** - Responsive breakpoint detection (MUI theme-based)
 - **useKeyboardOpen** - Mobile keyboard visibility detection (viewport-based)
+- **useInactivityLogout** - Signs out after inactivity (used for username+PIN sessions)
 - **useLogger** - Conditional console logging utility
 - **useSaveProgress** - Handles account upgrade prompts and email linking
 - **useThresholdAnimation** - Triggers animations when values cross thresholds (e.g., level up)
@@ -194,6 +205,10 @@ Top-level route components:
 - **ProfilePage** - User profile, settings, pack selection, and account management
 - **SceneBuilderPage** - Scene customization interface with Konva canvas
 - **StatsPage** - Comprehensive performance analytics dashboard with lifetime stats
+- **PrivacyPolicyPage** - Privacy policy and data handling disclosures
+- **TermsOfServicePage** - Terms and acceptable use
+- **CoppaPage** - COPPA notice and parent guidance
+- **FerpaPage** - FERPA notice (school/education context)
 
 ### Constants (`src/constants/`)
 Type definitions and configuration:
@@ -232,12 +247,14 @@ Node.js 24 TypeScript Cloud Functions:
 - Fact provisioning and deck generation
 - Data migration utilities
 - Scheduled functions (if applicable)
+- Username+PIN auth callables (custom-token minting + PIN setup + lockout reset)
 
 **Package**: `functions/package.json`
 ```json
 {
   "engines": { "node": "24" },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "firebase-admin": "^12.0.0",
     "firebase-functions": "^7.0.3"
   }
@@ -248,13 +265,17 @@ Node.js 24 TypeScript Cloud Functions:
 
 ### User Document (`users/{uid}`)
 ```typescript
+type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
+
 interface User {
   id: string
   displayName: string | null
   email: string | null
   photoURL: string | null
+  username?: string
   createdAt: number
   lastLogin: number
+  lastSignInMethod?: SignInMethod
   totalSessions: number
   totalCorrect: number
   totalIncorrect: number
@@ -262,6 +283,8 @@ interface User {
   userDefaultSessionLength: number
   showTour: boolean
   upgradePromptSnoozedUntil?: Timestamp
+  hasUsernamePin?: boolean
+  usernameSetByUser?: boolean
   activePack: string // e.g., "1-12"
   activeScene?: SceneTheme
   sceneXP: number
@@ -352,6 +375,13 @@ interface SessionRecord {
 - **Anonymous**: `loginAnonymously()` → auto-generates username
 - **Google**: `loginWithGoogle()` or `linkGoogleAccount()` for upgrading
 - **Email Link**: `sendLoginLink()` → user clicks link → `FinishSignin` page handles sign-in
+- **Username + PIN**:
+  - Sign-in: callable `signInWithUsernamePin` validates username + 6-digit PIN, enforces lockout (5 attempts → 1 hour), and returns a Firebase custom token.
+  - Enablement: callable `setUsernamePin` stores bcrypt hash server-side and marks `hasUsernamePin` / `usernameSetByUser` on the user doc.
+  - Eligibility: PIN enablement is only allowed after signing in via Google or email-link (not during anonymous upgrade).
+  - Lockout reset: callable `resetUsernamePinLockout` is invoked after successful Google/email-link sign-in.
+
+**Security note**: The username index and PIN hashes live in server-only collections (`usernameIndex`, `userSecrets`) and are blocked from client access in `firestore.rules`.
 
 ### Pack System
 Users can select packs (e.g., "1-12" or "13-24") from `ProfilePage`. Active pack determines which facts are loaded into the card scheduler.
@@ -391,6 +421,7 @@ Users can customize practice session backgrounds using Konva canvas. Scenes are 
 - Debounce rapid user input with `useDebouncedCallback`
 - Lazy load components where appropriate
 - Batch Firestore writes (see `ReviewSession`)
+- In `useInactivityLogout`, the `onTimeout` callback is stored in a ref to avoid resubscribing listeners/timers on every render while still calling the latest callback.
 
 ## Common Patterns
 
@@ -491,5 +522,5 @@ Runs Vite dev server on `http://localhost:5173`
 
 ---
 
-**Last Updated**: 2026-02-06
+**Last Updated**: 2026-02-05
 **Repository**: [yoshinator/multiplication_masters](https://github.com/yoshinator/multiplication_masters)
