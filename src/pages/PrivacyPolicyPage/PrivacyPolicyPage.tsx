@@ -286,7 +286,7 @@ const PrivacyPolicyPage = () => {
         <Typography variant="body1" component="p">
           Questions or requests? Use the in-app Feedback button or email us at{' '}
           <Link href="mailto:support@mathbuilders.com">
-            support@yourdomain.com
+            support@mathbuilders.com
           </Link>{' '}
         </Typography>
       </Paper>
