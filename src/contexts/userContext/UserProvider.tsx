@@ -24,7 +24,7 @@ import {
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore'
-import { onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth'
 import { useLogger } from '../../hooks/useLogger'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
@@ -73,6 +73,15 @@ const UserProvider: FC<Props> = ({ children }) => {
     useFirestoreDoc<UserSceneMeta>(activeSceneMetaRef)
 
   const { execute: migrateUserToFacts } = useCloudFunction('migrateUserToFacts')
+  const { execute: ensureUserInitialized } = useCloudFunction(
+    'ensureUserInitialized'
+  )
+
+  const ensureUserInitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+  const ensureUserInitInFlightRef = useRef(false)
+  const missingUserDocSinceRef = useRef<number | null>(null)
 
   const isLoading =
     authStatus === 'loading' || isPackMetaLoading || isSceneMetaLoading
@@ -221,6 +230,13 @@ const UserProvider: FC<Props> = ({ children }) => {
         userUnsubscribe = null
       }
 
+      if (ensureUserInitTimerRef.current) {
+        clearTimeout(ensureUserInitTimerRef.current)
+        ensureUserInitTimerRef.current = null
+      }
+      ensureUserInitInFlightRef.current = false
+      missingUserDocSinceRef.current = null
+
       if (isCancelled) return
 
       if (!authUser) {
@@ -243,8 +259,55 @@ const UserProvider: FC<Props> = ({ children }) => {
             if (!docSnap.exists()) {
               setUser(null)
               setAuthStatus('loading')
+
+              if (missingUserDocSinceRef.current == null) {
+                missingUserDocSinceRef.current = Date.now()
+              }
+
+              const elapsedMs = Date.now() - missingUserDocSinceRef.current
+
+              // Try to recover by asking the server to initialize the user doc.
+              // This handles accounts created before the Auth onCreate initializer
+              // existed, as well as slow/failed trigger delivery.
+              if (
+                !ensureUserInitInFlightRef.current &&
+                !ensureUserInitTimerRef.current
+              ) {
+                ensureUserInitTimerRef.current = setTimeout(async () => {
+                  ensureUserInitTimerRef.current = null
+                  if (isCancelled) return
+
+                  ensureUserInitInFlightRef.current = true
+                  try {
+                    await ensureUserInitialized()
+                  } catch (err) {
+                    logger('ensureUserInitialized failed:', err)
+                  } finally {
+                    ensureUserInitInFlightRef.current = false
+                  }
+                }, 1000)
+              }
+
+              // Don’t allow infinite loading. If we still have no user doc after
+              // a reasonable window, sign out so the UI can recover.
+              if (elapsedMs > 20000) {
+                logger(
+                  'User doc missing for too long; signing out to recover UI',
+                  { uid, elapsedMs }
+                )
+                void firebaseSignOut(auth)
+                setUser(null)
+                setAuthStatus('signedOut')
+              }
               return
             }
+
+            if (ensureUserInitTimerRef.current) {
+              clearTimeout(ensureUserInitTimerRef.current)
+              ensureUserInitTimerRef.current = null
+            }
+            ensureUserInitInFlightRef.current = false
+            missingUserDocSinceRef.current = null
 
             const userData = docSnap.data() as User
             setUser(userData)
@@ -294,8 +357,15 @@ const UserProvider: FC<Props> = ({ children }) => {
       if (userUnsubscribe) {
         userUnsubscribe()
       }
+
+      if (ensureUserInitTimerRef.current) {
+        clearTimeout(ensureUserInitTimerRef.current)
+        ensureUserInitTimerRef.current = null
+      }
+      ensureUserInitInFlightRef.current = false
+      missingUserDocSinceRef.current = null
     }
-  }, [auth, db, logger])
+  }, [auth, db, logger, ensureUserInitialized])
 
   // Clean up effect no implicit return for readability.
   useEffect(() => {

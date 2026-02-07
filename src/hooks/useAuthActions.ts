@@ -70,6 +70,7 @@ export const useAuthActions = () => {
                 ? String((retryError as { code?: unknown }).code)
                 : null
             if (retryCode === 'not-found') return
+            logger('Error setting lastSignInMethod on retry:', retryError)
             throw retryError
           }
         }
