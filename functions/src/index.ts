@@ -15,6 +15,7 @@ const USERNAME_INDEX_COLLECTION = 'usernameIndex'
 const USER_SECRETS_COLLECTION = 'userSecrets'
 const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
+const MAX_USERNAME_ATTEMPTS = 10
 
 const normalizeUsernameKey = (username: string): string =>
   username.trim().toLowerCase()
@@ -77,13 +78,76 @@ const generateRandomUsername = (): string => {
   return `${adj}${animal}${numberStr}`
 }
 
+async function createInitialUserInTransaction(
+  tx: FirebaseFirestore.Transaction,
+  uid: string
+): Promise<string> {
+  const userRef = db.collection('users').doc(uid)
+
+  for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
+    const candidate = generateRandomUsername()
+    const usernameKey = normalizeUsernameKey(candidate)
+    const indexRef = db.collection(USERNAME_INDEX_COLLECTION).doc(usernameKey)
+
+    const indexSnap = await tx.get(indexRef)
+    if (indexSnap.exists) continue
+
+    tx.set(indexRef, {
+      uid,
+      username: candidate,
+      createdAt: FieldValue.serverTimestamp(),
+    })
+
+    tx.set(userRef, {
+      uid,
+      username: candidate,
+
+      userRole: 'student',
+      subscriptionStatus: 'free',
+      showTour: true,
+      upgradePromptCount: 0,
+
+      totalAccuracy: 100,
+      lifetimeCorrect: 0,
+      lifetimeIncorrect: 0,
+      totalSessions: 0,
+      userDefaultSessionLength: 0,
+
+      newCardsSeenToday: 0,
+      maxNewCardsPerDay: 10,
+
+      enabledPacks: ['mul_36', 'mul_144'],
+      activePack: 'mul_36',
+      activeScene: 'garden',
+
+      metaInitialized: true,
+
+      createdAt: FieldValue.serverTimestamp(),
+      lastLogin: FieldValue.serverTimestamp(),
+    })
+
+    const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
+    tx.set(sceneMetaRef, {
+      sceneId: 'garden',
+      xp: 0,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    return candidate
+  }
+
+  throw new HttpsError(
+    'internal',
+    'Failed to generate a unique username after multiple attempts.'
+  )
+}
+
 export const initializeUserOnAuthCreate = authV1
   .user()
   .onCreate(async (authUser) => {
     const uid = authUser.uid
     const userRef = db.collection('users').doc(uid)
-
-    const MAX_USERNAME_ATTEMPTS = 10
 
     const username = await db.runTransaction<string | null>(async (tx) => {
       const existing = await tx.get(userRef)
@@ -91,64 +155,7 @@ export const initializeUserOnAuthCreate = authV1
         return null
       }
 
-      for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
-        const candidate = generateRandomUsername()
-        const usernameKey = normalizeUsernameKey(candidate)
-        const indexRef = db
-          .collection(USERNAME_INDEX_COLLECTION)
-          .doc(usernameKey)
-
-        const indexSnap = await tx.get(indexRef)
-        if (indexSnap.exists) continue
-
-        tx.set(indexRef, {
-          uid,
-          username: candidate,
-          createdAt: FieldValue.serverTimestamp(),
-        })
-
-        tx.set(userRef, {
-          uid,
-          username: candidate,
-
-          userRole: 'student',
-          subscriptionStatus: 'free',
-          showTour: true,
-          upgradePromptCount: 0,
-
-          totalAccuracy: 100,
-          lifetimeCorrect: 0,
-          lifetimeIncorrect: 0,
-          totalSessions: 0,
-          userDefaultSessionLength: 0,
-
-          newCardsSeenToday: 0,
-          maxNewCardsPerDay: 10,
-
-          enabledPacks: ['mul_36', 'mul_144'],
-          activePack: 'mul_36',
-          activeScene: 'garden',
-
-          metaInitialized: true,
-
-          createdAt: FieldValue.serverTimestamp(),
-          lastLogin: FieldValue.serverTimestamp(),
-        })
-
-        const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
-        tx.set(sceneMetaRef, {
-          sceneId: 'garden',
-          xp: 0,
-          createdAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        })
-
-        return candidate
-      }
-
-      throw new Error(
-        'Failed to generate a unique username after multiple attempts'
-      )
+      return await createInitialUserInTransaction(tx, uid)
     })
 
     if (username === null) {
@@ -166,7 +173,6 @@ export const ensureUserInitialized = onCall(async (request) => {
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
   const userRef = db.collection('users').doc(uid)
-  const MAX_USERNAME_ATTEMPTS = 10
 
   const result = await db.runTransaction<{
     created: boolean
@@ -181,63 +187,8 @@ export const ensureUserInitialized = onCall(async (request) => {
       }
     }
 
-    for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
-      const candidate = generateRandomUsername()
-      const usernameKey = normalizeUsernameKey(candidate)
-      const indexRef = db.collection(USERNAME_INDEX_COLLECTION).doc(usernameKey)
-
-      const indexSnap = await tx.get(indexRef)
-      if (indexSnap.exists) continue
-
-      tx.set(indexRef, {
-        uid,
-        username: candidate,
-        createdAt: FieldValue.serverTimestamp(),
-      })
-
-      tx.set(userRef, {
-        uid,
-        username: candidate,
-
-        userRole: 'student',
-        subscriptionStatus: 'free',
-        showTour: true,
-        upgradePromptCount: 0,
-
-        totalAccuracy: 100,
-        lifetimeCorrect: 0,
-        lifetimeIncorrect: 0,
-        totalSessions: 0,
-        userDefaultSessionLength: 0,
-
-        newCardsSeenToday: 0,
-        maxNewCardsPerDay: 10,
-
-        enabledPacks: ['mul_36', 'mul_144'],
-        activePack: 'mul_36',
-        activeScene: 'garden',
-
-        metaInitialized: true,
-
-        createdAt: FieldValue.serverTimestamp(),
-        lastLogin: FieldValue.serverTimestamp(),
-      })
-
-      const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
-      tx.set(sceneMetaRef, {
-        sceneId: 'garden',
-        xp: 0,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      })
-
-      return { created: true, username: candidate }
-    }
-
-    throw new HttpsError(
-      'internal',
-      'Failed to generate a unique username after multiple attempts.'
-    )
+    const username = await createInitialUserInTransaction(tx, uid)
+    return { created: true, username }
   })
 
   logger.info('ensureUserInitialized result', { uid, ...result })
