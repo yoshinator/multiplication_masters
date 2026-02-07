@@ -82,6 +82,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   )
   const ensureUserInitInFlightRef = useRef(false)
   const missingUserDocSinceRef = useRef<number | null>(null)
+  const signOutInFlightRef = useRef(false)
 
   const isLoading =
     authStatus === 'loading' || isPackMetaLoading || isSceneMetaLoading
@@ -236,6 +237,7 @@ const UserProvider: FC<Props> = ({ children }) => {
       }
       ensureUserInitInFlightRef.current = false
       missingUserDocSinceRef.current = null
+      signOutInFlightRef.current = false
 
       if (isCancelled) return
 
@@ -295,9 +297,20 @@ const UserProvider: FC<Props> = ({ children }) => {
                   'User doc missing for too long; signing out to recover UI',
                   { uid, elapsedMs }
                 )
-                void firebaseSignOut(auth)
-                setUser(null)
-                setAuthStatus('signedOut')
+                if (!signOutInFlightRef.current) {
+                  signOutInFlightRef.current = true
+                  void (async () => {
+                    try {
+                      await firebaseSignOut(auth)
+                      // Let onAuthStateChanged drive state transitions.
+                    } catch (err) {
+                      logger('firebaseSignOut failed:', err)
+                      signOutInFlightRef.current = false
+                      // Avoid immediate re-attempt loops.
+                      missingUserDocSinceRef.current = Date.now()
+                    }
+                  })()
+                }
               }
               return
             }
@@ -364,6 +377,7 @@ const UserProvider: FC<Props> = ({ children }) => {
       }
       ensureUserInitInFlightRef.current = false
       missingUserDocSinceRef.current = null
+      signOutInFlightRef.current = false
     }
   }, [auth, db, logger, ensureUserInitialized])
 
