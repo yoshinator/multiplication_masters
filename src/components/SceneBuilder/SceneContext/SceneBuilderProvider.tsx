@@ -22,18 +22,17 @@ import { useNotification } from '../../../contexts/notificationContext/notificat
 import { extractErrorMessage } from '../../../utilities/typeutils'
 import { useCloudFunction } from '../../../hooks/useCloudFunction'
 import { type SavedScene } from '../../../constants/dataModels'
+import { useUser } from '../../../contexts/userContext/useUserContext'
 
 type Props = {
   sceneId?: string
   savedScene?: SavedScene | null
-  unlockedItemIds: string[]
   onLayoutChange?: (objects: SceneObjectInstance[]) => void
   children: ReactNode
 }
 
 export const SceneBuilderProvider: FC<Props> = ({
   sceneId,
-  unlockedItemIds,
   onLayoutChange,
   children,
   savedScene,
@@ -42,9 +41,11 @@ export const SceneBuilderProvider: FC<Props> = ({
   const initialBackgroundId = savedScene?.backgroundId
   const initialThumbnailUrl = savedScene?.thumbnailUrl
   const initialName = savedScene?.name
-  const theme = savedScene?.theme || ('garden' as SceneTheme)
 
   const { storage, auth, app } = useFirebaseContext()
+  const { user } = useUser()
+  const theme =
+    savedScene?.theme || user?.activeScene || ('garden' as SceneTheme)
   const [currentThumbnailUrl, setCurrentThumbnailUrl] =
     useState(initialThumbnailUrl)
 
@@ -231,7 +232,6 @@ export const SceneBuilderProvider: FC<Props> = ({
     objects: visibleObjects,
     selectedId,
     backgroundId,
-    unlockedItemIds,
     addObject,
     setBackground,
     updateObject,

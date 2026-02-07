@@ -10,21 +10,14 @@ import type { SavedScene } from '../../constants/dataModels'
 
 type Props = {
   sceneId?: string
-  unlockedItemIds: string[]
   onLayoutChange?: (objects: SceneObjectInstance[]) => void
   savedScene?: SavedScene | null
 }
 
-const SceneBuilder: FC<Props> = ({
-  sceneId,
-  unlockedItemIds,
-  onLayoutChange,
-  savedScene,
-}) => {
+const SceneBuilder: FC<Props> = ({ sceneId, onLayoutChange, savedScene }) => {
   return (
     <SceneBuilderProvider
       sceneId={sceneId}
-      unlockedItemIds={unlockedItemIds}
       onLayoutChange={onLayoutChange}
       savedScene={savedScene}
     >

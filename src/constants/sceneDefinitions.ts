@@ -66,10 +66,13 @@ export const SCENE_ITEMS: SceneItemDefinition[] = [
 
 // -------------- SPACEPORT THEME --------------
 SCENE_ITEMS.push(
-  ...range('spaceport', 'Background', 1, 'background', 1, {
+  ...range('spaceport', 'Background', 4, 'background', 1, {
     isBackground: true,
     zHint: 'back',
-  })
+  }),
+  ...range('spaceport', 'Friends', 12, 'friends'),
+  ...range('spaceport', 'Stuff', 12, 'stuff'),
+  ...range('spaceport', 'Effects', 12, 'effects')
 )
 
 // -------------- FARM THEME --------------
@@ -127,7 +130,7 @@ function range(
   scale = 0.2,
   extra?: Partial<SceneItemDefinition>
 ): SceneItemDefinition[] {
-  const baseUnlock = SCENES[theme].unlock ?? 0
+  const baseUnlock = 0
 
   // Define increments based on rarity request
   const increments: Record<SceneTab, number> = {

@@ -32,7 +32,7 @@ const ScenePalette: FC<Props> = ({ onClickCallBack }) => {
   const { db } = useFirebaseContext()
   const sceneDef = SCENES[theme]
 
-  const [activeTab, setActiveTab] = useState<SceneTab>('stuff')
+  const [activeTab, setActiveTab] = useState<SceneTab>('background')
 
   const sceneMetaRef = useMemo(() => {
     if (!user?.uid || !db) return null
