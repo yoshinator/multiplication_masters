@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
+import { auth as authV1 } from 'firebase-functions/v1'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
@@ -24,6 +25,118 @@ const isValidUsername = (username: string): boolean => {
 }
 
 const isValidPin = (pin: string): boolean => /^\d{6}$/.test(pin)
+
+const adjectives = [
+  'Quick',
+  'Lazy',
+  'Happy',
+  'Brave',
+  'Clever',
+  'Calm',
+  'Nimble',
+  'Bold',
+  'Lucky',
+  'Swift',
+  'Wise',
+  'Jolly',
+  'Snappy',
+  'Shy',
+  'Zesty',
+  'Vivid',
+  'Bright',
+  'Cool',
+  'Daring',
+  'Funky',
+] as const
+
+const animals = [
+  'Lion',
+  'Tiger',
+  'Bear',
+  'Wolf',
+  'Fox',
+  'Eagle',
+  'Shark',
+  'Panda',
+  'Otter',
+  'Hawk',
+  'Zebra',
+  'Whale',
+  'Sloth',
+  'Koala',
+  'Rabbit',
+  'Falcon',
+  'Dragon',
+] as const
+
+const generateRandomUsername = (): string => {
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
+  const animal = animals[Math.floor(Math.random() * animals.length)]
+  const number = Math.floor(Math.random() * 10000)
+  const numberStr = number.toString().padStart(4, '0')
+  return `${adj}${animal}${numberStr}`
+}
+
+export const initializeUserOnAuthCreate = authV1
+  .user()
+  .onCreate(async (authUser) => {
+    const uid = authUser.uid
+
+    const userRef = db.collection('users').doc(uid)
+
+    // Defensive: never overwrite an existing user doc.
+    const existing = await userRef.get()
+    if (existing.exists) {
+      logger.info('Auth onCreate: user doc already exists; skipping init', {
+        uid,
+      })
+      return
+    }
+
+    const username = generateRandomUsername()
+    const batch = db.batch()
+
+    batch.set(userRef, {
+      uid,
+      username,
+
+      userRole: 'student',
+      subscriptionStatus: 'free',
+      showTour: true,
+      upgradePromptCount: 0,
+
+      totalAccuracy: 100,
+      lifetimeCorrect: 0,
+      lifetimeIncorrect: 0,
+      totalSessions: 0,
+      userDefaultSessionLength: 0,
+
+      newCardsSeenToday: 0,
+      maxNewCardsPerDay: 10,
+
+      enabledPacks: ['mul_36', 'mul_144'],
+      activePack: 'mul_36',
+      activeScene: 'garden',
+
+      // Mark as initialized so the client does not trigger legacy migration.
+      metaInitialized: true,
+
+      createdAt: FieldValue.serverTimestamp(),
+      lastLogin: FieldValue.serverTimestamp(),
+    })
+
+    // Create default scene meta for 'garden'
+    const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
+    batch.set(sceneMetaRef, {
+      sceneId: 'garden',
+      xp: 0,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    await batch.commit()
+    logger.info('Auth onCreate: initialized user doc', { uid })
+  })
 
 export const initializeUserMeta = onDocumentCreated(
   'users/{userId}',

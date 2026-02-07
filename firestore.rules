@@ -5,7 +5,9 @@ service cloud.firestore {
     // User root doc
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // User docs are created server-side (Auth onCreate Cloud Function).
+      // Disallow client-side creates to prevent partial/incorrect user docs.
+      allow create: if false;
       allow delete: if request.auth != null && request.auth.uid == userId;
 
       // Prevent clients from marking username as immutable or changing it once immutable.

@@ -168,6 +168,15 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 
 ### Cloud Functions (`functions/src/`)
 
+#### `initializeUserOnAuthCreate`
+**Trigger**: Firebase Auth `onCreate` event (new auth user)  
+**Purpose**: Server-side initialization of `users/{uid}` (replaces client-side seeding)  
+**Operations**:
+- Creates the `users/{uid}` root document with default fields (role, packs, stats counters, etc.)
+- Assigns a generated username
+- Sets `createdAt` / `lastLogin`
+- Creates default `sceneMeta/garden` document
+
 #### `initializeUserMeta`
 **Trigger**: Firestore `onCreate` event for `users/{userId}`  
 **Purpose**: Automatically initializes metadata for new users  
@@ -175,6 +184,8 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 - Creates default scene metadata (garden theme with 0 XP)
 - Sets up initial pack configuration (mul_36 and mul_144)
 - Marks user as initialized to prevent re-runs
+
+> Note: With `initializeUserOnAuthCreate` in place, `initializeUserMeta` acts as a defensive backstop for older data / edge cases.
 
 #### Username + PIN auth (callables)
 - **`signInWithUsernamePin`**: Validates username + 6-digit PIN, enforces lockout (5 failed attempts → 1 hour), and returns a Firebase custom token.
