@@ -15,7 +15,6 @@ export type SceneBuilderContextValue = {
   selectedId: string | null
   backgroundId: string | null
 
-  unlockedItemIds: string[]
   addObject: (def: SceneItemDefinition) => void
   setBackground: (def: SceneItemDefinition) => void
   updateObject: (obj: SceneObjectInstance) => void
