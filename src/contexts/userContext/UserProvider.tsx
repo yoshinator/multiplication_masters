@@ -28,34 +28,12 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { useLogger } from '../../hooks/useLogger'
 import { useFirebaseContext } from '../firebase/firebaseContext'
 import { omitUndefined } from '../../utilities/firebaseHelpers'
-import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
-import { generateRandomUsername } from '../../utilities/accountHelpers'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
 import { useFirestoreDoc } from '../../hooks/useFirestore'
 import { type SceneTheme } from '../../constants/sceneDefinitions'
 
 type Props = {
   children: ReactNode
-}
-
-const initialUser: Omit<User, 'uid' | 'username'> = {
-  userRole: 'student',
-  createdAt: null,
-  lastLogin: null,
-  totalAccuracy: 100,
-  userDefaultSessionLength: 0,
-  showTour: true,
-  upgradePromptCount: 0,
-
-  lifetimeCorrect: 0,
-  lifetimeIncorrect: 0,
-  totalSessions: 0,
-  subscriptionStatus: 'free',
-  newCardsSeenToday: 0,
-  maxNewCardsPerDay: MAX_NEW_CARDS_PER_DAY,
-  enabledPacks: ['mul_36', 'mul_144'],
-  activePack: 'mul_36',
-  activeScene: 'garden',
 }
 
 const UserProvider: FC<Props> = ({ children }) => {
@@ -257,66 +235,42 @@ const UserProvider: FC<Props> = ({ children }) => {
       try {
         const uid = authUser.uid
         const userRef = doc(db, 'users', uid)
-        const userSnap = await getDoc(userRef)
-
-        if (isCancelled) return
-
-        const userData = userSnap.data()
-        // Check if the user document exists and has been initialized.
-        // We check for 'createdAt' to ensure we don't overwrite an existing valid user.
-        if (!userSnap.exists() || !userData?.createdAt) {
-          logger('Seeding initial user data...')
-          const username = userData?.username || generateRandomUsername()
-          await setDoc(
-            userRef,
-            {
-              ...initialUser,
-              uid,
-              username,
-              createdAt: serverTimestamp(),
-              lastLogin: serverTimestamp(),
-            },
-            { merge: true }
-          )
-        } else {
-          try {
-            await updateDoc(userRef, {
-              lastLogin: serverTimestamp(),
-            })
-          } catch {
-            // If the document was deleted between the existence check and update,
-            // fall back to setDoc with merge to recreate/update it without
-            // treating this as a fatal auth error.
-            await setDoc(
-              userRef,
-              {
-                lastLogin: serverTimestamp(),
-              },
-              { merge: true }
-            )
-          }
-        }
-
-        if (isCancelled) return
-
-        // Update user data and set signedIn.
+        // Subscribe immediately. If the doc does not exist yet (e.g. server-side
+        // init still in progress), stay in loading state until it appears.
         userUnsubscribe = onSnapshot(
           userRef,
           (docSnap) => {
-            const userData = docSnap.data() as User
-            if (userData) {
-              setUser(userData)
-              setAuthStatus('signedIn')
-            } else {
+            if (!docSnap.exists()) {
               setUser(null)
-              setAuthStatus('signedOut')
+              setAuthStatus('loading')
+              return
             }
+
+            const userData = docSnap.data() as User
+            setUser(userData)
+            setAuthStatus('signedIn')
           },
           (error) => {
             logger('Error listening to user document:', error)
             setAuthStatus('signedOut')
           }
         )
+
+        // Best-effort update lastLogin. If the user doc hasn't been created yet,
+        // this will throw 'not-found' and we can safely ignore it.
+        try {
+          await updateDoc(userRef, {
+            lastLogin: serverTimestamp(),
+          })
+        } catch (error: unknown) {
+          const code =
+            typeof error === 'object' && error !== null && 'code' in error
+              ? String((error as { code?: unknown }).code)
+              : null
+          if (code !== 'not-found') {
+            logger('Failed to update lastLogin:', error)
+          }
+        }
       } catch (error: unknown) {
         if (
           typeof error === 'object' &&

@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
+import { auth as authV1 } from 'firebase-functions/v1'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
@@ -14,6 +15,7 @@ const USERNAME_INDEX_COLLECTION = 'usernameIndex'
 const USER_SECRETS_COLLECTION = 'userSecrets'
 const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
+const MAX_USERNAME_ATTEMPTS = 10
 
 const normalizeUsernameKey = (username: string): string =>
   username.trim().toLowerCase()
@@ -24,6 +26,174 @@ const isValidUsername = (username: string): boolean => {
 }
 
 const isValidPin = (pin: string): boolean => /^\d{6}$/.test(pin)
+
+const adjectives = [
+  'Quick',
+  'Lazy',
+  'Happy',
+  'Brave',
+  'Clever',
+  'Calm',
+  'Nimble',
+  'Bold',
+  'Lucky',
+  'Swift',
+  'Wise',
+  'Jolly',
+  'Snappy',
+  'Shy',
+  'Zesty',
+  'Vivid',
+  'Bright',
+  'Cool',
+  'Daring',
+  'Funky',
+] as const
+
+const animals = [
+  'Lion',
+  'Tiger',
+  'Bear',
+  'Wolf',
+  'Fox',
+  'Eagle',
+  'Shark',
+  'Panda',
+  'Otter',
+  'Hawk',
+  'Zebra',
+  'Whale',
+  'Sloth',
+  'Koala',
+  'Rabbit',
+  'Falcon',
+  'Dragon',
+] as const
+
+const generateRandomUsername = (): string => {
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
+  const animal = animals[Math.floor(Math.random() * animals.length)]
+  const number = Math.floor(Math.random() * 10000)
+  const numberStr = number.toString().padStart(4, '0')
+  return `${adj}${animal}${numberStr}`
+}
+
+async function createInitialUserInTransaction(
+  tx: FirebaseFirestore.Transaction,
+  uid: string
+): Promise<string> {
+  const userRef = db.collection('users').doc(uid)
+
+  for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
+    const candidate = generateRandomUsername()
+    const usernameKey = normalizeUsernameKey(candidate)
+    const indexRef = db.collection(USERNAME_INDEX_COLLECTION).doc(usernameKey)
+
+    const indexSnap = await tx.get(indexRef)
+    if (indexSnap.exists) continue
+
+    tx.set(indexRef, {
+      uid,
+      username: candidate,
+      createdAt: FieldValue.serverTimestamp(),
+    })
+
+    tx.set(userRef, {
+      uid,
+      username: candidate,
+
+      userRole: 'student',
+      subscriptionStatus: 'free',
+      showTour: true,
+      upgradePromptCount: 0,
+
+      totalAccuracy: 100,
+      lifetimeCorrect: 0,
+      lifetimeIncorrect: 0,
+      totalSessions: 0,
+      userDefaultSessionLength: 0,
+
+      newCardsSeenToday: 0,
+      maxNewCardsPerDay: 10,
+
+      enabledPacks: ['mul_36', 'mul_144'],
+      activePack: 'mul_36',
+      activeScene: 'garden',
+
+      metaInitialized: true,
+
+      createdAt: FieldValue.serverTimestamp(),
+      lastLogin: FieldValue.serverTimestamp(),
+    })
+
+    const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
+    tx.set(sceneMetaRef, {
+      sceneId: 'garden',
+      xp: 0,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    return candidate
+  }
+
+  throw new HttpsError(
+    'internal',
+    'Failed to generate a unique username after multiple attempts.'
+  )
+}
+
+export const initializeUserOnAuthCreate = authV1
+  .user()
+  .onCreate(async (authUser) => {
+    const uid = authUser.uid
+    const userRef = db.collection('users').doc(uid)
+
+    const username = await db.runTransaction<string | null>(async (tx) => {
+      const existing = await tx.get(userRef)
+      if (existing.exists) {
+        return null
+      }
+
+      return await createInitialUserInTransaction(tx, uid)
+    })
+
+    if (username === null) {
+      logger.info('Auth onCreate: user doc already exists; skipping init', {
+        uid,
+      })
+      return
+    }
+
+    logger.info('Auth onCreate: initialized user doc', { uid, username })
+  })
+
+export const ensureUserInitialized = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
+  const userRef = db.collection('users').doc(uid)
+
+  const result = await db.runTransaction<{
+    created: boolean
+    username: string | null
+  }>(async (tx) => {
+    const existing = await tx.get(userRef)
+    if (existing.exists) {
+      const data = existing.data() as { username?: unknown } | undefined
+      return {
+        created: false,
+        username: typeof data?.username === 'string' ? data.username : null,
+      }
+    }
+
+    const username = await createInitialUserInTransaction(tx, uid)
+    return { created: true, username }
+  })
+
+  logger.info('ensureUserInitialized result', { uid, ...result })
+  return result
+})
 
 export const initializeUserMeta = onDocumentCreated(
   'users/{userId}',

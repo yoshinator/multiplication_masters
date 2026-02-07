@@ -249,6 +249,10 @@ Node.js 24 TypeScript Cloud Functions:
 - Scheduled functions (if applicable)
 - Username+PIN auth callables (custom-token minting + PIN setup + lockout reset)
 
+User initialization is server-side:
+- `initializeUserOnAuthCreate` (Firebase Auth onCreate) creates `users/{uid}` with default fields and an assigned username.
+- The client (`UserProvider`) subscribes to `users/{uid}` and does not seed/overwrite user docs.
+
 **Package**: `functions/package.json`
 ```json
 {

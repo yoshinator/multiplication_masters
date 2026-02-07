@@ -11,13 +11,7 @@ import {
   linkWithCredential,
   signInWithCustomToken,
 } from 'firebase/auth'
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  updateDoc,
-  Timestamp,
-} from 'firebase/firestore'
+import { getFirestore, doc, updateDoc, Timestamp } from 'firebase/firestore'
 import { useFirebaseContext } from '../contexts/firebase/firebaseContext'
 import { useLogger } from './useLogger'
 import { useNotification } from '../contexts/notificationContext/notificationContext'
@@ -49,11 +43,39 @@ export const useAuthActions = () => {
     try {
       if (!app) return
       const db = getFirestore(app)
-      await setDoc(
-        doc(db, 'users', uid),
-        { lastSignInMethod: method },
-        { merge: true }
-      )
+      const userRef = doc(db, 'users', uid)
+      const tryUpdate = async () => {
+        await updateDoc(userRef, { lastSignInMethod: method })
+      }
+
+      try {
+        await tryUpdate()
+      } catch (error: unknown) {
+        const code =
+          typeof error === 'object' && error !== null && 'code' in error
+            ? String((error as { code?: unknown }).code)
+            : null
+
+        // If the server hasn't created the user doc yet (Auth onCreate), retry once.
+        if (code === 'not-found') {
+          await new Promise((resolve) => setTimeout(resolve, 750))
+          try {
+            await tryUpdate()
+            return
+          } catch (retryError: unknown) {
+            const retryCode =
+              typeof retryError === 'object' &&
+              retryError !== null &&
+              'code' in retryError
+                ? String((retryError as { code?: unknown }).code)
+                : null
+            if (retryCode === 'not-found') return
+            throw retryError
+          }
+        }
+
+        throw error
+      }
     } catch (error: unknown) {
       logger('Error setting lastSignInMethod', error)
       throw error
