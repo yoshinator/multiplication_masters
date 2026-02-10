@@ -14,15 +14,47 @@ export const useThresholdAnimation = (
   value: number,
   threshold: number,
   onThresholdCrossed?: (() => void) | null,
-  duration: number = 3000
+  duration: number = 3000,
+  options?: {
+    /**
+     * When false, the hook will not trigger animations and will keep its
+     * internal previous value in sync with `value`.
+     */
+    enabled?: boolean
+    /**
+     * If true (default), when `enabled` flips from false -> true the hook will
+     * reset its previous value to the current `value` to avoid firing due to
+     * initial hydration/network loads.
+     */
+    resetOnEnable?: boolean
+  }
 ) => {
   const [showAnimation, setShowAnimation] = useState(false)
   const prevValueRef = useRef(value)
+  const prevEnabledRef = useRef(options?.enabled ?? true)
 
   useEffect(() => {
+    const enabled = options?.enabled ?? true
+    const resetOnEnable = options?.resetOnEnable ?? true
+
+    // Keep internal state in sync while disabled.
+    if (!enabled) {
+      prevValueRef.current = value
+      prevEnabledRef.current = false
+      return
+    }
+
+    // Avoid firing when we just became enabled (common on first data load).
+    if (!prevEnabledRef.current && resetOnEnable) {
+      prevValueRef.current = value
+      prevEnabledRef.current = true
+      return
+    }
+
     const prevValue = prevValueRef.current
     const crossed = prevValue < threshold && value >= threshold
     prevValueRef.current = value
+    prevEnabledRef.current = true
 
     if (crossed) {
       setShowAnimation(true)
@@ -30,7 +62,13 @@ export const useThresholdAnimation = (
         onThresholdCrossed()
       }
     }
-  }, [value, threshold, onThresholdCrossed])
+  }, [
+    value,
+    threshold,
+    onThresholdCrossed,
+    options?.enabled,
+    options?.resetOnEnable,
+  ])
 
   useEffect(() => {
     if (showAnimation) {
