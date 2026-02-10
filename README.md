@@ -91,6 +91,7 @@ Reusable UI components organized by feature:
   - Username + 6-digit PIN sign-in (if enabled)
   - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance)
 - **MultiplicationCard** - Flash card interface with timer and zones
+- **PanelCard** - Reusable responsive panel shell (shared layout for dashboard-style panels like DailyGoalPanel and SceneXPDisplay)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection for authenticated users
 - **SavedScenesGallery** - Scene builder saved layouts gallery
@@ -127,7 +128,7 @@ Custom React hooks for shared logic:
 - **useInactivityLogout** - Inactivity timeout handler (used to auto-logout username+PIN sessions)
 - **useLogger** - Error logging and debugging utilities
 - **useSaveProgress** - Session data persistence
-- **useThresholdAnimation** - Performance-based visual feedback
+- **useThresholdAnimation** - Triggers a temporary animation flag when a value crosses a threshold (supports gating via `enabled` / `resetOnEnable` to avoid firing during initial data hydration)
 
 ### Pages (`src/pages/`)
 Top-level route components:

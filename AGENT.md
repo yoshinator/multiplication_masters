@@ -123,6 +123,7 @@ Organized by feature, key components include:
   - `UsernamePinLogin` for kid-friendly username + 6-digit PIN sign-in
   - `SetPinModal` (opened from Profile) to enable username+PIN sign-in
 - **MultiplicationCard** - Flash card interface with timer and zones (correct/incorrect/skip)
+- **PanelCard** - Reusable responsive panel shell for dashboard-style panels (desktop header + consistent spacing)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection HOC for authenticated users
 - **SavedScenesGallery** - Scene builder saved layouts gallery
@@ -195,7 +196,7 @@ Custom React hooks for shared logic:
 - **useInactivityLogout** - Signs out after inactivity (used for username+PIN sessions)
 - **useLogger** - Conditional console logging utility
 - **useSaveProgress** - Handles account upgrade prompts and email linking
-- **useThresholdAnimation** - Triggers animations when values cross thresholds (e.g., level up)
+- **useThresholdAnimation** - Triggers animations when values cross thresholds (e.g., goal reached / item unlocked). Supports gating via `enabled` and `resetOnEnable` to prevent firing during initial network/hydration loads.
 
 ### Pages (`src/pages/`)
 Top-level route components:
