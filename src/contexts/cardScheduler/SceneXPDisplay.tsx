@@ -1,11 +1,12 @@
 import { type FC, useMemo } from 'react'
-import { Box, Typography, LinearProgress, Card } from '@mui/material'
+import { Box, Typography, LinearProgress } from '@mui/material'
 import { AutoAwesome } from '@mui/icons-material'
 import LevelUpAnimation from '../../components/LevelUpAnimation/LevelUpAnimation'
 import { SCENE_ITEMS } from '../../constants/sceneDefinitions'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
+import PanelCard from '../../components/PanelCard/PanelCard'
 
 const SceneXPDisplay: FC = () => {
   const { user, activeSceneMeta } = useUser()
@@ -62,107 +63,74 @@ const SceneXPDisplay: FC = () => {
   )
 
   return (
-    <Box
+    <PanelCard
       id="scene-xp-panel"
-      sx={{
-        position: 'relative',
-        width: { xs: '100%', sm: 340 },
-        mx: { xs: 0, sm: 'auto' },
-        height: '100%',
-        my: 1,
-      }}
+      title="Scene XP"
+      wrapperSx={{ my: 1 }}
+      icon={<AutoAwesome sx={{ fontSize: 32, color: 'warning.main' }} />}
+      overlay={
+        <LevelUpAnimation
+          isVisible={showAnimation}
+          title="✨ NEW ITEM UNLOCKED! ✨"
+          color="#FFD700"
+        />
+      }
     >
-      <Card
-        {...(isMobile ? { component: Box } : {})}
-        elevation={0}
-        sx={{
-          height: '100%',
-          p: { xs: 2, sm: 2.5 },
-          pb: { xs: 0, sm: 2 },
-          borderRadius: { xs: 0, sm: 2 },
-          border: { xs: 'none', sm: '1px solid' },
-          borderColor: 'divider',
-          bgcolor: { xs: 'transparent', sm: 'background.paper' },
-          boxShadow: { xs: 'none', sm: 'inherit' },
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          textAlign: 'left',
-        }}
-      >
-        {!isMobile && (
-          <Box display="flex" alignItems="center" gap={1}>
-            <AutoAwesome sx={{ fontSize: 32, color: 'warning.main' }} />
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              Scene XP
-            </Typography>
-          </Box>
-        )}
-
-        {nextUnlock ? (
-          <>
-            <Typography
-              variant="caption"
-              sx={{
-                opacity: 0.7,
-                mb: { xs: 0.5, sm: 1 },
-                fontWeight: { xs: 600, sm: 400 },
-              }}
-            >
-              Scene Progress{' '}
-              {isMobile
-                ? `· ${roundedProgressPercentage}%`
-                : `· ${currentXP} XP`}
-            </Typography>
-
-            <LinearProgress
-              variant="determinate"
-              value={progressPercentage}
-              sx={{
-                width: '100%',
-                height: 8,
-                borderRadius: 10,
-                bgcolor: 'grey.300',
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: 'warning.main',
-                },
-              }}
-            />
-
-            <Box
-              sx={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'baseline',
-                mt: 0.5,
-              }}
-            >
-              <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                {roundedProgressPercentage}%
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {xpToNext} XP until next unlock
-              </Typography>
-            </Box>
-          </>
-        ) : (
+      {nextUnlock ? (
+        <>
           <Typography
             variant="caption"
-            color="success.main"
-            sx={{ fontWeight: 700, mt: isMobile ? 0 : 1 }}
+            sx={{
+              opacity: 0.7,
+              mb: { xs: 0.5, sm: 1 },
+              fontWeight: { xs: 600, sm: 400 },
+            }}
           >
-            🎉 All items unlocked for this scene!
+            Scene Progress{' '}
+            {isMobile ? `· ${roundedProgressPercentage}%` : `· ${currentXP} XP`}
           </Typography>
-        )}
-      </Card>
 
-      <LevelUpAnimation
-        isVisible={showAnimation}
-        title="✨ NEW ITEM UNLOCKED! ✨"
-        color="#FFD700"
-      />
-    </Box>
+          <LinearProgress
+            variant="determinate"
+            value={progressPercentage}
+            sx={{
+              width: '100%',
+              height: 8,
+              borderRadius: 10,
+              bgcolor: 'grey.300',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: 'warning.main',
+              },
+            }}
+          />
+
+          <Box
+            sx={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              mt: 0.5,
+            }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+              {roundedProgressPercentage}%
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {xpToNext} XP until next unlock
+            </Typography>
+          </Box>
+        </>
+      ) : (
+        <Typography
+          variant="caption"
+          color="success.main"
+          sx={{ fontWeight: 700, mt: isMobile ? 0 : 1 }}
+        >
+          🎉 All items unlocked for this scene!
+        </Typography>
+      )}
+    </PanelCard>
   )
 }
 
