@@ -73,7 +73,7 @@ const SceneXPDisplay: FC = () => {
       }}
     >
       <Card
-        component={isMobile ? Box : Card}
+        {...(isMobile ? { component: Box } : {})}
         elevation={0}
         sx={{
           height: '100%',
