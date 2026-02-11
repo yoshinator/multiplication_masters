@@ -16,8 +16,10 @@ const DESCRIPTION_BY_LABEL: Record<string, string> = {
   'Total Sessions': 'How many practice sessions you have completed overall.',
   'Total Questions': 'Total number of questions you have answered overall.',
   'Avg Accuracy': 'Your overall accuracy across all questions answered.',
-  'Lifetime Correct': 'Total number of correct answers across all time.',
-  'Lifetime Incorrect': 'Total number of incorrect answers across all time.',
+  'Lifetime Correct':
+    'Total number of questions you have answered since joining MathBuilders.',
+  'Lifetime Incorrect':
+    'Total number of incorrect answers since joining MathBuilders.',
   'Facts Mastered':
     'Facts you have answered fast and correct a minimum of 8 times in a row.',
   'Due Today': 'Cards that are due now and should be reviewed today.',
@@ -34,6 +36,7 @@ const StatsCard: FC<Props> = ({ icon, label, value, color }) => {
         display: 'flex',
         flex: 1,
         minWidth: 75,
+        minHeight: { xs: 100 },
 
         p: { xs: 0.75, sm: 1 },
         flexDirection: 'column',
