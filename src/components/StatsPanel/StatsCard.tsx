@@ -19,7 +19,7 @@ const DESCRIPTION_BY_LABEL: Record<string, string> = {
   'Lifetime Correct': 'Total number of correct answers across all time.',
   'Lifetime Incorrect': 'Total number of incorrect answers across all time.',
   'Facts Mastered':
-    'Facts you have answered fast and correct a minimum of 8 times in a row. You will see these less often.',
+    'Facts you have answered fast and correct a minimum of 8 times in a row.',
   'Due Today': 'Cards that are due now and should be reviewed today.',
   'Due Tomorrow': "Cards due by tomorrow (includes today's due cards as well).",
 }

@@ -11,7 +11,7 @@ interface Props {
   incorrect: number
   seen: number
   avgResponseTime?: number | null
-  answer?: number
+  answer?: string | number
 }
 
 const MissedFactCard: FC<Props> = ({
