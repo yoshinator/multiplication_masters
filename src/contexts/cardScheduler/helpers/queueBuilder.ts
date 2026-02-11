@@ -3,13 +3,14 @@ import type { PackMeta, User, UserFact } from '../../../constants/dataModels'
 import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
 
 /**
- * Builds a just-in-time review queue based on the user's facts and session length.
+ * Builds a just-in-time review queue scoped to the active pack and session length.
  * Prioritizes DUE cards, then LEARNING cards, and finally NEW cards within daily limits.
  *
  *
  * @param userFacts - The array of UserFact objects available to the user.
  * @param user - The User object containing user settings and progress.
  * @param activePackMeta - Metadata about the currently active pack.
+ * @param activePackFactIds - Canonical IDs for facts in the active pack.
  * @param sessionLength - The desired length of the review session.
  * @param logger - A logging function for debug output.
  * @returns An object containing the built queue, session facts, and a flag indicating if provisioning is needed.
