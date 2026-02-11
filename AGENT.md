@@ -526,7 +526,7 @@ Runs Vite dev server on `http://localhost:5173`
 - Production deployment hardening (rate limiting, abuse prevention)
 
 ---
-Always keep AGENT.md and README.md up to date. 
+Always keep AGENT.md and README.md up to date.
 ---
 
 **Last Updated**: 2026-02-05
