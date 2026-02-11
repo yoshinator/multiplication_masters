@@ -83,6 +83,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const ensureUserInitInFlightRef = useRef(false)
   const missingUserDocSinceRef = useRef<number | null>(null)
   const signOutInFlightRef = useRef(false)
+  const packMetaInitRef = useRef<string | null>(null)
 
   const isLoading =
     authStatus === 'loading' || isPackMetaLoading || isSceneMetaLoading
@@ -114,6 +115,37 @@ const UserProvider: FC<Props> = ({ children }) => {
     if (!user?.activePack) return new Set<string>()
     return getPackFactIds(user.activePack)
   }, [user?.activePack])
+
+  useEffect(() => {
+    if (!db || !user?.uid || !user.activePack) return
+    if (activePackMeta || isPackMetaLoading) return
+    if (!activePackFactIds || activePackFactIds.size === 0) return
+
+    const initKey = `${user.uid}:${user.activePack}`
+    if (packMetaInitRef.current === initKey) return
+    packMetaInitRef.current = initKey
+
+    const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
+    const fallbackMeta: PackMeta = {
+      packName: user.activePack,
+      totalFacts: activePackFactIds.size,
+      isCompleted: false,
+      nextSeqToIntroduce: 0,
+      lastActivity: Date.now(),
+    }
+
+    setDoc(metaRef, fallbackMeta, { merge: true }).catch((err) => {
+      logger('Error initializing pack meta:', err)
+    })
+  }, [
+    activePackFactIds,
+    activePackMeta,
+    db,
+    isPackMetaLoading,
+    logger,
+    user?.activePack,
+    user?.uid,
+  ])
 
   // Pass activePackMeta into the Context value
 

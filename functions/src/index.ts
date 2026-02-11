@@ -16,6 +16,7 @@ const USER_SECRETS_COLLECTION = 'userSecrets'
 const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
 const MAX_USERNAME_ATTEMPTS = 10
+const DEFAULT_ENABLED_PACKS = ['mul_36', 'mul_144', 'div_144'] as const
 
 const normalizeUsernameKey = (username: string): string =>
   username.trim().toLowerCase()
@@ -116,7 +117,7 @@ async function createInitialUserInTransaction(
       newCardsSeenToday: 0,
       maxNewCardsPerDay: 10,
 
-      enabledPacks: ['mul_36', 'mul_144'],
+      enabledPacks: [...DEFAULT_ENABLED_PACKS],
       activePack: 'mul_36',
       activeScene: 'garden',
 
@@ -226,7 +227,7 @@ export const initializeUserMeta = onDocumentCreated(
       userRef,
       {
         metaInitialized: true,
-        enabledPacks: ['mul_36', 'mul_144'], // New users start with the free pack
+        enabledPacks: [...DEFAULT_ENABLED_PACKS], // New users start with the free pack
         activePack: 'mul_36',
         activeScene: 'garden',
       },
@@ -584,7 +585,7 @@ export const migrateUserToFacts = onCall(async (request) => {
     await userRef.set(
       {
         metaInitialized: true,
-        enabledPacks: ['mul_36', 'mul_144'],
+        enabledPacks: [...DEFAULT_ENABLED_PACKS],
         activePack: 'mul_36',
       },
       { merge: true }
@@ -682,9 +683,11 @@ export const migrateUserToFacts = onCall(async (request) => {
       { merge: true }
     )
     // Build enabled packs list so that the active pack is always included.
-    const enabledPacks = ['mul_36', 'mul_144'].includes(packName)
-      ? ['mul_36', 'mul_144']
-      : ['mul_36', 'mul_144', packName]
+    const enabledPacks = DEFAULT_ENABLED_PACKS.includes(
+      packName as (typeof DEFAULT_ENABLED_PACKS)[number]
+    )
+      ? [...DEFAULT_ENABLED_PACKS]
+      : [...DEFAULT_ENABLED_PACKS, packName]
     // Update user pointers
     currentBatch.set(
       userRef,

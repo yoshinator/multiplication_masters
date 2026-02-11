@@ -1,7 +1,7 @@
 # Multiplication Masters - Coding Assistant Context
 
 ## Project Overview
-**Multiplication Masters** (aka Math Builders) is a time-driven hybrid SRS (Spaced Repetition System) application for mastering multiplication facts up to 24×24. The project combines Leitner and SM-2 algorithms to build reflex-level recall through an adaptive spaced-repetition engine that responds to both accuracy and response speed.
+**Multiplication Masters** (aka Math Builders) is a time-driven hybrid SRS (Spaced Repetition System) application for mastering multiplication facts up to 24×24, with complementary division packs. The project combines Leitner and SM-2 algorithms to build reflex-level recall through an adaptive spaced-repetition engine that responds to both accuracy and response speed.
 
 ## Tech Stack
 
@@ -290,7 +290,7 @@ interface User {
   upgradePromptSnoozedUntil?: Timestamp
   hasUsernamePin?: boolean
   usernameSetByUser?: boolean
-  activePack: string // e.g., "1-12"
+  activePack: string // e.g., "mul_144" or "div_144"
   activeScene?: SceneTheme
   sceneXP: number
   // ... other fields
@@ -389,7 +389,7 @@ interface SessionRecord {
 **Security note**: The username index and PIN hashes live in server-only collections (`usernameIndex`, `userSecrets`) and are blocked from client access in `firestore.rules`.
 
 ### Pack System
-Users can select packs (e.g., "1-12" or "13-24") from `ProfilePage`. Active pack determines which facts are loaded into the card scheduler.
+Users can select packs (e.g., "mul_144" or "div_144") from `ProfilePage`. Active pack determines which facts are loaded into the card scheduler.
 
 ### Scene Builder
 Users can customize practice session backgrounds using Konva canvas. Scenes are saved to Firebase Storage and metadata stored in Firestore.

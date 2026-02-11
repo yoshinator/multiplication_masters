@@ -67,6 +67,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
   const top = currentFact?.operands[0]
   const bottom = currentFact?.operands[1]
   const value = currentFact?.answer
+  const operator = currentFact?.type === 'div' ? '÷' : '×'
 
   const expectedLength = value != null ? String(value).length : 0
   const reviewsLeftForCard = Math.max(1, 4 - (currentFact?.box ?? 1))
@@ -455,7 +456,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
                   fontWeight: 800,
                 }}
               >
-                {top} × {bottom}
+                {top} {operator} {bottom}
               </Typography>
             </Grid>
 
