@@ -123,8 +123,6 @@ const UserProvider: FC<Props> = ({ children }) => {
 
     const initKey = `${user.uid}:${user.activePack}`
     if (packMetaInitRef.current === initKey) return
-    packMetaInitRef.current = initKey
-
     const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
     const fallbackMeta: PackMeta = {
       packName: user.activePack,
@@ -134,7 +132,12 @@ const UserProvider: FC<Props> = ({ children }) => {
       lastActivity: Date.now(),
     }
 
+    packMetaInitRef.current = initKey
+
     setDoc(metaRef, fallbackMeta, { merge: true }).catch((err) => {
+      if (packMetaInitRef.current === initKey) {
+        packMetaInitRef.current = null
+      }
       logger('Error initializing pack meta:', err)
     })
   }, [
