@@ -3,13 +3,14 @@ import type { PackMeta, User, UserFact } from '../../../constants/dataModels'
 import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
 
 /**
- * Builds a just-in-time review queue based on the user's facts and session length.
+ * Builds a just-in-time review queue scoped to the active pack and session length.
  * Prioritizes DUE cards, then LEARNING cards, and finally NEW cards within daily limits.
  *
  *
  * @param userFacts - The array of UserFact objects available to the user.
  * @param user - The User object containing user settings and progress.
  * @param activePackMeta - Metadata about the currently active pack.
+ * @param activePackFactIds - Canonical IDs for facts in the active pack.
  * @param sessionLength - The desired length of the review session.
  * @param logger - A logging function for debug output.
  * @returns An object containing the built queue, session facts, and a flag indicating if provisioning is needed.
@@ -18,6 +19,7 @@ export function buildQueue(
   userFacts: UserFact[],
   user: User,
   activePackMeta: PackMeta | null,
+  activePackFactIds: Set<string>,
   sessionLength: number,
   logger: (...args: unknown[]) => void
 ) {
@@ -26,12 +28,17 @@ export function buildQueue(
   const now = Date.now()
   const sessionFacts: UserFact[] = []
 
-  // 1. Gather all DUE facts the user already owns across ALL packs
-  const due = userFacts.filter((f) => f.nextDueTime <= now && f.seen > 0)
+  const scopedFacts =
+    activePackFactIds && activePackFactIds.size > 0
+      ? userFacts.filter((fact) => activePackFactIds.has(fact.id))
+      : userFacts
+
+  // 1. Gather all DUE facts the user already owns in the active pack
+  const due = scopedFacts.filter((f) => f.nextDueTime <= now && f.seen > 0)
   sessionFacts.push(...due)
   // 2. Gather LEARNING facts (Box 1-3) that aren't due yet
   if (sessionFacts.length < sessionLength) {
-    const learning = userFacts
+    const learning = scopedFacts
       .filter((f) => f.box <= 3 && f.nextDueTime > now)
       .slice(0, sessionLength - sessionFacts.length)
     sessionFacts.push(...learning)
@@ -51,7 +58,7 @@ export function buildQueue(
   let addedNewCount = 0
 
   if (sessionFacts.length < sessionLength) {
-    const newCards = userFacts
+    const newCards = scopedFacts
       .filter((f) => f.seen === 0)
       .slice(0, Math.min(sessionLength - sessionFacts.length, remainingDaily))
 

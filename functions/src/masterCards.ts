@@ -81,8 +81,34 @@ export const generateMulPack = (start: number, end: number): UserFact[] => {
   return facts
 }
 
+/**
+ * Generates division tables (integer results only).
+ * For div_144: dividends from 1x1 through 12x12.
+ */
+export const generateDivPack = (start: number, end: number): UserFact[] => {
+  const facts: UserFact[] = []
+
+  for (let i = start; i <= end; i++) {
+    for (let j = 1; j <= end; j++) {
+      const dividend = i * j
+      facts.push({
+        id: createFactId('div', [dividend, i]),
+        type: 'div',
+        operands: [dividend, i],
+        answer: j,
+        level: i,
+        difficulty: i <= 7 ? 'basic' : i <= 12 ? 'advanced' : 'elite',
+        expression: `${dividend} ÷ ${i}`,
+        ...defaultSrs(),
+      })
+    }
+  }
+  return facts
+}
+
 export const MASTER_FACTS: Record<string, UserFact[]> = {
   mul_36: generateMulPack(1, 6),
   mul_144: generateMulPack(1, 12),
   mul_576: generateMulPack(1, 24),
+  div_144: generateDivPack(1, 12),
 }

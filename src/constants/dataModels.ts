@@ -36,7 +36,7 @@ export type UserCard = {
   lastElapsedTime: number
 }
 
-export type PackKey = 'mul_36' | 'mul_144' | 'mul_576'
+export type PackKey = 'mul_36' | 'mul_144' | 'mul_576' | 'div_144'
 
 export type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
 
@@ -180,13 +180,17 @@ export const getPackFactIds = (packName: PackKey): Set<string> => {
   let max = 0
 
   if (packName === 'mul_36') max = 6
-  else if (packName === 'mul_144') max = 12
+  else if (packName === 'mul_144' || packName === 'div_144') max = 12
   else if (packName === 'mul_576') max = 24
   else return new Set<string>()
 
   for (let i = 1; i <= max; i++) {
     for (let j = 1; j <= max; j++) {
-      ids.add(`mul:${i}:${j}`)
+      if (packName === 'div_144') {
+        ids.add(`div:${i * j}:${i}`)
+      } else {
+        ids.add(`mul:${i}:${j}`)
+      }
     }
   }
 

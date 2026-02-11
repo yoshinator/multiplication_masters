@@ -146,7 +146,7 @@ const PracticePage: FC = () => {
             popover: {
               title: 'The Question',
               description:
-                'Here is your math problem. Multiply the left number by the right number.',
+                'Here is your math problem. Solve the expression shown on the card.',
               onPopoverRender: stopTimer,
             },
           },

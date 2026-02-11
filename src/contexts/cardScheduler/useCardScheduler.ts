@@ -30,7 +30,8 @@ export function useCardScheduler(
   userFacts: UserFact[],
   user: User | null,
   activePackMeta: PackMeta | null,
-  updateUser: (fields: Partial<User>) => void
+  updateUser: (fields: Partial<User>) => void,
+  activePackFactIds: Set<string>
 ) {
   const logger = useLogger('Scheduler')
   const { addUpdatedFactToSession, finishSession } = useReviewSession()
@@ -57,6 +58,7 @@ export function useCardScheduler(
       facts,
       user,
       activePackMeta,
+      activePackFactIds,
       sessionLength,
       logger
     )
@@ -107,6 +109,7 @@ export function useCardScheduler(
     setIsSessionActive,
     sessionLength,
     activePackMeta,
+    activePackFactIds,
     app,
     provisionFacts,
   ])

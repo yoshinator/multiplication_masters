@@ -18,6 +18,7 @@ const PackMasteryPanel: FC = () => {
     if (name === 'mul_36') return 'Multiplication 1-6'
     if (name === 'mul_144') return 'Multiplication 1-12'
     if (name === 'mul_576') return 'Multiplication 1-24'
+    if (name === 'div_144') return 'Division 1-12'
     return name
   }
   return (
