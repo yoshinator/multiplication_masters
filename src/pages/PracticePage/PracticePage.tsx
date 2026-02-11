@@ -1,4 +1,4 @@
-import { useEffect, type FC, useRef, useMemo } from 'react'
+import { useEffect, type FC, useRef, useMemo, useCallback } from 'react'
 import { Box, LinearProgress } from '@mui/material'
 import { driver, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
@@ -39,6 +39,27 @@ const PracticePage: FC = () => {
   const tourListenersRef = useRef<Array<() => void>>([])
   const { db } = useFirebaseContext()
 
+  const disableTourClose = useCallback(() => {
+    document.body.classList.add('tour-close-disabled')
+  }, [])
+
+  const enableTourClose = useCallback(() => {
+    document.body.classList.remove('tour-close-disabled')
+  }, [])
+
+  const attachEnableCloseOnNext = useCallback(() => {
+    const nextButton = document.querySelector(
+      '.driver-popover-next-btn'
+    ) as HTMLElement | null
+    if (!nextButton) return
+
+    const handler = () => enableTourClose()
+    nextButton.addEventListener('click', handler, { once: true })
+    tourListenersRef.current.push(() => {
+      nextButton.removeEventListener('click', handler)
+    })
+  }, [enableTourClose])
+
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
 
@@ -52,6 +73,7 @@ const PracticePage: FC = () => {
       if (driverRef.current) {
         driverRef.current.destroy()
       }
+      enableTourClose()
       // Execute all stored cleanup functions for event listeners
       tourListenersRef.current.forEach((fn) => fn())
       tourListenersRef.current = []
@@ -64,20 +86,28 @@ const PracticePage: FC = () => {
   }, [user?.showTour])
 
   useEffect(() => {
-    if (!user?.showTour) return
+    if (!user?.showTour || user?.onboardingCompleted === false) return
+
+    const handleTourDismissed = () => {
+      enableTourClose()
+      updateUser({ showTour: false })
+      tourState.current = INITIAL_TOUR_STATE
+    }
 
     if (!driverRef.current) {
       driverRef.current = driver({
         showProgress: true,
         animate: true,
-        allowClose: false,
+        allowClose: true,
         nextBtnText: 'Next',
         prevBtnText: 'Previous',
         doneBtnText: 'Done',
+        onDestroyed: handleTourDismissed,
       })
     }
 
     const driverObj = driverRef.current
+    driverObj.setConfig({ onDestroyed: handleTourDismissed })
 
     const attachCloseListener = (selector: string, driverInstance: Driver) => {
       const element = document.querySelector(selector) as HTMLElement | null
@@ -100,6 +130,10 @@ const PracticePage: FC = () => {
           popover: {
             title: 'Go Home',
             description: 'Click here anytime to go back to the main screen.',
+            onPopoverRender: () => {
+              disableTourClose()
+              attachEnableCloseOnNext()
+            },
           },
         },
         {
@@ -108,6 +142,7 @@ const PracticePage: FC = () => {
             title: 'Your Profile',
             description:
               'Change your settings here. You can make the game easier or harder, or change how many cards you play.',
+            onPopoverRender: enableTourClose,
           },
         },
         {
@@ -207,6 +242,7 @@ const PracticePage: FC = () => {
             userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
           })
           tourState.current = INITIAL_TOUR_STATE
+          enableTourClose()
         },
       })
 
@@ -235,7 +271,17 @@ const PracticePage: FC = () => {
 
       driverObj.drive()
     }
-  }, [user?.showTour, isSessionActive, isPlayedSession, stopTimer, updateUser])
+  }, [
+    attachEnableCloseOnNext,
+    disableTourClose,
+    enableTourClose,
+    isPlayedSession,
+    isSessionActive,
+    stopTimer,
+    updateUser,
+    user?.onboardingCompleted,
+    user?.showTour,
+  ])
 
   useEffect(() => {
     if (isKeyboardOpen) {

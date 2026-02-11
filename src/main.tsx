@@ -12,6 +12,7 @@ import ModalProvider from './contexts/modalContext/ModalProvider.tsx'
 import { ThemeContextProvider } from './contexts/themeContext/ThemeContextProvider.tsx'
 import { NotificationProvider } from './contexts/notificationContext/NotificationProvider.tsx'
 import { BrowserRouter } from 'react-router-dom'
+import './theme/driverOverrides.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

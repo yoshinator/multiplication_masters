@@ -15,6 +15,8 @@ type AppModalProps = {
   title?: string
   children: ReactNode
   maxWidth?: 'xs' | 'sm' | 'md'
+  disableClose?: boolean
+  hideCloseButton?: boolean
 }
 
 const AppModal: FC<AppModalProps> = ({
@@ -23,16 +25,29 @@ const AppModal: FC<AppModalProps> = ({
   title,
   children,
   maxWidth = 'sm',
+  disableClose = false,
+  hideCloseButton = false,
 }) => {
   const isMobile = useIsMobile()
+
+  const handleClose = (_event: unknown, reason?: string) => {
+    if (
+      disableClose &&
+      (reason === 'backdropClick' || reason === 'escapeKeyDown')
+    ) {
+      return
+    }
+    onClose()
+  }
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       fullScreen={isMobile}
       maxWidth={maxWidth}
       fullWidth
+      disableEscapeKeyDown={disableClose}
       slotProps={{
         paper: {
           sx: {
@@ -54,9 +69,11 @@ const AppModal: FC<AppModalProps> = ({
           }}
         >
           {title}
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
+          {!hideCloseButton && (
+            <IconButton onClick={onClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          )}
         </DialogTitle>
       )}
 

@@ -1,4 +1,4 @@
-import { type FC, useMemo } from 'react'
+import { type FC, type ReactElement, useMemo } from 'react'
 import { Box, Button, Typography, Stack, Card } from '@mui/material'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
@@ -144,7 +144,7 @@ const SessionSummary: FC = () => {
 export default SessionSummary
 
 type SSCProps = {
-  icon: React.ReactElement
+  icon: ReactElement
   label: string
   value: string | number
 }

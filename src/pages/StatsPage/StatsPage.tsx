@@ -58,6 +58,7 @@ const StatsPage: FC = () => {
   const startTour = () => {
     const driverObj = driver({
       showProgress: true,
+      allowClose: true,
       steps: [
         {
           element: '#stats-title',

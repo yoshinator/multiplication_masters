@@ -1,4 +1,4 @@
-import { type FC, useMemo } from 'react'
+import { type FC, type KeyboardEvent, type MouseEvent, useMemo } from 'react'
 import { Box, Typography, IconButton, Stack } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
@@ -27,7 +27,7 @@ const SavedScenesGallery: FC = () => {
 
   const { data: savedScenes } = useFirestoreQuery<SavedScene>(scenesQuery)
 
-  const handleDeleteScene = async (e: React.MouseEvent, scene: SavedScene) => {
+  const handleDeleteScene = async (e: MouseEvent, scene: SavedScene) => {
     e.stopPropagation()
     if (!db || !user?.uid || !storage) return
 
@@ -57,12 +57,12 @@ const SavedScenesGallery: FC = () => {
     }
   }
 
-  const handleEditScene = (e: React.MouseEvent, scene: SavedScene) => {
+  const handleEditScene = (e: MouseEvent, scene: SavedScene) => {
     e.stopPropagation()
     navigate(`/builder?id=${scene.id}`)
   }
 
-  const handleChoiceKeyDown = (e: React.KeyboardEvent, sceneId: string) => {
+  const handleChoiceKeyDown = (e: KeyboardEvent, sceneId: string) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       updateUser({ activeSavedSceneId: sceneId })
