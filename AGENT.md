@@ -526,6 +526,8 @@ Runs Vite dev server on `http://localhost:5173`
 - Production deployment hardening (rate limiting, abuse prevention)
 
 ---
+Always keep AGENT.md and README.md up to date. 
+---
 
 **Last Updated**: 2026-02-05
 **Repository**: [yoshinator/multiplication_masters](https://github.com/yoshinator/multiplication_masters)

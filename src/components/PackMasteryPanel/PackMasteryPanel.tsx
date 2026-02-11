@@ -1,8 +1,9 @@
 import { useMemo, type FC } from 'react'
-import { Box, LinearProgress, Card, Typography } from '@mui/material'
+import { Box, LinearProgress, Typography } from '@mui/material'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { percentPackMastered } from '../../contexts/cardScheduler/helpers/srsLogic'
+import FlipCard from '../FlipCard/FlipCard'
 
 const PackMasteryPanel: FC = () => {
   const { activePackMeta, activePackFactIds } = useUser()
@@ -20,23 +21,48 @@ const PackMasteryPanel: FC = () => {
     return name
   }
   return (
-    <Card id="pack-mastery-panel" sx={{ flex: 1, minWidth: 280 }}>
-      <Box p={2}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Pack Mastery: {formatPackName(activePackMeta?.packName)}
-        </Typography>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Box flex={1}>
-            <LinearProgress
-              variant="determinate"
-              value={masteryPercent}
-              sx={{ height: 10, borderRadius: 5 }}
-            />
+    <FlipCard
+      ariaLabel="Flip pack mastery card"
+      cardSx={{ flex: 1, minWidth: 280 }}
+      faceSx={{ display: 'flex', alignItems: 'stretch' }}
+      front={
+        <Box p={2} sx={{ width: '100%' }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            Pack Mastery: {formatPackName(activePackMeta?.packName)}
+          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Box flex={1}>
+              <LinearProgress
+                variant="determinate"
+                value={masteryPercent}
+                sx={{ height: 10, borderRadius: 5 }}
+              />
+            </Box>
+            <Typography variant="body2">{masteryPercent}%</Typography>
           </Box>
-          <Typography variant="body2">{masteryPercent}%</Typography>
         </Box>
-      </Box>
-    </Card>
+      }
+      back={
+        <Box
+          p={2}
+          sx={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            What this means
+          </Typography>
+          <Typography variant="caption" sx={{ opacity: 0.75, mt: 0.5 }}>
+            Pack mastery is the percent of facts in your active pack that are
+            currently considered mastered by the SRS.
+          </Typography>
+        </Box>
+      }
+    />
   )
 }
 
