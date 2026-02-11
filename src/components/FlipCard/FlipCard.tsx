@@ -1,7 +1,6 @@
 import {
   type FC,
   type KeyboardEvent,
-  type PropsWithChildren,
   type ReactNode,
   useCallback,
   useState,
@@ -29,7 +28,6 @@ const FlipCard: FC<Props> = ({
   cardSx,
   faceSx,
   ariaLabel,
-  sx,
   ...cardProps
 }) => {
   const [isFlipped, setIsFlipped] = useState(false)
