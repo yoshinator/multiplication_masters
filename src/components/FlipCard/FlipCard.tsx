@@ -21,7 +21,6 @@ interface Props extends CardProps {
   /** Extra styles applied to both faces (front/back). */
   faceSx?: SxProps<Theme>
   ariaLabel?: string
-  props?: PropsWithChildren
 }
 
 const FlipCard: FC<Props> = ({
@@ -30,7 +29,8 @@ const FlipCard: FC<Props> = ({
   cardSx,
   faceSx,
   ariaLabel,
-  props,
+  sx,
+  ...cardProps
 }) => {
   const [isFlipped, setIsFlipped] = useState(false)
 
@@ -48,7 +48,7 @@ const FlipCard: FC<Props> = ({
         toggle()
       }
     },
-    [toggle],
+    [toggle]
   )
 
   const onKeyUp = useCallback(
@@ -58,7 +58,7 @@ const FlipCard: FC<Props> = ({
         toggle()
       }
     },
-    [toggle],
+    [toggle]
   )
 
   return (
@@ -71,18 +71,20 @@ const FlipCard: FC<Props> = ({
       onClick={toggle}
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
-      sx={{
-        cursor: 'pointer',
-        userSelect: 'none',
-        outline: 'none',
-        '&:focus-visible': {
-          outline: '2px solid',
-          outlineColor: 'primary.main',
-          outlineOffset: 2,
+      sx={[
+        {
+          cursor: 'pointer',
+          userSelect: 'none',
+          outline: 'none',
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: 'primary.main',
+            outlineOffset: 2,
+          },
         },
-        ...cardSx,
-      }}
-      {...props}
+      ]}
+      {...cardSx}
+      {...cardProps}
     >
       <Box
         sx={{
