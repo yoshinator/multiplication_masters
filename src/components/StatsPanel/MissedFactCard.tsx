@@ -11,6 +11,7 @@ interface Props {
   incorrect: number
   seen: number
   avgResponseTime?: number | null
+  answer?: number
 }
 
 const MissedFactCard: FC<Props> = ({
@@ -18,20 +19,10 @@ const MissedFactCard: FC<Props> = ({
   incorrect,
   seen,
   avgResponseTime,
+  answer,
 }) => {
   const isMobile = useIsMobile()
   const showLabels = !isMobile
-
-  const answer = (() => {
-    if (!expression) return null
-    // Expected format: "3 × 4" (but support x/* as well)
-    const match = expression.match(/(\d+)\s*[×x*]\s*(\d+)/i)
-    if (!match) return null
-    const a = Number(match[1])
-    const b = Number(match[2])
-    if (Number.isNaN(a) || Number.isNaN(b)) return null
-    return a * b
-  })()
 
   return (
     <FlipCard

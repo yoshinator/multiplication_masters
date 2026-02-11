@@ -22,6 +22,7 @@ const PackMasteryPanel: FC = () => {
   }
   return (
     <FlipCard
+      id="pack-mastery-panel"
       ariaLabel="Flip pack mastery card"
       cardSx={{ flex: 1, minWidth: 280 }}
       faceSx={{ display: 'flex', alignItems: 'stretch' }}

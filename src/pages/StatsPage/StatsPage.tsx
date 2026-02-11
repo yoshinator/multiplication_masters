@@ -217,14 +217,9 @@ const StatsPage: FC = () => {
       </Typography>
 
       <Grid container spacing={2} id="most-missed-stats">
-        {topTenMissedMultiplication.map((fact) => (
-          <Grid size={{ xs: 6, sm: 4 }} key={fact.expression}>
-            <MissedFactCard
-              expression={fact.expression}
-              incorrect={fact.incorrect}
-              seen={fact.seen}
-              avgResponseTime={fact.avgResponseTime}
-            />
+        {topTenMissedMultiplication.map((props) => (
+          <Grid size={{ xs: 6, sm: 4 }} key={props.expression}>
+            <MissedFactCard {...props} />
           </Grid>
         ))}
       </Grid>

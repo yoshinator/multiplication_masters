@@ -1,22 +1,37 @@
 import {
   type FC,
   type KeyboardEvent,
+  type PropsWithChildren,
   type ReactNode,
   useCallback,
   useState,
 } from 'react'
-import { Box, Card, type SxProps, type Theme } from '@mui/material'
+import {
+  Box,
+  Card,
+  type CardProps,
+  type SxProps,
+  type Theme,
+} from '@mui/material'
 
-type Props = {
+interface Props extends CardProps {
   front: ReactNode
   back: ReactNode
   cardSx?: SxProps<Theme>
   /** Extra styles applied to both faces (front/back). */
   faceSx?: SxProps<Theme>
   ariaLabel?: string
+  props?: PropsWithChildren
 }
 
-const FlipCard: FC<Props> = ({ front, back, cardSx, faceSx, ariaLabel }) => {
+const FlipCard: FC<Props> = ({
+  front,
+  back,
+  cardSx,
+  faceSx,
+  ariaLabel,
+  props,
+}) => {
   const [isFlipped, setIsFlipped] = useState(false)
 
   const toggle = useCallback(() => {
@@ -25,12 +40,25 @@ const FlipCard: FC<Props> = ({ front, back, cardSx, faceSx, ariaLabel }) => {
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.repeat) {
+        return
+      }
+      if (e.key === 'Enter') {
         e.preventDefault()
         toggle()
       }
     },
-    [toggle]
+    [toggle],
+  )
+
+  const onKeyUp = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        e.preventDefault()
+        toggle()
+      }
+    },
+    [toggle],
   )
 
   return (
@@ -42,6 +70,7 @@ const FlipCard: FC<Props> = ({ front, back, cardSx, faceSx, ariaLabel }) => {
       aria-pressed={isFlipped}
       onClick={toggle}
       onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
       sx={{
         cursor: 'pointer',
         userSelect: 'none',
@@ -53,6 +82,7 @@ const FlipCard: FC<Props> = ({ front, back, cardSx, faceSx, ariaLabel }) => {
         },
         ...cardSx,
       }}
+      {...props}
     >
       <Box
         sx={{
@@ -65,15 +95,20 @@ const FlipCard: FC<Props> = ({ front, back, cardSx, faceSx, ariaLabel }) => {
             width: '100%',
             transformStyle: 'preserve-3d',
             transition: 'transform 500ms ease',
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+            },
             transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
             display: 'grid',
           }}
         >
           <Box
+            aria-hidden={isFlipped}
             sx={{
               gridArea: '1 / 1',
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
+              pointerEvents: isFlipped ? 'none' : 'auto',
               ...faceSx,
             }}
           >
@@ -81,11 +116,13 @@ const FlipCard: FC<Props> = ({ front, back, cardSx, faceSx, ariaLabel }) => {
           </Box>
 
           <Box
+            aria-hidden={!isFlipped}
             sx={{
               gridArea: '1 / 1',
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
+              pointerEvents: !isFlipped ? 'none' : 'auto',
               ...faceSx,
             }}
           >
