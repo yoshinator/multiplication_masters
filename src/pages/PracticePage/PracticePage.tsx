@@ -37,6 +37,7 @@ const PracticePage: FC = () => {
   const { stopTimer } = useTimerActions()
   const driverRef = useRef<Driver | null>(null)
   const tourListenersRef = useRef<Array<() => void>>([])
+  const internalDestroyRef = useRef(false)
   const { db } = useFirebaseContext()
 
   const disableTourClose = useCallback(() => {
@@ -89,6 +90,10 @@ const PracticePage: FC = () => {
     if (!user?.showTour || user?.onboardingCompleted === false) return
 
     const handleTourDismissed = () => {
+      if (internalDestroyRef.current) {
+        internalDestroyRef.current = false
+        return
+      }
       enableTourClose()
       updateUser({ showTour: false })
       tourState.current = INITIAL_TOUR_STATE
@@ -108,6 +113,11 @@ const PracticePage: FC = () => {
 
     const driverObj = driverRef.current
     driverObj.setConfig({ onDestroyed: handleTourDismissed })
+
+    const destroyForTransition = () => {
+      internalDestroyRef.current = true
+      driverObj.destroy()
+    }
 
     const attachCloseListener = (selector: string, driverInstance: Driver) => {
       const element = document.querySelector(selector) as HTMLElement | null
@@ -172,7 +182,7 @@ const PracticePage: FC = () => {
       driverObj.drive()
       tourState.current.welcome = true
     } else if (isSessionActive && !tourState.current.session) {
-      driverObj.destroy()
+      destroyForTransition()
 
       setTimeout(() => {
         driverObj.setSteps([

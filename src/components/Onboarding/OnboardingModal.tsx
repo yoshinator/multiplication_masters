@@ -9,8 +9,6 @@ import {
 } from '@mui/material'
 import AppModal from '../AppModal/AppModal'
 import type { GradeLevel, UserRole } from '../../constants/dataModels'
-import { ROUTES } from '../../constants/routeConstants'
-import { Link as RouterLink } from 'react-router-dom'
 
 const ROLE_OPTIONS: Array<{
   value: UserRole
@@ -99,7 +97,7 @@ const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
   const parsedLearnerCount = Number.parseInt(learnerCount, 10)
   const learnerCountValue =
     isMultiLearner && Number.isFinite(parsedLearnerCount)
-      ? Math.max(1, parsedLearnerCount)
+      ? Math.min(40, Math.max(1, parsedLearnerCount))
       : null
 
   const handleComplete = () => {
@@ -207,7 +205,12 @@ const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
                 type="number"
                 value={learnerCount}
                 onChange={(event) => setLearnerCount(event.target.value)}
-                inputProps={{ min: 1, max: 25 }}
+                helperText={
+                  role === 'parent'
+                    ? 'Enter how many you have. You can add more learners later (max 40).'
+                    : 'Enter how many you support (max 40).'
+                }
+                inputProps={{ min: 1, max: 40 }}
               />
             )}
           </Stack>
@@ -259,16 +262,8 @@ const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
             <Divider />
 
             <Typography variant="body2" color="text.secondary">
-              You can manage packs, goals, and tour settings anytime in{' '}
-              <Button
-                component={RouterLink}
-                to={ROUTES.PROFILE}
-                size="small"
-                sx={{ textTransform: 'none', px: 0.5 }}
-              >
-                Profile
-              </Button>
-              .
+              You can manage packs, goals, and tour settings in Profile after
+              onboarding.
             </Typography>
           </Stack>
         )}
