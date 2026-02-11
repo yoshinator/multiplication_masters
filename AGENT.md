@@ -123,6 +123,7 @@ Organized by feature, key components include:
   - `UsernamePinLogin` for kid-friendly username + 6-digit PIN sign-in
   - `SetPinModal` (opened from Profile) to enable username+PIN sign-in
 - **FactCard** - Flash card interface with timer and zones (correct/incorrect/skip)
+- **OnboardingModal** - Required first-login questionnaire (role + grade defaults)
 - **PanelCard** - Reusable responsive panel shell for dashboard-style panels (desktop header + consistent spacing)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection HOC for authenticated users
@@ -274,13 +275,14 @@ type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
 
 interface User {
   id: string
-  displayName: string | null
-  email: string | null
-  photoURL: string | null
   username?: string
   createdAt: number
   lastLogin: number
   lastSignInMethod?: SignInMethod
+  userRole: 'student' | 'teacher' | 'parent' | 'adult'
+  learnerGradeLevels?: Array<'K' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9+' | 'adult'>
+  learnerCount?: number
+  onboardingCompleted?: boolean
   totalSessions: number
   totalCorrect: number
   totalIncorrect: number
@@ -400,6 +402,7 @@ Users can customize practice session backgrounds using Konva canvas. Scenes are 
 - Use TypeScript strict mode
 - Prefer functional components with hooks
 - Use `type` over `interface` for simple shapes
+- For React types, import with `type` (e.g., `type KeyboardEvent`) instead of `React.KeyboardEvent`
 - Extract reusable logic into custom hooks
 - Keep components focused and single-purpose
 

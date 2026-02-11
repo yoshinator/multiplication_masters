@@ -45,6 +45,19 @@ export type PackKey =
   | 'sub_20'
 
 export type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
+export type UserRole = 'student' | 'teacher' | 'parent' | 'adult'
+export type GradeLevel =
+  | 'K'
+  | '1'
+  | '2'
+  | '3'
+  | '4'
+  | '5'
+  | '6'
+  | '7'
+  | '8'
+  | '9+'
+  | 'adult'
 
 export interface User {
   uid: string
@@ -52,14 +65,17 @@ export interface User {
   usernameSetByUser?: boolean
   hasUsernamePin?: boolean
   lastSignInMethod?: SignInMethod
-  userRole: 'student' | 'teacher' | 'parent'
+  userRole: UserRole
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   subscriptionStatus: 'free' | 'premium'
   showTour: boolean
+  onboardingCompleted?: boolean
   upgradePromptCount: number
   lastUpgradePromptAt?: Timestamp
   upgradePromptSnoozedUntil?: Timestamp
+  learnerGradeLevels?: GradeLevel[]
+  learnerCount?: number
 
   totalAccuracy: number
 

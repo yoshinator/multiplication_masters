@@ -91,6 +91,7 @@ Reusable UI components organized by feature:
   - Username + 6-digit PIN sign-in (if enabled)
   - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance)
 - **FactCard** - Flash card interface with timer and zones (multiplication, division, addition, subtraction)
+- **OnboardingModal** - Required first-login questionnaire (role + grade defaults)
 - **PanelCard** - Reusable responsive panel shell (shared layout for dashboard-style panels like DailyGoalPanel and SceneXPDisplay)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection for authenticated users

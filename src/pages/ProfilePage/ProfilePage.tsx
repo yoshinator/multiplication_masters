@@ -1,4 +1,4 @@
-import { type FC } from 'react'
+import { type ChangeEvent, type FC, type KeyboardEvent } from 'react'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   Box,
@@ -12,6 +12,7 @@ import {
   RadioGroup,
   Select,
   type SelectChangeEvent,
+  Switch,
   Tooltip,
   Typography,
 } from '@mui/material'
@@ -151,7 +152,7 @@ const ProfilePage: FC = () => {
   const { sessionLength } = useSessionStatusContext()
   const { updateUser, user } = useUser()
 
-  const handleChoiceKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+  const handleChoiceKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       e.currentTarget.click()
@@ -162,8 +163,12 @@ const ProfilePage: FC = () => {
     updateUser({ activePack: event.target.value })
   }
 
-  const handleThemeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThemeChange = (event: ChangeEvent<HTMLInputElement>) => {
     setMode(event.target.value as 'light' | 'dark' | 'system')
+  }
+
+  const handleShowTourChange = (event: ChangeEvent<HTMLInputElement>) => {
+    updateUser({ showTour: event.target.checked })
   }
 
   const isAnonymous = auth?.currentUser?.isAnonymous
@@ -441,6 +446,22 @@ const ProfilePage: FC = () => {
             />
           </RadioGroup>
         </FormControl>
+      </Box>
+
+      {/* Guided Tour */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Guided Tour
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={Boolean(user?.showTour)}
+              onChange={handleShowTourChange}
+            />
+          }
+          label="Show the tour next time I visit Practice"
+        />
       </Box>
     </Box>
   )

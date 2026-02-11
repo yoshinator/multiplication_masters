@@ -1,4 +1,4 @@
-import { type FC } from 'react'
+import { type FC, useCallback, useEffect, useRef } from 'react'
 import { Box, Card, Typography, Button, Stack } from '@mui/material'
 
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
@@ -6,18 +6,77 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 import CardLoadingSkeleton from '../CardLoadingSkeleton/CardLoadingSkeleton'
+import { useModal } from '../../contexts/modalContext/modalContext'
+import OnboardingModal from '../Onboarding/OnboardingModal'
+import type { GradeLevel, PackKey } from '../../constants/dataModels'
 
 const WelcomeBack: FC = () => {
   const { startSession, isLoading } = useCardSchedulerContext()
-  const { user } = useUser()
+  const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
+  const { openModal, closeModal } = useModal()
+  const onboardingOpenedRef = useRef(false)
+
+  useEffect(() => {
+    onboardingOpenedRef.current = false
+  }, [user?.uid])
+
+  const getDefaultPackForGrades = (grades: GradeLevel[]): PackKey => {
+    if (grades.some((grade) => ['K', '1', '2'].includes(grade))) {
+      return 'add_20'
+    }
+    return 'mul_36'
+  }
+
+  const ensureOnboarding = useCallback(() => {
+    if (!user || user.onboardingCompleted) return true
+    if (!onboardingOpenedRef.current) {
+      onboardingOpenedRef.current = true
+      openModal(
+        <OnboardingModal
+          onComplete={({ role, gradeLevels, learnerCount }) => {
+            const defaultPack = getDefaultPackForGrades(gradeLevels)
+            const starterPacks: PackKey[] = ['add_20', 'mul_36']
+            const isPremium = user.subscriptionStatus === 'premium'
+            const enabledPacks = Array.from(
+              new Set(
+                isPremium
+                  ? [...(user.enabledPacks ?? []), defaultPack]
+                  : [...starterPacks, defaultPack]
+              )
+            )
+
+            updateUser({
+              userRole: role,
+              learnerGradeLevels: gradeLevels,
+              learnerCount: learnerCount ?? undefined,
+              onboardingCompleted: true,
+              activePack: defaultPack,
+              enabledPacks,
+              showTour: true,
+            })
+            closeModal()
+          }}
+        />
+      )
+    }
+    return false
+  }, [closeModal, openModal, updateUser, user])
 
   const handleStartSession = async () => {
     if (isLoading) {
       return
     }
+    if (!ensureOnboarding()) {
+      return
+    }
     await startSession()
   }
+
+  useEffect(() => {
+    if (!user || user.onboardingCompleted) return
+    ensureOnboarding()
+  }, [ensureOnboarding, user])
 
   return (
     <Box
