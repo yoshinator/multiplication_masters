@@ -11,6 +11,7 @@ import {
   type PackMeta,
   type User,
   getPackFactIds,
+  getPackFactList,
   type UserSceneMeta,
 } from '../../constants/dataModels'
 import { type AuthStatus, UserContext } from './useUserContext'
@@ -40,7 +41,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
-  const { app, auth, db, loadUserFacts } = useFirebaseContext()
+  const { app, auth, db, loadUserFacts, userFacts } = useFirebaseContext()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -124,11 +125,22 @@ const UserProvider: FC<Props> = ({ children }) => {
     const initKey = `${user.uid}:${user.activePack}`
     if (packMetaInitRef.current === initKey) return
     const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
+    const orderedFactIds = getPackFactList(user.activePack)
+    const existingFactIds = new Set(
+      userFacts
+        .filter((fact) => activePackFactIds.has(fact.id))
+        .map((fact) => fact.id)
+    )
+    const firstMissingIndex = orderedFactIds.findIndex(
+      (factId) => !existingFactIds.has(factId)
+    )
+    const nextSeqToIntroduce =
+      firstMissingIndex === -1 ? orderedFactIds.length : firstMissingIndex
     const fallbackMeta: PackMeta = {
       packName: user.activePack,
-      totalFacts: activePackFactIds.size,
-      isCompleted: false,
-      nextSeqToIntroduce: 0,
+      totalFacts: orderedFactIds.length,
+      isCompleted: nextSeqToIntroduce >= orderedFactIds.length,
+      nextSeqToIntroduce,
       lastActivity: Date.now(),
     }
 
@@ -146,6 +158,7 @@ const UserProvider: FC<Props> = ({ children }) => {
     db,
     isPackMetaLoading,
     logger,
+    userFacts,
     user?.activePack,
     user?.uid,
   ])

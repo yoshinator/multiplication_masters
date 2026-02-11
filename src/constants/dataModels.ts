@@ -193,43 +193,55 @@ export type PackMeta = {
 }
 
 const packFactIdsCache = new Map<PackKey, Set<string>>()
+const packFactListCache = new Map<PackKey, string[]>()
 
-export const getPackFactIds = (packName: PackKey): Set<string> => {
-  if (packFactIdsCache.has(packName)) {
-    return packFactIdsCache.get(packName)!
+export const getPackFactList = (packName: PackKey): string[] => {
+  if (packFactListCache.has(packName)) {
+    return packFactListCache.get(packName)!
   }
-  const ids = new Set<string>()
+
+  const ids: string[] = []
   let max = 0
 
   if (packName === 'add_20') {
     for (let a = 0; a <= 20; a++) {
       for (let b = 0; b <= 20 - a; b++) {
-        ids.add(`add:${a}:${b}`)
+        ids.push(`add:${a}:${b}`)
       }
     }
   } else if (packName === 'sub_20') {
     for (let a = 0; a <= 20; a++) {
       for (let b = 0; b <= a; b++) {
-        ids.add(`sub:${a}:${b}`)
+        ids.push(`sub:${a}:${b}`)
       }
     }
   } else {
     if (packName === 'mul_36') max = 6
     else if (packName === 'mul_144' || packName === 'div_144') max = 12
     else if (packName === 'mul_576') max = 24
-    else return new Set<string>()
+    else return []
 
     for (let i = 1; i <= max; i++) {
       for (let j = 1; j <= max; j++) {
         if (packName === 'div_144') {
-          ids.add(`div:${i * j}:${i}`)
+          ids.push(`div:${i * j}:${i}`)
         } else {
-          ids.add(`mul:${i}:${j}`)
+          ids.push(`mul:${i}:${j}`)
         }
       }
     }
   }
 
+  packFactListCache.set(packName, ids)
+  return ids
+}
+
+export const getPackFactIds = (packName: PackKey): Set<string> => {
+  if (packFactIdsCache.has(packName)) {
+    return packFactIdsCache.get(packName)!
+  }
+
+  const ids = new Set<string>(getPackFactList(packName))
   packFactIdsCache.set(packName, ids)
   return ids
 }

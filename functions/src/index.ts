@@ -530,24 +530,25 @@ export const provisionFacts = onCall(async (request) => {
     const sliceEnd = Math.min(startIdx + count, masterList.length)
     const factsToProvision = masterList.slice(startIdx, sliceEnd)
 
-    // Use { merge: true } so we NEVER overwrite existing student progress.
-    factsToProvision.forEach((f) => {
+    let actualAddedCount = 0
+    for (const f of factsToProvision) {
       const factRef = factsCol.doc(f.id)
-      transaction.set(factRef, f, { merge: true })
-    })
-
-    const actualAddedCount = factsToProvision.length
+      const factSnap = await transaction.get(factRef)
+      if (factSnap.exists) continue
+      transaction.set(factRef, f)
+      actualAddedCount += 1
+    }
 
     transaction.update(metaRef, {
-      nextSeqToIntroduce: startIdx + actualAddedCount,
-      isCompleted: startIdx + actualAddedCount >= masterList.length,
+      nextSeqToIntroduce: sliceEnd,
+      isCompleted: sliceEnd >= masterList.length,
       lastActivity: Date.now(),
     })
 
     return {
       success: true,
       added: actualAddedCount,
-      newCursor: startIdx + actualAddedCount,
+      newCursor: sliceEnd,
     }
   })
 })
@@ -579,6 +580,14 @@ export const migrateUserToFacts = onCall(async (request) => {
   const userRef = db.collection('users').doc(uid)
   const cardsCol = userRef.collection('UserCards')
   const factsCol = userRef.collection('UserFacts')
+
+  const existingFacts = await factsCol.limit(1).get()
+  if (!existingFacts.empty) {
+    return {
+      success: true,
+      message: 'UserFacts already exist. Skipping migration.',
+    }
+  }
 
   // 1. Fetch only seen cards
   const snapshot = await cardsCol.where('seen', '>', 0).get()
