@@ -16,13 +16,7 @@ const USER_SECRETS_COLLECTION = 'userSecrets'
 const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
 const MAX_USERNAME_ATTEMPTS = 10
-const DEFAULT_ENABLED_PACKS = [
-  'mul_36',
-  'mul_144',
-  'div_144',
-  'add_20',
-  'sub_20',
-] as const
+const DEFAULT_ENABLED_PACKS = ['mul_36', 'add_20', 'sub_20'] as const
 
 const normalizeUsernameKey = (username: string): string =>
   username.trim().toLowerCase()
