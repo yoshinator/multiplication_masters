@@ -133,6 +133,8 @@ const PACK_LABELS: Partial<Record<PackKey, string>> = {
   mul_36: 'Multiplication to 36',
   mul_576: 'Multiplication to 576',
   div_144: 'Division 144',
+  add_20: 'Addition to 20',
+  sub_20: 'Subtraction within 20',
 }
 
 /**

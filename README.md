@@ -1,6 +1,6 @@
 # Multiplication Masters
 
-A time-driven hybrid SRS (Spaced Repetition System) combining Leitner and SM-2 algorithms for mastering multiplication facts up to 24×24, with complementary division packs. This project builds reflex-level recall using a custom spaced-repetition engine that adapts to both accuracy and response speed, providing an engaging and effective learning experience for students.
+A time-driven hybrid SRS (Spaced Repetition System) combining Leitner and SM-2 algorithms for mastering multiplication facts up to 24×24, with complementary division, addition, and subtraction packs. This project builds reflex-level recall using a custom spaced-repetition engine that adapts to both accuracy and response speed, providing an engaging and effective learning experience for students.
 
 ## Overview
 
@@ -90,7 +90,7 @@ Reusable UI components organized by feature:
   - Email-link sign-in
   - Username + 6-digit PIN sign-in (if enabled)
   - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance)
-- **MultiplicationCard** - Flash card interface with timer and zones (multiplication + division)
+- **FactCard** - Flash card interface with timer and zones (multiplication, division, addition, subtraction)
 - **PanelCard** - Reusable responsive panel shell (shared layout for dashboard-style panels like DailyGoalPanel and SceneXPDisplay)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection for authenticated users
@@ -197,7 +197,7 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 
 #### `provisionFacts`
 **Trigger**: HTTPS callable function  
-**Purpose**: Provisions new multiplication/division facts for users (1-30 facts per call)  
+**Purpose**: Provisions new multiplication/division/addition/subtraction facts for users (1-30 facts per call)  
 **Operations**:
 - Validates user authentication and pack name
 - Uses transactions to safely increment fact cursor
@@ -227,7 +227,7 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 - Includes security checks for emulator vs production environments
 
 ### Data Models (`functions/src/masterCards.ts`)
-- **MASTER_FACTS** - Pre-generated fact databases for mul_36, mul_144, mul_576, and div_144 packs
+- **MASTER_FACTS** - Pre-generated fact databases for mul_36, mul_144, mul_576, div_144, add_20, and sub_20 packs
 - **PackMeta** - Pack metadata interface (progress tracking)
 - **UserFact** - Individual fact data model with SRS fields
 

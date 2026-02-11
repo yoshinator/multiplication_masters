@@ -41,7 +41,7 @@ type Props = {
   backgroundImageUrl?: string | null
 }
 
-const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
+const FactCard: FC<Props> = ({ backgroundImageUrl }) => {
   // COMPONENT STATE
   const [answer, setAnswer] = useState('')
   const [cardColor, setCardColor] = useState('background.paper')
@@ -64,8 +64,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
   const { user, updateUser } = useUser()
   const isMobile = useIsMobile()
 
-  const top = currentFact?.operands[0]
-  const bottom = currentFact?.operands[1]
+  const operands = currentFact?.operands ?? []
   const value = currentFact?.answer
   const operator =
     currentFact?.type === 'div'
@@ -75,6 +74,13 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
         : currentFact?.type === 'sub'
           ? '-'
           : '×'
+  const fallbackExpression =
+    operands.length >= 2
+      ? `${operands[0]} ${operator} ${operands[1]}`
+      : operands.length === 1
+        ? String(operands[0])
+        : ''
+  const expression = currentFact?.expression ?? fallbackExpression
 
   const expectedLength = value != null ? String(value).length : 0
   const reviewsLeftForCard = Math.max(1, 4 - (currentFact?.box ?? 1))
@@ -463,7 +469,7 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
                   fontWeight: 800,
                 }}
               >
-                {top} {operator} {bottom}
+                {expression}
               </Typography>
             </Grid>
 
@@ -594,4 +600,4 @@ const MultiplicationCard: FC<Props> = ({ backgroundImageUrl }) => {
   )
 }
 
-export default MultiplicationCard
+export default FactCard

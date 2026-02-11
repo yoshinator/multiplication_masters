@@ -1,7 +1,7 @@
 # Multiplication Masters - Coding Assistant Context
 
 ## Project Overview
-**Multiplication Masters** (aka Math Builders) is a time-driven hybrid SRS (Spaced Repetition System) application for mastering multiplication facts up to 24×24, with complementary division packs. The project combines Leitner and SM-2 algorithms to build reflex-level recall through an adaptive spaced-repetition engine that responds to both accuracy and response speed.
+**Multiplication Masters** (aka Math Builders) is a time-driven hybrid SRS (Spaced Repetition System) application for mastering multiplication facts up to 24×24, with complementary division, addition, and subtraction packs. The project combines Leitner and SM-2 algorithms to build reflex-level recall through an adaptive spaced-repetition engine that responds to both accuracy and response speed.
 
 ## Tech Stack
 
@@ -122,7 +122,7 @@ Organized by feature, key components include:
   - `SaveProgressModal` for upgrading anonymous accounts (requires Terms acceptance)
   - `UsernamePinLogin` for kid-friendly username + 6-digit PIN sign-in
   - `SetPinModal` (opened from Profile) to enable username+PIN sign-in
-- **MultiplicationCard** - Flash card interface with timer and zones (correct/incorrect/skip)
+- **FactCard** - Flash card interface with timer and zones (correct/incorrect/skip)
 - **PanelCard** - Reusable responsive panel shell for dashboard-style panels (desktop header + consistent spacing)
 - **PackMasteryPanel** - Pack completion progress visualization
 - **RequireUser** - Route protection HOC for authenticated users
@@ -290,7 +290,7 @@ interface User {
   upgradePromptSnoozedUntil?: Timestamp
   hasUsernamePin?: boolean
   usernameSetByUser?: boolean
-  activePack: string // e.g., "mul_144" or "div_144"
+  activePack: string // e.g., "mul_144", "div_144", "add_20", or "sub_20"
   activeScene?: SceneTheme
   sceneXP: number
   // ... other fields
@@ -369,7 +369,7 @@ interface SessionRecord {
 2. `CardScheduler.startSession()` loads facts and builds queue
 3. `SessionStatusContext` sets `isSessionActive = true`
 4. Timer starts countdown from `sessionLength`
-5. User answers cards via `MultiplicationCard` component
+5. User answers cards via `FactCard` component
 6. Each answer calls `submitAnswer()` → updates fact → adds to pending batch
 7. Timer expires or user stops → `ReviewSession.finishSession()`
 8. Batch writes all pending updates to Firestore
@@ -389,7 +389,7 @@ interface SessionRecord {
 **Security note**: The username index and PIN hashes live in server-only collections (`usernameIndex`, `userSecrets`) and are blocked from client access in `firestore.rules`.
 
 ### Pack System
-Users can select packs (e.g., "mul_144" or "div_144") from `ProfilePage`. Active pack determines which facts are loaded into the card scheduler.
+Users can select packs (e.g., "mul_144", "div_144", "add_20", or "sub_20") from `ProfilePage`. Active pack determines which facts are loaded into the card scheduler.
 
 ### Scene Builder
 Users can customize practice session backgrounds using Konva canvas. Scenes are saved to Firebase Storage and metadata stored in Firestore.

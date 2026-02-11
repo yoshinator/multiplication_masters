@@ -36,7 +36,13 @@ export type UserCard = {
   lastElapsedTime: number
 }
 
-export type PackKey = 'mul_36' | 'mul_144' | 'mul_576' | 'div_144'
+export type PackKey =
+  | 'mul_36'
+  | 'mul_144'
+  | 'mul_576'
+  | 'div_144'
+  | 'add_20'
+  | 'sub_20'
 
 export type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
 
@@ -179,17 +185,31 @@ export const getPackFactIds = (packName: PackKey): Set<string> => {
   const ids = new Set<string>()
   let max = 0
 
-  if (packName === 'mul_36') max = 6
-  else if (packName === 'mul_144' || packName === 'div_144') max = 12
-  else if (packName === 'mul_576') max = 24
-  else return new Set<string>()
+  if (packName === 'add_20') {
+    for (let a = 0; a <= 20; a++) {
+      for (let b = 0; b <= 20 - a; b++) {
+        ids.add(`add:${a}:${b}`)
+      }
+    }
+  } else if (packName === 'sub_20') {
+    for (let a = 0; a <= 20; a++) {
+      for (let b = 0; b <= a; b++) {
+        ids.add(`sub:${a}:${b}`)
+      }
+    }
+  } else {
+    if (packName === 'mul_36') max = 6
+    else if (packName === 'mul_144' || packName === 'div_144') max = 12
+    else if (packName === 'mul_576') max = 24
+    else return new Set<string>()
 
-  for (let i = 1; i <= max; i++) {
-    for (let j = 1; j <= max; j++) {
-      if (packName === 'div_144') {
-        ids.add(`div:${i * j}:${i}`)
-      } else {
-        ids.add(`mul:${i}:${j}`)
+    for (let i = 1; i <= max; i++) {
+      for (let j = 1; j <= max; j++) {
+        if (packName === 'div_144') {
+          ids.add(`div:${i * j}:${i}`)
+        } else {
+          ids.add(`mul:${i}:${j}`)
+        }
       }
     }
   }

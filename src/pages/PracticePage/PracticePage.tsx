@@ -3,7 +3,7 @@ import { Box, LinearProgress } from '@mui/material'
 import { driver, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 
-import MultiplicationCard from '../../components/MultiplicationCard/MultiplicationCard'
+import FactCard from '../../components/FactCard/FactCard'
 import StatsPanel from '../../components/StatsPanel/StatsPanel'
 import SessionSummary from '../../components/SessionSummary/SessionSummary'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
@@ -302,7 +302,7 @@ const PracticePage: FC = () => {
         happened after the last login display the summary if you just logged in and 
         have not played a session display the welcome back component*/}
         {isSessionActive ? (
-          <MultiplicationCard backgroundImageUrl={sceneData?.thumbnailUrl} />
+          <FactCard backgroundImageUrl={sceneData?.thumbnailUrl} />
         ) : isPlayedSession ? (
           <SessionSummary />
         ) : (
