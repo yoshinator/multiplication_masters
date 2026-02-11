@@ -106,9 +106,60 @@ export const generateDivPack = (start: number, end: number): UserFact[] => {
   return facts
 }
 
+/**
+ * Generates addition facts with sums within 20.
+ */
+export const generateAddPack = (maxSum: number): UserFact[] => {
+  const facts: UserFact[] = []
+
+  for (let a = 0; a <= maxSum; a++) {
+    for (let b = 0; b <= maxSum - a; b++) {
+      const level = Math.max(a, b)
+      facts.push({
+        id: createFactId('add', [a, b]),
+        type: 'add',
+        operands: [a, b],
+        answer: a + b,
+        level,
+        difficulty: level <= 10 ? 'basic' : level <= 15 ? 'advanced' : 'elite',
+        expression: `${a} + ${b}`,
+        ...defaultSrs(),
+      })
+    }
+  }
+
+  return facts
+}
+
+/**
+ * Generates subtraction facts within 20 (non-negative answers).
+ */
+export const generateSubPack = (maxValue: number): UserFact[] => {
+  const facts: UserFact[] = []
+
+  for (let a = 0; a <= maxValue; a++) {
+    for (let b = 0; b <= a; b++) {
+      facts.push({
+        id: createFactId('sub', [a, b]),
+        type: 'sub',
+        operands: [a, b],
+        answer: a - b,
+        level: a,
+        difficulty: a <= 10 ? 'basic' : a <= 15 ? 'advanced' : 'elite',
+        expression: `${a} - ${b}`,
+        ...defaultSrs(),
+      })
+    }
+  }
+
+  return facts
+}
+
 export const MASTER_FACTS: Record<string, UserFact[]> = {
   mul_36: generateMulPack(1, 6),
   mul_144: generateMulPack(1, 12),
   mul_576: generateMulPack(1, 24),
   div_144: generateDivPack(1, 12),
+  add_20: generateAddPack(20),
+  sub_20: generateSubPack(20),
 }
