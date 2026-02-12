@@ -530,14 +530,17 @@ export const provisionFacts = onCall(async (request) => {
     const sliceEnd = Math.min(startIdx + count, masterList.length)
     const factsToProvision = masterList.slice(startIdx, sliceEnd)
 
+    const factRefs = factsToProvision.map((f) => factsCol.doc(f.id))
+    const factSnaps = await transaction.getAll(...factRefs)
+
     let actualAddedCount = 0
-    for (const f of factsToProvision) {
-      const factRef = factsCol.doc(f.id)
-      const factSnap = await transaction.get(factRef)
-      if (factSnap.exists) continue
-      transaction.set(factRef, f)
+    factSnaps.forEach((factSnap, idx) => {
+      if (factSnap.exists) return
+      const fact = factsToProvision[idx]
+      if (!fact) return
+      transaction.set(factRefs[idx], fact)
       actualAddedCount += 1
-    }
+    })
 
     transaction.update(metaRef, {
       nextSeqToIntroduce: sliceEnd,
