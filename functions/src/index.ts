@@ -583,9 +583,90 @@ export const migrateUserToFacts = onCall(async (request) => {
 
   const existingFacts = await factsCol.limit(1).get()
   if (!existingFacts.empty) {
+    // UserFacts exist, but we still need to ensure the user is properly initialized
+    // to prevent the client from repeatedly attempting migration.
+    const userDoc = await userRef.get()
+    const userData = userDoc.data()
+
+    // If already marked as initialized, we're done
+    if (userData?.metaInitialized) {
+      return {
+        success: true,
+        message: 'UserFacts already exist. Already initialized.',
+      }
+    }
+
+    // Determine active pack from existing facts
+    // Fetch all facts to determine the highest operand
+    const allFacts = await factsCol.get()
+    let maxOperand = 0
+    for (const factDoc of allFacts.docs) {
+      const factData = factDoc.data()
+      if (factData.type === 'mul' && Array.isArray(factData.operands)) {
+        const op1 = factData.operands[0] as number
+        const op2 = factData.operands[1] as number
+        if (!isNaN(op1) && !isNaN(op2)) {
+          maxOperand = Math.max(maxOperand, op1, op2)
+        }
+      }
+    }
+
+    // Determine pack based on max operand (same logic as migration)
+    const packName = maxOperand > 12 ? 'mul_576' : maxOperand > 6 ? 'mul_144' : 'mul_36'
+    const masterList = MASTER_FACTS[packName]
+
+    if (masterList) {
+      const migratedIds = new Set(allFacts.docs.map(doc => doc.id))
+      
+      // Find first missing index to set cursor
+      let nextSeq = masterList.length
+      for (let i = 0; i < masterList.length; i++) {
+        if (!migratedIds.has(masterList[i].id)) {
+          nextSeq = i
+          break
+        }
+      }
+
+      const batch = db.batch()
+      
+      // Create/update pack meta
+      const metaRef = userRef.collection('packMeta').doc(packName)
+      batch.set(
+        metaRef,
+        {
+          packName,
+          totalFacts: masterList.length,
+          isCompleted: nextSeq >= masterList.length,
+          nextSeqToIntroduce: nextSeq,
+          lastActivity: Date.now(),
+        },
+        { merge: true }
+      )
+
+      // Build enabled packs list
+      const enabledPacks = DEFAULT_ENABLED_PACKS.includes(
+        packName as (typeof DEFAULT_ENABLED_PACKS)[number]
+      )
+        ? [...DEFAULT_ENABLED_PACKS]
+        : [...DEFAULT_ENABLED_PACKS, packName]
+
+      // Mark user as initialized
+      batch.set(
+        userRef,
+        {
+          activePack: packName,
+          enabledPacks,
+          metaInitialized: true,
+        },
+        { merge: true }
+      )
+
+      await batch.commit()
+    }
+
     return {
       success: true,
-      message: 'UserFacts already exist. Skipping migration.',
+      message: 'UserFacts already exist. Initialized metadata.',
     }
   }
 
