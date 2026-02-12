@@ -666,6 +666,7 @@ const ensureMetaForExistingFacts = async (
     userPatch.enabledPacks = normalizedEnabled
   }
 
+  const batch = db.batch()
   if (Object.keys(userPatch).length > 0) {
     batch.set(userRef, userPatch, { merge: true })
   }
