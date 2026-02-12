@@ -18,6 +18,10 @@ const PIN_LOCKOUT_MS = 60 * 60 * 1000
 const MAX_USERNAME_ATTEMPTS = 10
 const DEFAULT_ENABLED_PACKS = ['add_20', 'mul_36'] as const
 
+// Pack boundaries for determining which pack a user should be in
+const MAX_OPERAND_MUL_36 = 6
+const MAX_OPERAND_MUL_144 = 12
+
 const normalizeUsernameKey = (username: string): string =>
   username.trim().toLowerCase()
 
@@ -602,22 +606,36 @@ export const migrateUserToFacts = onCall(async (request) => {
     let maxOperand = 0
     for (const factDoc of allFacts.docs) {
       const factData = factDoc.data()
-      if (factData.type === 'mul' && Array.isArray(factData.operands)) {
-        const op1 = factData.operands[0] as number
-        const op2 = factData.operands[1] as number
-        if (!isNaN(op1) && !isNaN(op2)) {
+      if (
+        factData.type === 'mul' &&
+        Array.isArray(factData.operands) &&
+        factData.operands.length >= 2
+      ) {
+        const op1 = factData.operands[0]
+        const op2 = factData.operands[1]
+        if (
+          typeof op1 === 'number' &&
+          typeof op2 === 'number' &&
+          !isNaN(op1) &&
+          !isNaN(op2)
+        ) {
           maxOperand = Math.max(maxOperand, op1, op2)
         }
       }
     }
 
     // Determine pack based on max operand (same logic as migration)
-    const packName = maxOperand > 12 ? 'mul_576' : maxOperand > 6 ? 'mul_144' : 'mul_36'
+    const packName =
+      maxOperand > MAX_OPERAND_MUL_144
+        ? 'mul_576'
+        : maxOperand > MAX_OPERAND_MUL_36
+          ? 'mul_144'
+          : 'mul_36'
     const masterList = MASTER_FACTS[packName]
 
     if (masterList) {
-      const migratedIds = new Set(allFacts.docs.map(doc => doc.id))
-      
+      const migratedIds = new Set(allFacts.docs.map((doc) => doc.id))
+
       // Find first missing index to set cursor
       let nextSeq = masterList.length
       for (let i = 0; i < masterList.length; i++) {
@@ -628,7 +646,7 @@ export const migrateUserToFacts = onCall(async (request) => {
       }
 
       const batch = db.batch()
-      
+
       // Create/update pack meta
       const metaRef = userRef.collection('packMeta').doc(packName)
       batch.set(
@@ -749,7 +767,7 @@ export const migrateUserToFacts = onCall(async (request) => {
 
   // 2. Determine Pack and Meta
   // If they have seen 13x13, they are in the 576 pack. Otherwise default to 144.
-  const packName = maxOperand > 12 ? 'mul_576' : 'mul_144'
+  const packName = maxOperand > MAX_OPERAND_MUL_144 ? 'mul_576' : 'mul_144'
   const masterList = MASTER_FACTS[packName]
 
   if (masterList) {
