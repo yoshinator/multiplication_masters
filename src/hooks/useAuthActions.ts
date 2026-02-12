@@ -277,7 +277,9 @@ export const useAuthActions = () => {
         throw new Error('No custom token returned')
       }
 
-      return await signInWithCustomToken(auth, customToken)
+      const credential = await signInWithCustomToken(auth, customToken)
+      await setLastSignInMethod(credential.user.uid, 'profilePin')
+      return credential
     } catch (error: unknown) {
       logger('Error logging in with profile PIN', error)
       showNotification(extractErrorMessage(error), 'error')

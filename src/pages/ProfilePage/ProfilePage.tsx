@@ -44,6 +44,8 @@ import SceneThemeSelect from '../../components/SceneThemeSelect/SceneThemeSelect
 import { useFirestoreQuery } from '../../hooks/useFirestore'
 import { collection, query } from 'firebase/firestore'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
+import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import { extractErrorMessage } from '../../utilities/typeutils'
 
 /**
  * Style object for the grid container used in the profile page.
@@ -185,6 +187,7 @@ const ProfilePage: FC = () => {
   const { sessionLength } = useSessionStatusContext()
   const { updateUser, user, profile, activeProfileId, setActiveProfileId } =
     useUser()
+  const { showNotification } = useNotification()
 
   const [profileSessionId, setProfileSessionId] = useState<string | null>(null)
   const [newProfileName, setNewProfileName] = useState('')
@@ -228,16 +231,20 @@ const ProfilePage: FC = () => {
     const gradeLevel = newProfileGrade
       ? Number.parseInt(newProfileGrade, 10)
       : null
-    const result = await createProfileFn({
-      displayName: newProfileName.trim(),
-      gradeLevel,
-    })
-    const profileId = result?.data?.profileId
-    if (profileId) {
-      await setActiveProfileId(profileId)
+    try {
+      const result = await createProfileFn({
+        displayName: newProfileName.trim(),
+        gradeLevel,
+      })
+      const profileId = result?.data?.profileId
+      if (profileId) {
+        await setActiveProfileId(profileId)
+      }
+      setNewProfileName('')
+      setNewProfileGrade('')
+    } catch (error: unknown) {
+      showNotification(extractErrorMessage(error), 'error')
     }
-    setNewProfileName('')
-    setNewProfileGrade('')
   }
 
   const handleChoiceKeyDown = (e: KeyboardEvent<HTMLElement>) => {

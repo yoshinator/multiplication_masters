@@ -63,9 +63,7 @@ service cloud.firestore {
         && (resource.data.pinEnabled == true
             ? request.resource.data.pinEnabled == true
             : request.resource.data.pinEnabled != true)
-        && (resource.data.pinEnabled == true
-            ? request.resource.data.loginName == resource.data.loginName
-            : true);
+        && request.resource.data.loginName == resource.data.loginName;
 
       allow delete: if request.auth != null
         && request.auth.uid == userId

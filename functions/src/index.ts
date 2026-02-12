@@ -216,8 +216,17 @@ async function createInitialUserInTransaction(
   tx: FirebaseFirestore.Transaction,
   uid: string
 ): Promise<{ profileId: string; loginName: string; displayName: string }> {
-  const userRef = db.collection('users').doc(uid)
+  await createUserAccountInTransaction(tx, uid)
 
+  const displayName = generateRandomUsername()
+  return await createProfileInTransaction(tx, uid, displayName, null, true)
+}
+
+async function createUserAccountInTransaction(
+  tx: FirebaseFirestore.Transaction,
+  uid: string
+): Promise<void> {
+  const userRef = db.collection('users').doc(uid)
   tx.set(
     userRef,
     {
@@ -229,9 +238,6 @@ async function createInitialUserInTransaction(
     },
     { merge: true }
   )
-
-  const displayName = generateRandomUsername()
-  return await createProfileInTransaction(tx, uid, displayName, null, true)
 }
 
 export const initializeUserOnAuthCreate = authV1
@@ -348,7 +354,7 @@ export const createProfile = onCall(async (request) => {
   const profile = await db.runTransaction(async (tx) => {
     const userSnap = await tx.get(userRef)
     if (!userSnap.exists) {
-      await createInitialUserInTransaction(tx, uid)
+      await createUserAccountInTransaction(tx, uid)
     }
 
     return await createProfileInTransaction(
@@ -914,6 +920,14 @@ export const signInWithProfilePin = onCall(async (request) => {
   if (outcome.type === 'invalid') {
     throw new HttpsError('invalid-argument', 'Invalid credentials.')
   }
+
+  const userRef = db.collection('users').doc(outcome.uid)
+  await userRef.set(
+    {
+      activeProfileId: outcome.profileId,
+    },
+    { merge: true }
+  )
 
   const token = await getAuth().createCustomToken(outcome.uid, {
     profileId: outcome.profileId,

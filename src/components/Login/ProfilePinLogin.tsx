@@ -2,20 +2,20 @@ import { useMemo, useState, type FC } from 'react'
 import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { useAuthActions } from '../../hooks/useAuthActions'
 
-type UsernamePinLoginProps = {
+type ProfilePinLoginProps = {
   onSuccess: () => void
 }
 
-const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
+const ProfilePinLogin: FC<ProfilePinLoginProps> = ({ onSuccess }) => {
   const { loginWithProfilePin } = useAuthActions()
-  const [username, setUsername] = useState('')
+  const [loginName, setLoginName] = useState('')
   const [pin, setPin] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const usernameOk = useMemo(() => {
-    const u = username.trim()
+    const u = loginName.trim()
     return /^[a-zA-Z0-9_]{3,20}$/.test(u)
-  }, [username])
+  }, [loginName])
 
   const pinOk = useMemo(() => /^\d{6}$/.test(pin), [pin])
 
@@ -26,7 +26,7 @@ const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
 
     setIsSubmitting(true)
     try {
-      await loginWithProfilePin(username.trim(), pin)
+      await loginWithProfilePin(loginName.trim(), pin)
       onSuccess()
     } finally {
       setIsSubmitting(false)
@@ -42,11 +42,11 @@ const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
       <Stack spacing={1.5}>
         <TextField
           label="Profile login name"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          error={Boolean(username) && !usernameOk}
+          value={loginName}
+          onChange={(e) => setLoginName(e.target.value)}
+          error={Boolean(loginName) && !usernameOk}
           helperText={
-            username ? '3-20 characters: letters, numbers, underscores' : ' '
+            loginName ? '3-20 characters: letters, numbers, underscores' : ' '
           }
           fullWidth
         />
@@ -76,4 +76,4 @@ const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
   )
 }
 
-export default UsernamePinLogin
+export default ProfilePinLogin

@@ -45,6 +45,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(
     null
   )
+  const [profileClaimId, setProfileClaimId] = useState<string | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
   const { app, auth, db, loadUserFacts, userFacts } = useFirebaseContext()
@@ -58,6 +59,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const uidRef = useRef<string | undefined>(undefined)
   const activeProfileIdRef = useRef<string | null>(null)
+  const profileClaimIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     uidRef.current = user?.uid
@@ -66,6 +68,10 @@ const UserProvider: FC<Props> = ({ children }) => {
   useEffect(() => {
     activeProfileIdRef.current = activeProfileId
   }, [activeProfileId])
+
+  useEffect(() => {
+    profileClaimIdRef.current = profileClaimId
+  }, [profileClaimId])
 
   // Add this state to UserProvider
   const packMetaRef = useMemo(() => {
@@ -370,6 +376,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         setUser(null)
         setProfile(null)
         setActiveProfileIdState(null)
+        setProfileClaimId(null)
         setAuthStatus('signedOut')
         return
       }
@@ -378,6 +385,17 @@ const UserProvider: FC<Props> = ({ children }) => {
 
       try {
         const uid = authUser.uid
+        try {
+          const tokenResult = await authUser.getIdTokenResult()
+          const claimProfileId =
+            typeof tokenResult.claims.profileId === 'string'
+              ? tokenResult.claims.profileId
+              : null
+          setProfileClaimId(claimProfileId)
+        } catch (err) {
+          logger('Failed to read profile claim:', err)
+          setProfileClaimId(null)
+        }
         const userRef = doc(db, 'users', uid)
         // Subscribe immediately. If the doc does not exist yet (e.g. server-side
         // init still in progress), stay in loading state until it appears.
@@ -452,7 +470,9 @@ const UserProvider: FC<Props> = ({ children }) => {
 
             const accountData = docSnap.data() as UserAccount
 
-            const nextProfileId = accountData.activeProfileId || null
+            const claimProfileId = profileClaimIdRef.current
+            const nextProfileId =
+              (claimProfileId || accountData.activeProfileId) ?? null
             setActiveProfileIdState(nextProfileId)
 
             if (!nextProfileId && !ensureUserInitInFlightRef.current) {
