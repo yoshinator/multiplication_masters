@@ -18,8 +18,8 @@ const PIN_LOCKOUT_MS = 60 * 60 * 1000
 const MAX_USERNAME_ATTEMPTS = 10
 const DEFAULT_ENABLED_PACKS = ['add_20', 'mul_36'] as const
 
-// Pack boundaries for determining which pack a user should be in
-const MAX_OPERAND_MUL_36 = 6
+// Pack boundary for determining which pack a user should be in during migration
+// Users with operands > 12 go to mul_576, otherwise default to mul_144
 const MAX_OPERAND_MUL_144 = 12
 
 const normalizeUsernameKey = (username: string): string =>
@@ -625,12 +625,8 @@ export const migrateUserToFacts = onCall(async (request) => {
     }
 
     // Determine pack based on max operand (same logic as migration)
-    const packName =
-      maxOperand > MAX_OPERAND_MUL_144
-        ? 'mul_576'
-        : maxOperand > MAX_OPERAND_MUL_36
-          ? 'mul_144'
-          : 'mul_36'
+    // Default to mul_144 for existing users, upgrade to mul_576 if they have higher operands
+    const packName = maxOperand > MAX_OPERAND_MUL_144 ? 'mul_576' : 'mul_144'
     const masterList = MASTER_FACTS[packName]
 
     if (masterList) {
