@@ -530,24 +530,28 @@ export const provisionFacts = onCall(async (request) => {
     const sliceEnd = Math.min(startIdx + count, masterList.length)
     const factsToProvision = masterList.slice(startIdx, sliceEnd)
 
-    // Use { merge: true } so we NEVER overwrite existing student progress.
-    factsToProvision.forEach((f) => {
-      const factRef = factsCol.doc(f.id)
-      transaction.set(factRef, f, { merge: true })
+    const factRefs = factsToProvision.map((f) => factsCol.doc(f.id))
+    const factSnaps = await transaction.getAll(...factRefs)
+
+    let actualAddedCount = 0
+    factSnaps.forEach((factSnap, idx) => {
+      if (factSnap.exists) return
+      const fact = factsToProvision[idx]
+      if (!fact) return
+      transaction.set(factRefs[idx], fact)
+      actualAddedCount += 1
     })
 
-    const actualAddedCount = factsToProvision.length
-
     transaction.update(metaRef, {
-      nextSeqToIntroduce: startIdx + actualAddedCount,
-      isCompleted: startIdx + actualAddedCount >= masterList.length,
+      nextSeqToIntroduce: sliceEnd,
+      isCompleted: sliceEnd >= masterList.length,
       lastActivity: Date.now(),
     })
 
     return {
       success: true,
       added: actualAddedCount,
-      newCursor: startIdx + actualAddedCount,
+      newCursor: sliceEnd,
     }
   })
 })
@@ -572,6 +576,103 @@ const getOrCreatePackMeta = async (
   return newMeta
 }
 
+const ensureMetaForExistingFacts = async (
+  userRef: FirebaseFirestore.DocumentReference,
+  factsCol: FirebaseFirestore.CollectionReference
+) => {
+  const userSnap = await userRef.get()
+  const userData = userSnap.data() as
+    | {
+        activePack?: unknown
+        enabledPacks?: unknown
+        activeScene?: unknown
+        metaInitialized?: unknown
+      }
+    | undefined
+
+  const activePack =
+    typeof userData?.activePack === 'string' &&
+    userData.activePack in MASTER_FACTS
+      ? userData.activePack
+      : 'mul_36'
+
+  const rawEnabled = Array.isArray(userData?.enabledPacks)
+    ? userData?.enabledPacks
+    : []
+  const normalizedEnabled = rawEnabled.filter(
+    (pack) => typeof pack === 'string' && pack in MASTER_FACTS
+  ) as string[]
+
+  if (normalizedEnabled.length === 0) {
+    normalizedEnabled.push(...DEFAULT_ENABLED_PACKS)
+  }
+  if (!normalizedEnabled.includes(activePack)) {
+    normalizedEnabled.push(activePack)
+  }
+
+  const activeScene =
+    typeof userData?.activeScene === 'string' ? userData.activeScene : 'garden'
+
+  const masterList = MASTER_FACTS[activePack]
+  const factsSnap = await factsCol.get()
+  const factIds = new Set(factsSnap.docs.map((doc) => doc.id))
+
+  let nextSeq = masterList.length
+  for (let i = 0; i < masterList.length; i++) {
+    if (!factIds.has(masterList[i].id)) {
+      nextSeq = i
+      break
+    }
+  }
+
+  const packMetaRef = userRef.collection('packMeta').doc(activePack)
+  const sceneMetaRef = userRef.collection('sceneMeta').doc(activeScene)
+
+  const userPatch: Record<string, unknown> = {}
+  if (userData?.metaInitialized !== true) userPatch.metaInitialized = true
+
+  await db.runTransaction(async (transaction) => {
+    const packMetaSnap = await transaction.get(packMetaRef)
+    if (!packMetaSnap.exists) {
+      transaction.create(packMetaRef, {
+        packName: activePack,
+        totalFacts: masterList.length,
+        isCompleted: nextSeq >= masterList.length,
+        nextSeqToIntroduce: nextSeq,
+        lastActivity: Date.now(),
+      })
+    }
+
+    const sceneMetaSnap = await transaction.get(sceneMetaRef)
+    if (!sceneMetaSnap.exists) {
+      transaction.create(sceneMetaRef, {
+        sceneId: activeScene,
+        xp: 0,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+    }
+
+    if (Object.keys(userPatch).length > 0) {
+      transaction.set(userRef, userPatch, { merge: true })
+    }
+  })
+  if (userData?.activePack !== activePack) userPatch.activePack = activePack
+  if (userData?.activeScene !== activeScene) userPatch.activeScene = activeScene
+  if (
+    normalizedEnabled.length > 0 &&
+    JSON.stringify(normalizedEnabled) !== JSON.stringify(userData?.enabledPacks)
+  ) {
+    userPatch.enabledPacks = normalizedEnabled
+  }
+
+  if (Object.keys(userPatch).length > 0) {
+    batch.set(userRef, userPatch, { merge: true })
+  }
+
+  await batch.commit()
+}
+
 export const migrateUserToFacts = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
@@ -579,6 +680,15 @@ export const migrateUserToFacts = onCall(async (request) => {
   const userRef = db.collection('users').doc(uid)
   const cardsCol = userRef.collection('UserCards')
   const factsCol = userRef.collection('UserFacts')
+
+  const existingFacts = await factsCol.limit(1).get()
+  if (!existingFacts.empty) {
+    await ensureMetaForExistingFacts(userRef, factsCol)
+    return {
+      success: true,
+      message: 'UserFacts already exist. Skipping migration.',
+    }
+  }
 
   // 1. Fetch only seen cards
   const snapshot = await cardsCol.where('seen', '>', 0).get()
