@@ -44,7 +44,12 @@ export type PackKey =
   | 'add_20'
   | 'sub_20'
 
-export type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
+export type SignInMethod =
+  | 'anonymous'
+  | 'google'
+  | 'emailLink'
+  | 'usernamePin'
+  | 'profilePin'
 export type UserRole = 'student' | 'teacher' | 'parent' | 'adult'
 export type GradeLevel =
   | 'K'
@@ -69,6 +74,7 @@ export interface User {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   subscriptionStatus: 'free' | 'premium'
+  activeProfileId?: string
   showTour: boolean
   onboardingCompleted?: boolean
   upgradePromptCount: number
@@ -94,6 +100,49 @@ export interface User {
   enabledPacks?: PackKey[] // what they’re allowed to practice
   activePack?: PackKey // what PracticePage uses right now
   metaInitialized?: boolean // server-side init done
+  activeSavedSceneId?: string | null
+}
+
+export interface UserAccount {
+  uid: string
+  userRole: UserRole
+  subscriptionStatus: 'free' | 'premium'
+  lastSignInMethod?: SignInMethod
+  createdAt: Timestamp | null
+  lastLogin: Timestamp | null
+  activeProfileId?: string
+}
+
+export type UserProfile = {
+  id: string
+  displayName: string
+  loginName: string
+  gradeLevel: number | null
+  pinEnabled?: boolean
+  createdAt: Timestamp | null
+  updatedAt: Timestamp | null
+
+  showTour?: boolean
+  onboardingCompleted?: boolean
+  learnerGradeLevels?: GradeLevel[]
+  learnerCount?: number
+  upgradePromptCount?: number
+
+  totalAccuracy?: number
+  lifetimeCorrect?: number
+  lifetimeIncorrect?: number
+  totalSessions?: number
+  userDefaultSessionLength?: number
+
+  unlockedScenes?: SceneTheme[]
+  activeScene?: SceneTheme
+  newCardsSeenToday?: number
+  lastNewCardDate?: number
+  maxNewCardsPerDay?: number
+
+  enabledPacks?: PackKey[]
+  activePack?: PackKey
+  metaInitialized?: boolean
   activeSavedSceneId?: string | null
 }
 

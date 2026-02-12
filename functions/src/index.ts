@@ -13,9 +13,11 @@ const db = getFirestore()
 
 const USERNAME_INDEX_COLLECTION = 'usernameIndex'
 const USER_SECRETS_COLLECTION = 'userSecrets'
+const PROFILE_INDEX_COLLECTION = 'profileIndex'
+const PROFILE_SECRETS_COLLECTION = 'profileSecrets'
 const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
-const MAX_USERNAME_ATTEMPTS = 10
+const MAX_PROFILE_LOGIN_ATTEMPTS = 12
 const DEFAULT_ENABLED_PACKS = ['add_20', 'mul_36'] as const
 
 const normalizeUsernameKey = (username: string): string =>
@@ -23,6 +25,14 @@ const normalizeUsernameKey = (username: string): string =>
 
 const isValidUsername = (username: string): boolean => {
   const u = username.trim()
+  return /^[a-zA-Z0-9_]{3,20}$/.test(u)
+}
+
+const normalizeLoginNameKey = (loginName: string): string =>
+  loginName.trim().toLowerCase()
+
+const isValidLoginName = (loginName: string): boolean => {
+  const u = loginName.trim()
   return /^[a-zA-Z0-9_]{3,20}$/.test(u)
 }
 
@@ -79,58 +89,99 @@ const generateRandomUsername = (): string => {
   return `${adj}${animal}${numberStr}`
 }
 
-async function createInitialUserInTransaction(
-  tx: FirebaseFirestore.Transaction,
-  uid: string
-): Promise<string> {
-  const userRef = db.collection('users').doc(uid)
+const resolveActiveProfileId = async (
+  uid: string,
+  tokenProfileId: unknown
+): Promise<string> => {
+  if (typeof tokenProfileId === 'string' && tokenProfileId.trim()) {
+    return tokenProfileId
+  }
 
-  for (let attempt = 0; attempt < MAX_USERNAME_ATTEMPTS; attempt++) {
-    const candidate = generateRandomUsername()
-    const usernameKey = normalizeUsernameKey(candidate)
-    const indexRef = db.collection(USERNAME_INDEX_COLLECTION).doc(usernameKey)
+  const userRef = db.collection('users').doc(uid)
+  const userSnap = await userRef.get()
+  const userData = userSnap.data() as { activeProfileId?: unknown } | undefined
+  const activeProfileId =
+    typeof userData?.activeProfileId === 'string'
+      ? userData.activeProfileId
+      : null
+  if (!activeProfileId) {
+    throw new HttpsError('failed-precondition', 'Active profile not set.')
+  }
+
+  return activeProfileId
+}
+
+const sanitizeLoginNameBase = (displayName: string): string => {
+  const raw = displayName.trim().replace(/\s+/g, '')
+  const sanitized = raw.replace(/[^a-zA-Z0-9_]/g, '')
+  if (sanitized.length < 3) return ''
+  return sanitized.slice(0, 20)
+}
+
+const buildLoginNameCandidate = (base: string, attempt: number): string => {
+  if (!base) return generateRandomUsername()
+  if (attempt === 0) return base
+
+  const suffix = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0')
+  const maxBaseLength = Math.max(3, 20 - suffix.length)
+  return `${base.slice(0, maxBaseLength)}${suffix}`
+}
+
+async function createProfileInTransaction(
+  tx: FirebaseFirestore.Transaction,
+  uid: string,
+  displayName: string,
+  gradeLevel: number | null,
+  setActive: boolean
+): Promise<{ profileId: string; loginName: string; displayName: string }> {
+  const userRef = db.collection('users').doc(uid)
+  const profileRef = userRef.collection('profiles').doc()
+  const base = sanitizeLoginNameBase(displayName)
+
+  for (let attempt = 0; attempt < MAX_PROFILE_LOGIN_ATTEMPTS; attempt++) {
+    const candidate = buildLoginNameCandidate(base, attempt)
+    if (!isValidLoginName(candidate)) continue
+    const loginNameKey = normalizeLoginNameKey(candidate)
+    const indexRef = db.collection(PROFILE_INDEX_COLLECTION).doc(loginNameKey)
 
     const indexSnap = await tx.get(indexRef)
     if (indexSnap.exists) continue
 
     tx.set(indexRef, {
       uid,
-      username: candidate,
+      profileId: profileRef.id,
+      loginName: candidate,
       createdAt: FieldValue.serverTimestamp(),
     })
 
-    tx.set(userRef, {
-      uid,
-      username: candidate,
-
-      userRole: 'student',
-      subscriptionStatus: 'free',
+    tx.set(profileRef, {
+      displayName: displayName.trim() || candidate,
+      loginName: candidate,
+      gradeLevel,
+      pinEnabled: false,
       showTour: true,
       onboardingCompleted: false,
       learnerGradeLevels: [],
       learnerCount: 1,
       upgradePromptCount: 0,
-
       totalAccuracy: 100,
       lifetimeCorrect: 0,
       lifetimeIncorrect: 0,
       totalSessions: 0,
       userDefaultSessionLength: 0,
-
       newCardsSeenToday: 0,
       maxNewCardsPerDay: 10,
-
       enabledPacks: [...DEFAULT_ENABLED_PACKS],
       activePack: 'mul_36',
       activeScene: 'garden',
-
       metaInitialized: true,
-
       createdAt: FieldValue.serverTimestamp(),
-      lastLogin: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     })
 
-    const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
+    const sceneMetaRef = profileRef.collection('sceneMeta').doc('garden')
     tx.set(sceneMetaRef, {
       sceneId: 'garden',
       xp: 0,
@@ -138,12 +189,54 @@ async function createInitialUserInTransaction(
       updatedAt: FieldValue.serverTimestamp(),
     })
 
-    return candidate
+    if (setActive) {
+      tx.set(
+        userRef,
+        {
+          activeProfileId: profileRef.id,
+        },
+        { merge: true }
+      )
+    }
+
+    return {
+      profileId: profileRef.id,
+      loginName: candidate,
+      displayName: displayName.trim() || candidate,
+    }
   }
 
   throw new HttpsError(
     'internal',
-    'Failed to generate a unique username after multiple attempts.'
+    'Failed to generate a unique profile login name after multiple attempts.'
+  )
+}
+
+async function createInitialUserInTransaction(
+  tx: FirebaseFirestore.Transaction,
+  uid: string
+): Promise<{ profileId: string; loginName: string; displayName: string }> {
+  await createUserAccountInTransaction(tx, uid)
+
+  const displayName = generateRandomUsername()
+  return await createProfileInTransaction(tx, uid, displayName, null, true)
+}
+
+async function createUserAccountInTransaction(
+  tx: FirebaseFirestore.Transaction,
+  uid: string
+): Promise<void> {
+  const userRef = db.collection('users').doc(uid)
+  tx.set(
+    userRef,
+    {
+      uid,
+      userRole: 'student',
+      subscriptionStatus: 'free',
+      createdAt: FieldValue.serverTimestamp(),
+      lastLogin: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
   )
 }
 
@@ -153,7 +246,11 @@ export const initializeUserOnAuthCreate = authV1
     const uid = authUser.uid
     const userRef = db.collection('users').doc(uid)
 
-    const username = await db.runTransaction<string | null>(async (tx) => {
+    const profile = await db.runTransaction<{
+      profileId: string
+      loginName: string
+      displayName: string
+    } | null>(async (tx) => {
       const existing = await tx.get(userRef)
       if (existing.exists) {
         return null
@@ -162,14 +259,18 @@ export const initializeUserOnAuthCreate = authV1
       return await createInitialUserInTransaction(tx, uid)
     })
 
-    if (username === null) {
+    if (profile === null) {
       logger.info('Auth onCreate: user doc already exists; skipping init', {
         uid,
       })
       return
     }
 
-    logger.info('Auth onCreate: initialized user doc', { uid, username })
+    logger.info('Auth onCreate: initialized user doc', {
+      uid,
+      profileId: profile.profileId,
+      loginName: profile.loginName,
+    })
   })
 
 export const ensureUserInitialized = onCall(async (request) => {
@@ -180,23 +281,97 @@ export const ensureUserInitialized = onCall(async (request) => {
 
   const result = await db.runTransaction<{
     created: boolean
-    username: string | null
+    profileId: string | null
+    loginName: string | null
   }>(async (tx) => {
     const existing = await tx.get(userRef)
     if (existing.exists) {
-      const data = existing.data() as { username?: unknown } | undefined
+      const data = existing.data() as { activeProfileId?: unknown } | undefined
+      const activeProfileId =
+        typeof data?.activeProfileId === 'string' ? data.activeProfileId : null
+
+      if (!activeProfileId) {
+        const profile = await createProfileInTransaction(
+          tx,
+          uid,
+          generateRandomUsername(),
+          null,
+          true
+        )
+        return {
+          created: true,
+          profileId: profile.profileId,
+          loginName: profile.loginName,
+        }
+      }
+
       return {
         created: false,
-        username: typeof data?.username === 'string' ? data.username : null,
+        profileId: activeProfileId,
+        loginName: null,
       }
     }
 
-    const username = await createInitialUserInTransaction(tx, uid)
-    return { created: true, username }
+    const profile = await createInitialUserInTransaction(tx, uid)
+    return {
+      created: true,
+      profileId: profile.profileId,
+      loginName: profile.loginName,
+    }
   })
 
   logger.info('ensureUserInitialized result', { uid, ...result })
   return result
+})
+
+export const createProfile = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
+  const { displayName, gradeLevel } = request.data ?? {}
+  const name = typeof displayName === 'string' ? displayName.trim() : ''
+
+  if (!name) {
+    throw new HttpsError('invalid-argument', 'Display name is required.')
+  }
+  if (name.length > 40) {
+    throw new HttpsError('invalid-argument', 'Display name is too long.')
+  }
+
+  let normalizedGrade: number | null = null
+  if (gradeLevel !== undefined && gradeLevel !== null) {
+    if (!Number.isInteger(gradeLevel) || gradeLevel < 0 || gradeLevel > 12) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Grade level must be between 0 and 12.'
+      )
+    }
+    normalizedGrade = gradeLevel
+  }
+
+  const userRef = db.collection('users').doc(uid)
+
+  const profile = await db.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef)
+    if (!userSnap.exists) {
+      await createUserAccountInTransaction(tx, uid)
+    }
+
+    return await createProfileInTransaction(
+      tx,
+      uid,
+      name,
+      normalizedGrade,
+      true
+    )
+  })
+
+  logger.info('Created profile', { uid, profileId: profile.profileId })
+  return {
+    profileId: profile.profileId,
+    loginName: profile.loginName,
+    displayName: profile.displayName,
+  }
 })
 
 export const initializeUserMeta = onDocumentCreated(
@@ -209,36 +384,28 @@ export const initializeUserMeta = onDocumentCreated(
     const snap = await userRef.get()
     const data = snap.data()
 
-    if (data?.metaInitialized === true) {
-      logger.info(`Meta already initialized for user: ${userId}`)
+    const activeProfileId =
+      typeof data?.activeProfileId === 'string' ? data.activeProfileId : null
+
+    if (activeProfileId) {
+      logger.info(`Profile already initialized for user: ${userId}`)
       return
     }
 
-    const batch = db.batch()
-
-    // Create default scene meta for 'garden'
-    const sceneMetaRef = userRef.collection('sceneMeta').doc('garden')
-    batch.set(sceneMetaRef, {
-      sceneId: 'garden',
-      xp: 0,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+    await db.runTransaction(async (tx) => {
+      const freshSnap = await tx.get(userRef)
+      const freshData = freshSnap.data() as { activeProfileId?: unknown }
+      if (typeof freshData?.activeProfileId === 'string') return
+      await createProfileInTransaction(
+        tx,
+        userId,
+        generateRandomUsername(),
+        null,
+        true
+      )
     })
 
-    // Ensure user has active/enabled pack if client didn’t set it (defensive)
-    batch.set(
-      userRef,
-      {
-        metaInitialized: true,
-        enabledPacks: [...DEFAULT_ENABLED_PACKS], // New users start with the free pack
-        activePack: 'mul_36',
-        activeScene: 'garden',
-      },
-      { merge: true }
-    )
-
-    await batch.commit()
-    logger.info(`Initialized meta for user: ${userId}`)
+    logger.info(`Initialized default profile for user: ${userId}`)
   }
 )
 
@@ -361,11 +528,162 @@ export const setUsernamePin = onCall(async (request) => {
   return { success: true }
 })
 
+export const setProfilePin = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
+  const { pin, profileId } = request.data ?? {}
+  if (typeof pin !== 'string') {
+    throw new HttpsError('invalid-argument', 'PIN is required.')
+  }
+  if (!isValidPin(pin)) {
+    throw new HttpsError('invalid-argument', 'PIN must be exactly 6 digits.')
+  }
+
+  const authProfileId = request.auth?.token?.profileId
+  const resolvedProfileId =
+    typeof authProfileId === 'string'
+      ? authProfileId
+      : typeof profileId === 'string'
+        ? profileId
+        : await resolveActiveProfileId(uid, null)
+
+  const profileRef = db
+    .collection('users')
+    .doc(uid)
+    .collection('profiles')
+    .doc(resolvedProfileId)
+
+  const profileSnap = await profileRef.get()
+  if (!profileSnap.exists) {
+    throw new HttpsError('not-found', 'Profile not found.')
+  }
+
+  const profileData = profileSnap.data() as
+    | { loginName?: unknown; pinEnabled?: unknown }
+    | undefined
+  const loginName =
+    typeof profileData?.loginName === 'string' ? profileData.loginName : null
+  if (!loginName || !isValidLoginName(loginName)) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Profile login name is not set.'
+    )
+  }
+
+  if (profileData?.pinEnabled === true) {
+    throw new HttpsError(
+      'failed-precondition',
+      'A PIN is already configured for this profile.'
+    )
+  }
+
+  const loginNameKey = normalizeLoginNameKey(loginName)
+  const indexRef = db.collection(PROFILE_INDEX_COLLECTION).doc(loginNameKey)
+  const secretsRef = db
+    .collection(PROFILE_SECRETS_COLLECTION)
+    .doc(resolvedProfileId)
+  const now = Date.now()
+
+  const pinHash = await bcrypt.hash(pin, 12)
+
+  await db.runTransaction(async (tx) => {
+    const [indexSnap, profileSnap] = await Promise.all([
+      tx.get(indexRef),
+      tx.get(profileRef),
+    ])
+
+    if (indexSnap.exists) {
+      const existing = indexSnap.data() as
+        | { uid?: string; profileId?: string }
+        | undefined
+      if (existing?.uid !== uid || existing?.profileId !== resolvedProfileId) {
+        throw new HttpsError(
+          'already-exists',
+          'This login name is already in use.'
+        )
+      }
+    } else {
+      tx.set(indexRef, {
+        uid,
+        profileId: resolvedProfileId,
+        loginName,
+        createdAt: FieldValue.serverTimestamp(),
+      })
+    }
+
+    const freshProfile = profileSnap.data() as
+      | { pinEnabled?: boolean }
+      | undefined
+    if (freshProfile?.pinEnabled === true) {
+      throw new HttpsError(
+        'failed-precondition',
+        'A PIN is already configured for this profile.'
+      )
+    }
+
+    tx.set(
+      secretsRef,
+      {
+        loginNameKey,
+        pinHash,
+        failedAttempts: 0,
+        lockoutUntil: null,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        lockoutResetAt: now,
+      },
+      { merge: true }
+    )
+
+    tx.set(
+      profileRef,
+      {
+        pinEnabled: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    )
+  })
+
+  logger.info('Profile PIN enabled', { uid, profileId: resolvedProfileId })
+  return { success: true }
+})
+
 export const resetUsernamePinLockout = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
   const secretsRef = db.collection(USER_SECRETS_COLLECTION).doc(uid)
+  await secretsRef.set(
+    {
+      failedAttempts: 0,
+      lockoutUntil: null,
+      updatedAt: FieldValue.serverTimestamp(),
+      lockoutResetAt: Date.now(),
+    },
+    { merge: true }
+  )
+
+  return { success: true }
+})
+
+export const resetProfilePinLockout = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
+  const { profileId } = request.data ?? {}
+  const authProfileId = request.auth?.token?.profileId
+  const resolvedProfileId =
+    typeof authProfileId === 'string'
+      ? authProfileId
+      : typeof profileId === 'string'
+        ? profileId
+        : await resolveActiveProfileId(uid, null)
+
+  const secretsRef = db
+    .collection(PROFILE_SECRETS_COLLECTION)
+    .doc(resolvedProfileId)
   await secretsRef.set(
     {
       failedAttempts: 0,
@@ -492,6 +810,131 @@ export const signInWithUsernamePin = onCall(async (request) => {
   return { customToken: token }
 })
 
+export const signInWithProfilePin = onCall(async (request) => {
+  const { loginName, pin } = request.data ?? {}
+
+  if (typeof loginName !== 'string' || typeof pin !== 'string') {
+    throw new HttpsError('invalid-argument', 'Login name and PIN are required.')
+  }
+
+  if (!isValidLoginName(loginName) || !isValidPin(pin)) {
+    throw new HttpsError('invalid-argument', 'Invalid credentials.')
+  }
+
+  const loginNameKey = normalizeLoginNameKey(loginName)
+  const indexRef = db.collection(PROFILE_INDEX_COLLECTION).doc(loginNameKey)
+  const now = Date.now()
+
+  const outcome = await db.runTransaction<
+    | { type: 'success'; uid: string; profileId: string }
+    | { type: 'invalid' }
+    | { type: 'locked'; lockoutUntil: number }
+  >(async (tx) => {
+    const indexSnap = await tx.get(indexRef)
+    if (!indexSnap.exists) {
+      return { type: 'invalid' }
+    }
+
+    const indexData = indexSnap.data() as
+      | { uid?: string; profileId?: string }
+      | undefined
+    const uid = indexData?.uid
+    const profileId = indexData?.profileId
+    if (!uid || !profileId || typeof uid !== 'string') {
+      return { type: 'invalid' }
+    }
+
+    const secretsRef = db.collection(PROFILE_SECRETS_COLLECTION).doc(profileId)
+    const secretsSnap = await tx.get(secretsRef)
+    const secrets = secretsSnap.data() as
+      | {
+          pinHash?: string
+          failedAttempts?: number
+          lockoutUntil?: number | null
+        }
+      | undefined
+
+    const lockoutUntil =
+      typeof secrets?.lockoutUntil === 'number' ? secrets.lockoutUntil : null
+    if (lockoutUntil && lockoutUntil > now) {
+      return { type: 'locked', lockoutUntil }
+    }
+
+    const pinHash = secrets?.pinHash
+    if (!pinHash || typeof pinHash !== 'string') {
+      return { type: 'invalid' }
+    }
+
+    const pinOk = await bcrypt.compare(pin, pinHash)
+
+    if (pinOk) {
+      tx.set(
+        secretsRef,
+        {
+          failedAttempts: 0,
+          lockoutUntil: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+      return { type: 'success', uid, profileId }
+    }
+
+    const failedAttempts =
+      (typeof secrets?.failedAttempts === 'number'
+        ? secrets.failedAttempts
+        : 0) + 1
+    if (failedAttempts >= MAX_PIN_ATTEMPTS) {
+      const until = now + PIN_LOCKOUT_MS
+      tx.set(
+        secretsRef,
+        {
+          failedAttempts,
+          lockoutUntil: until,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+      return { type: 'locked', lockoutUntil: until }
+    }
+
+    tx.set(
+      secretsRef,
+      {
+        failedAttempts,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    )
+
+    return { type: 'invalid' }
+  })
+
+  if (outcome.type === 'locked') {
+    throw new HttpsError(
+      'resource-exhausted',
+      'Profile is locked for 1 hour. Ask a parent or teacher to reset it.'
+    )
+  }
+
+  if (outcome.type === 'invalid') {
+    throw new HttpsError('invalid-argument', 'Invalid credentials.')
+  }
+
+  const userRef = db.collection('users').doc(outcome.uid)
+  await userRef.set(
+    {
+      activeProfileId: outcome.profileId,
+    },
+    { merge: true }
+  )
+
+  const token = await getAuth().createCustomToken(outcome.uid, {
+    profileId: outcome.profileId,
+  })
+  return { customToken: token, profileId: outcome.profileId }
+})
+
 export const provisionFacts = onCall(async (request) => {
   // 5 is the smallest number of new facts per day 30 is the max
   const { packName, count = 5 } = request.data
@@ -509,9 +952,17 @@ export const provisionFacts = onCall(async (request) => {
   if (!masterList)
     throw new HttpsError('not-found', 'Pack name not recognized.')
 
-  const userRef = db.collection('users').doc(uid)
-  const metaRef = userRef.collection('packMeta').doc(packName)
-  const factsCol = userRef.collection('UserFacts')
+  const profileId = await resolveActiveProfileId(
+    uid,
+    request.auth?.token?.profileId
+  )
+  const profileRef = db
+    .collection('users')
+    .doc(uid)
+    .collection('profiles')
+    .doc(profileId)
+  const metaRef = profileRef.collection('packMeta').doc(packName)
+  const factsCol = profileRef.collection('UserFacts')
 
   return await db.runTransaction(async (transaction) => {
     const meta = await getOrCreatePackMeta(
@@ -577,11 +1028,11 @@ const getOrCreatePackMeta = async (
 }
 
 const ensureMetaForExistingFacts = async (
-  userRef: FirebaseFirestore.DocumentReference,
+  profileRef: FirebaseFirestore.DocumentReference,
   factsCol: FirebaseFirestore.CollectionReference
 ) => {
-  const userSnap = await userRef.get()
-  const userData = userSnap.data() as
+  const profileSnap = await profileRef.get()
+  const userData = profileSnap.data() as
     | {
         activePack?: unknown
         enabledPacks?: unknown
@@ -625,8 +1076,8 @@ const ensureMetaForExistingFacts = async (
     }
   }
 
-  const packMetaRef = userRef.collection('packMeta').doc(activePack)
-  const sceneMetaRef = userRef.collection('sceneMeta').doc(activeScene)
+  const packMetaRef = profileRef.collection('packMeta').doc(activePack)
+  const sceneMetaRef = profileRef.collection('sceneMeta').doc(activeScene)
 
   const userPatch: Record<string, unknown> = {}
   if (userData?.metaInitialized !== true) userPatch.metaInitialized = true
@@ -654,7 +1105,7 @@ const ensureMetaForExistingFacts = async (
     }
 
     if (Object.keys(userPatch).length > 0) {
-      transaction.set(userRef, userPatch, { merge: true })
+      transaction.set(profileRef, userPatch, { merge: true })
     }
   })
   if (userData?.activePack !== activePack) userPatch.activePack = activePack
@@ -668,7 +1119,7 @@ const ensureMetaForExistingFacts = async (
 
   const batch = db.batch()
   if (Object.keys(userPatch).length > 0) {
-    batch.set(userRef, userPatch, { merge: true })
+    batch.set(profileRef, userPatch, { merge: true })
   }
 
   await batch.commit()
@@ -679,12 +1130,17 @@ export const migrateUserToFacts = onCall(async (request) => {
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
   const userRef = db.collection('users').doc(uid)
+  const profileId = await resolveActiveProfileId(
+    uid,
+    request.auth?.token?.profileId
+  )
+  const profileRef = userRef.collection('profiles').doc(profileId)
   const cardsCol = userRef.collection('UserCards')
-  const factsCol = userRef.collection('UserFacts')
+  const factsCol = profileRef.collection('UserFacts')
 
   const existingFacts = await factsCol.limit(1).get()
   if (!existingFacts.empty) {
-    await ensureMetaForExistingFacts(userRef, factsCol)
+    await ensureMetaForExistingFacts(profileRef, factsCol)
     return {
       success: true,
       message: 'UserFacts already exist. Skipping migration.',
@@ -697,6 +1153,12 @@ export const migrateUserToFacts = onCall(async (request) => {
     // If they have no seen cards, just initialize them as a fresh user
     // so we don't keep trying to migrate them.
     await userRef.set(
+      {
+        activeProfileId: profileId,
+      },
+      { merge: true }
+    )
+    await profileRef.set(
       {
         metaInitialized: true,
         enabledPacks: [...DEFAULT_ENABLED_PACKS],
@@ -784,7 +1246,7 @@ export const migrateUserToFacts = onCall(async (request) => {
       }
     }
 
-    const metaRef = userRef.collection('packMeta').doc(packName)
+    const metaRef = profileRef.collection('packMeta').doc(packName)
     currentBatch.set(
       metaRef,
       {
@@ -804,7 +1266,7 @@ export const migrateUserToFacts = onCall(async (request) => {
       : [...DEFAULT_ENABLED_PACKS, packName]
     // Update user pointers
     currentBatch.set(
-      userRef,
+      profileRef,
       {
         activePack: packName,
         enabledPacks, // Ensure basics are enabled and active pack is included
@@ -871,6 +1333,11 @@ export const saveUserScene = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
+  const profileId = await resolveActiveProfileId(
+    uid,
+    request.auth?.token?.profileId
+  )
+
   const { objects, theme, thumbnailUrl, name, backgroundId, id, sceneId } =
     request.data
   const docId = id || sceneId
@@ -921,8 +1388,10 @@ export const saveUserScene = onCall(async (request) => {
 
       try {
         // Decode pathname to safely check the path structure without worrying about encoding (e.g. %2F)
+        const decodedPath = decodeURIComponent(url.pathname)
         if (
-          decodeURIComponent(url.pathname).includes(`/users/${uid}/scenes/`)
+          decodedPath.includes(`/users/${uid}/profiles/${profileId}/scenes/`) ||
+          decodedPath.includes(`/users/${uid}/scenes/`)
         ) {
           isValidThumbnail = true
         }
@@ -941,8 +1410,12 @@ export const saveUserScene = onCall(async (request) => {
   if (!isValidThumbnail) {
     throw new HttpsError('invalid-argument', 'Invalid thumbnailUrl.')
   }
-  const userRef = db.collection('users').doc(uid)
-  const savedScenesCol = userRef.collection('savedScenes')
+  const profileRef = db
+    .collection('users')
+    .doc(uid)
+    .collection('profiles')
+    .doc(profileId)
+  const savedScenesCol = profileRef.collection('savedScenes')
 
   const sceneData = {
     name: name || 'Untitled Scene',

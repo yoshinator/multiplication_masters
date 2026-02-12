@@ -10,8 +10,8 @@ type SetPinModalProps = {
 }
 
 const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
-  const { user } = useUser()
-  const { setUsernamePin } = useAuthActions()
+  const { profile } = useUser()
+  const { setProfilePin } = useAuthActions()
   const { showNotification } = useNotification()
 
   const [pin, setPin] = useState('')
@@ -30,7 +30,7 @@ const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
 
     setIsSubmitting(true)
     try {
-      await setUsernamePin(pin)
+      await setProfilePin(pin, profile?.id)
       showNotification('PIN sign-in enabled!', 'success')
       onClose()
     } finally {
@@ -42,10 +42,10 @@ const SetPinModal: FC<SetPinModalProps> = ({ onClose }) => {
     <AppModal open onClose={onClose} title="Set a sign-in PIN" maxWidth="xs">
       <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Your sign-in username is:
+          Profile login name:
         </Typography>
         <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          {user?.username ?? ''}
+          {profile?.loginName ?? ''}
         </Typography>
       </Box>
 

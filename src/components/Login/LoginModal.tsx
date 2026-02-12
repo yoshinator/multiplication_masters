@@ -3,7 +3,7 @@ import { Button, Divider, Box } from '@mui/material'
 import GoogleIcon from '@mui/icons-material/Google'
 import AppModal from '../AppModal/AppModal'
 import Login from '../Login/Login'
-import UsernamePinLogin from './UsernamePinLogin'
+import ProfilePinLogin from './ProfilePinLogin'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 
@@ -49,7 +49,7 @@ const LoginModal: FC<LoginModalProps> = ({ onClose }) => {
       />
 
       <Divider sx={{ my: 2 }}>OR</Divider>
-      <UsernamePinLogin onSuccess={onClose} />
+      <ProfilePinLogin onSuccess={onClose} />
     </AppModal>
   )
 }

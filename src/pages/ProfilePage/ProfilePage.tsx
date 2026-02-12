@@ -1,4 +1,11 @@
-import { type ChangeEvent, type FC, type KeyboardEvent } from 'react'
+import {
+  type ChangeEvent,
+  type FC,
+  type KeyboardEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   Box,
@@ -13,6 +20,7 @@ import {
   Select,
   type SelectChangeEvent,
   Switch,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
@@ -31,8 +39,13 @@ import { useSessionStatusContext } from '../../contexts/SessionStatusContext/ses
 import { useThemeContext } from '../../contexts/themeContext/themeContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import type { PackKey } from '../../constants/dataModels'
+import type { PackKey, UserProfile } from '../../constants/dataModels'
 import SceneThemeSelect from '../../components/SceneThemeSelect/SceneThemeSelect'
+import { useFirestoreQuery } from '../../hooks/useFirestore'
+import { collection, query } from 'firebase/firestore'
+import { useCloudFunction } from '../../hooks/useCloudFunction'
+import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import { extractErrorMessage } from '../../utilities/typeutils'
 
 /**
  * Style object for the grid container used in the profile page.
@@ -138,6 +151,28 @@ const PACK_LABELS: Partial<Record<PackKey, string>> = {
   sub_20: 'Subtraction within 20',
 }
 
+const PROFILE_GRADE_OPTIONS = [
+  { value: 0, label: 'K' },
+  { value: 1, label: '1st' },
+  { value: 2, label: '2nd' },
+  { value: 3, label: '3rd' },
+  { value: 4, label: '4th' },
+  { value: 5, label: '5th' },
+  { value: 6, label: '6th' },
+  { value: 7, label: '7th' },
+  { value: 8, label: '8th' },
+  { value: 9, label: '9th' },
+  { value: 10, label: '10th' },
+  { value: 11, label: '11th' },
+  { value: 12, label: '12th' },
+]
+
+const formatProfileGrade = (grade: number | null | undefined) => {
+  if (grade === null || grade === undefined) return 'Not set'
+  const match = PROFILE_GRADE_OPTIONS.find((option) => option.value === grade)
+  return match?.label ?? `Grade ${grade}`
+}
+
 /**
  * Component for the user profile page, allowing users to manage their session settings,
  * theme preferences, and active learning packs.
@@ -145,12 +180,72 @@ const PACK_LABELS: Partial<Record<PackKey, string>> = {
  * @returns The rendered ProfilePage component.
  */
 const ProfilePage: FC = () => {
-  const { auth } = useFirebaseContext()
+  const { auth, db } = useFirebaseContext()
   const { openModal, closeModal } = useModal()
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
   const { sessionLength } = useSessionStatusContext()
-  const { updateUser, user } = useUser()
+  const { updateUser, user, profile, activeProfileId, setActiveProfileId } =
+    useUser()
+  const { showNotification } = useNotification()
+
+  const [profileSessionId, setProfileSessionId] = useState<string | null>(null)
+  const [newProfileName, setNewProfileName] = useState('')
+  const [newProfileGrade, setNewProfileGrade] = useState('')
+
+  const { execute: createProfileFn, isPending: isCreatingProfile } =
+    useCloudFunction<
+      { displayName: string; gradeLevel: number | null },
+      { profileId: string; loginName: string; displayName: string }
+    >('createProfile')
+
+  useEffect(() => {
+    if (!auth?.currentUser) {
+      setProfileSessionId(null)
+      return
+    }
+
+    auth.currentUser
+      .getIdTokenResult()
+      .then((result) => {
+        const claim = result.claims.profileId
+        setProfileSessionId(typeof claim === 'string' ? claim : null)
+      })
+      .catch(() => setProfileSessionId(null))
+  }, [auth?.currentUser])
+
+  const isProfileSession = Boolean(profileSessionId)
+
+  const profilesQuery = useMemo(() => {
+    if (!db || !user?.uid || isProfileSession) return null
+    return query(collection(db, 'users', user.uid, 'profiles'))
+  }, [db, user?.uid, isProfileSession])
+
+  const { data: profiles } = useFirestoreQuery<UserProfile>(profilesQuery)
+
+  const canCreateProfile =
+    newProfileName.trim().length > 0 && !isCreatingProfile
+
+  const handleCreateProfile = async () => {
+    if (!canCreateProfile) return
+    const gradeLevel = newProfileGrade
+      ? Number.parseInt(newProfileGrade, 10)
+      : null
+    try {
+      const result = await createProfileFn({
+        displayName: newProfileName.trim(),
+        gradeLevel,
+      })
+      const profileId = result?.data?.profileId
+      if (profileId) {
+        await setActiveProfileId(profileId)
+      }
+      setNewProfileName('')
+      setNewProfileGrade('')
+    } catch (error: unknown) {
+      showNotification(extractErrorMessage(error), 'error')
+    }
+  }
 
   const handleChoiceKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -179,7 +274,8 @@ const ProfilePage: FC = () => {
     !isAnonymous &&
     (providerIds.includes('google.com') || providerIds.includes('password'))
 
-  const hasPinSignIn = Boolean(user?.hasUsernamePin)
+  const hasPinSignIn = Boolean(profile?.pinEnabled)
+  const canManageProfiles = !isProfileSession
 
   return (
     <Box
@@ -204,16 +300,16 @@ const ProfilePage: FC = () => {
           textAlign: { xs: 'center', sm: 'left' },
         }}
       >
-        {user?.username ?? 'Student Profile'}
+        {profile?.displayName ?? user?.username ?? 'Student Profile'}
       </Typography>
 
-      {canEnablePinSignIn && !hasPinSignIn ? (
+      {canManageProfiles && canEnablePinSignIn && !hasPinSignIn ? (
         <Button
           variant="outlined"
           onClick={() => openModal(<SetPinModal onClose={closeModal} />)}
           sx={{ mb: 2 }}
         >
-          Enable Username + PIN sign-in
+          Enable profile PIN sign-in
         </Button>
       ) : null}
 
@@ -229,6 +325,130 @@ const ProfilePage: FC = () => {
           Save Progress (Sign Up)
         </Button>
       )}
+      {canManageProfiles ? (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            Learner Profiles
+          </Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
+              gap: 2,
+              alignItems: 'start',
+            }}
+          >
+            <Box
+              role="group"
+              aria-label="Learner profiles"
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                  lg: 'repeat(3, minmax(0, 1fr))',
+                },
+                gap: 1.5,
+              }}
+            >
+              {profiles.map((profileItem) => {
+                const selected = activeProfileId === profileItem.id
+                return (
+                  <Box
+                    key={profileItem.id}
+                    component="button"
+                    type="button"
+                    onClick={() => setActiveProfileId(profileItem.id)}
+                    sx={{
+                      textAlign: 'left',
+                      px: 2,
+                      py: 1.5,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: selected ? 'primary.main' : 'divider',
+                      bgcolor: selected ? 'primary.light' : 'background.paper',
+                      color: selected ? 'primary.contrastText' : 'inherit',
+                      display: 'grid',
+                      gap: 0.5,
+                      transition: '0.2s',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        borderColor: selected ? 'primary.main' : 'text.primary',
+                      },
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                        outlineOffset: 2,
+                      },
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {profileItem.displayName}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                      {formatProfileGrade(profileItem.gradeLevel)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                      Sign-in: {profileItem.loginName}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Box>
+
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 1.5,
+                p: 2,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: { xs: 'transparent', sm: 'background.default' },
+              }}
+            >
+              <Typography variant="subtitle2">Add learner</Typography>
+              <TextField
+                label="Display name"
+                value={newProfileName}
+                onChange={(event) => setNewProfileName(event.target.value)}
+                placeholder="e.g., Mia"
+                size="small"
+              />
+              <FormControl size="small">
+                <InputLabel id="new-profile-grade-label">Grade</InputLabel>
+                <Select
+                  labelId="new-profile-grade-label"
+                  label="Grade"
+                  value={newProfileGrade}
+                  onChange={(event: SelectChangeEvent<string>) => {
+                    setNewProfileGrade(event.target.value)
+                  }}
+                >
+                  <MenuItem value="">Not set</MenuItem>
+                  {PROFILE_GRADE_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                variant="outlined"
+                onClick={handleCreateProfile}
+                disabled={!canCreateProfile}
+              >
+                {isCreatingProfile ? 'Creating...' : 'Create profile'}
+              </Button>
+              <Typography variant="caption" color="text.secondary">
+                Sign-in names must be unique and are generated from the display
+                name.
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      ) : null}
+
       {/* Header */}
       <Box
         sx={{

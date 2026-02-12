@@ -23,6 +23,12 @@
 - **Authentication**: Firebase Auth (Anonymous, Google, Email Link)
 - **Cloud Functions**: Node.js 24 with TypeScript
 - **Storage**: Firebase Storage (for scene builder images)
+- **User Doc**: `activeProfileId?: string` for the current learner profile
+
+#### Learner Profiles
+- Profiles live under `users/{uid}/profiles/{profileId}` and store all learner data (packs, facts, scenes, stats).
+- A unique `loginName` is generated server-side for PIN sign-in using the `profileIndex` collection.
+- PIN secrets are stored server-side in `profileSecrets` (client access blocked).
 
 ### Development Tools
 - **Linting**: ESLint 9.x with TypeScript ESLint
@@ -51,6 +57,19 @@
 ├── firestore.rules       # Firestore security rules
 ├── storage.rules         # Storage security rules
 └── vite.config.ts        # Vite build configuration
+```
+
+### UserProfile Document (`users/{uid}/profiles/{profileId}`)
+```typescript
+type UserProfile = {
+  id: string
+  displayName: string
+  loginName: string // unique sign-in name for PIN login
+  gradeLevel: number | null // 0 = K, 1-12 = grades, null = unset
+  pinEnabled?: boolean
+  createdAt: Timestamp | null
+  updatedAt: Timestamp | null
+}
 ```
 
 ## Key Scripts

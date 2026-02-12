@@ -29,15 +29,30 @@ export const useAuthActions = () => {
     { customToken: string }
   >('signInWithUsernamePin')
 
+  const { execute: signInWithProfilePinFn } = useCloudFunction<
+    { loginName: string; pin: string },
+    { customToken: string; profileId?: string }
+  >('signInWithProfilePin')
+
   const { execute: setUsernamePinFn } = useCloudFunction<
     { pin: string },
     { success: true }
   >('setUsernamePin')
 
+  const { execute: setProfilePinFn } = useCloudFunction<
+    { pin: string; profileId?: string },
+    { success: true }
+  >('setProfilePin')
+
   const { execute: resetUsernamePinLockoutFn } = useCloudFunction<
     undefined,
     { success: true }
   >('resetUsernamePinLockout')
+
+  const { execute: resetProfilePinLockoutFn } = useCloudFunction<
+    { profileId?: string },
+    { success: true }
+  >('resetProfilePinLockout')
 
   const setLastSignInMethod = async (uid: string, method: SignInMethod) => {
     try {
@@ -252,6 +267,26 @@ export const useAuthActions = () => {
     }
   }
 
+  const loginWithProfilePin = async (loginName: string, pin: string) => {
+    try {
+      if (!auth) throw new Error('Firebase not ready')
+
+      const result = await signInWithProfilePinFn({ loginName, pin })
+      const customToken = result?.data?.customToken
+      if (!customToken) {
+        throw new Error('No custom token returned')
+      }
+
+      const credential = await signInWithCustomToken(auth, customToken)
+      await setLastSignInMethod(credential.user.uid, 'profilePin')
+      return credential
+    } catch (error: unknown) {
+      logger('Error logging in with profile PIN', error)
+      showNotification(extractErrorMessage(error), 'error')
+      throw error
+    }
+  }
+
   const setUsernamePin = async (pin: string) => {
     try {
       await setUsernamePinFn({ pin })
@@ -259,6 +294,24 @@ export const useAuthActions = () => {
       logger('Error setting username+PIN', error)
       showNotification(extractErrorMessage(error), 'error')
       throw error
+    }
+  }
+
+  const setProfilePin = async (pin: string, profileId?: string) => {
+    try {
+      await setProfilePinFn({ pin, profileId })
+    } catch (error: unknown) {
+      logger('Error setting profile PIN', error)
+      showNotification(extractErrorMessage(error), 'error')
+      throw error
+    }
+  }
+
+  const resetProfilePinLockout = async (profileId?: string) => {
+    try {
+      await resetProfilePinLockoutFn({ profileId })
+    } catch (error: unknown) {
+      logger('Error resetting profile PIN lockout', error)
     }
   }
 
@@ -286,6 +339,9 @@ export const useAuthActions = () => {
     isEmailLink,
     finishEmailSignIn,
     loginWithUsernamePin,
+    loginWithProfilePin,
     setUsernamePin,
+    setProfilePin,
+    resetProfilePinLockout,
   }
 }

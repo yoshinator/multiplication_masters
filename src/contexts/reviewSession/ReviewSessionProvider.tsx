@@ -43,7 +43,13 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const logger = useLogger()
   const { showNotification } = useNotification()
   const { db, setUserFacts, userFacts } = useFirebaseContext()
-  const { user, updateUser, activePackMeta, activePackFactIds } = useUser()
+  const {
+    user,
+    updateUser,
+    activePackMeta,
+    activePackFactIds,
+    activeProfileId,
+  } = useUser()
   const [percentageMastered, setPercentageMastered] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const { setIsSessionActive } = useSessionStatusContext()
@@ -90,13 +96,20 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   }, [getLatestMastery])
 
   const latestSessionQuery = useMemo(() => {
-    if (!db || !user?.uid) return null
+    if (!db || !user?.uid || !activeProfileId) return null
     return query(
-      collection(db, 'users', user.uid, 'Sessions'),
+      collection(
+        db,
+        'users',
+        user.uid,
+        'profiles',
+        activeProfileId,
+        'Sessions'
+      ),
       orderBy('endedAt', 'desc'),
       limit(1)
     )
-  }, [db, user?.uid])
+  }, [db, user?.uid, activeProfileId])
 
   const { data: sessions, loading: isLoading } =
     useFirestoreQuery<SessionRecord>(latestSessionQuery)
@@ -104,7 +117,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
   // 1. Helper to push pending facts and user stats to DB
   const commitSessionUpdates = useCallback(async () => {
-    if (!db || !user?.uid || isSaving) return
+    if (!db || !user?.uid || !activeProfileId || isSaving) return
     // Snapshot pending facts to handle concurrency and partial retries
     const factsToSave = { ...pendingUserFactsRef.current }
     const factIds = Object.keys(factsToSave)
@@ -118,7 +131,15 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     // A. Update Facts
     for (const fact of Object.values(factsToSave)) {
-      const factRef = doc(db, 'users', user.uid, 'UserFacts', fact.id)
+      const factRef = doc(
+        db,
+        'users',
+        user.uid,
+        'profiles',
+        activeProfileId,
+        'UserFacts',
+        fact.id
+      )
       const cleanFactPayload = omitUndefined(fact)
 
       // Only update if there are fields left after cleaning
@@ -150,7 +171,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
     // Note: We do NOT reset sessionCorrectCount state here,
     // because the session is still active visually.
-  }, [db, user, logger, showNotification, isSaving])
+  }, [db, user, logger, showNotification, isSaving, activeProfileId])
 
   const addUpdatedFactToSession = useCallback(
     (fact: UserFact, oldBox: number) => {
@@ -225,7 +246,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       sessionLength: number,
       sessionType: SessionRecord['sessionType'] = 'multiplication'
     ) => {
-      if (!db || !user?.uid) return
+      if (!db || !user?.uid || !activeProfileId) return
 
       if (!sessionStartRef.current) {
         resetSessionState()
@@ -285,7 +306,15 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       // A. Pending Facts
       for (const fact of pendingFacts) {
-        const factRef = doc(db, 'users', user.uid, 'UserFacts', fact.id)
+        const factRef = doc(
+          db,
+          'users',
+          user.uid,
+          'profiles',
+          activeProfileId,
+          'UserFacts',
+          fact.id
+        )
         const cleanFactPayload = omitUndefined(fact)
         if (Object.keys(cleanFactPayload).length > 0) {
           batch.update(factRef, cleanFactPayload)
@@ -293,7 +322,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       }
 
       // B. User Stats
-      const userRef = doc(db, 'users', user.uid)
+      const userRef = doc(db, 'users', user.uid, 'profiles', activeProfileId)
       const userDBUpdates: FieldValueAllowed<User> = {
         totalSessions: increment(1),
         lifetimeCorrect: increment(finalCorrect),
@@ -307,7 +336,16 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       updateUser(localUserUpdates)
 
       // C. Session Record
-      const sessionRef = doc(collection(db, 'users', user.uid, 'Sessions'))
+      const sessionRef = doc(
+        collection(
+          db,
+          'users',
+          user.uid,
+          'profiles',
+          activeProfileId,
+          'Sessions'
+        )
+      )
       batch.set(sessionRef, omitUndefined(sessionRecord))
 
       try {
@@ -320,7 +358,15 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
         setIsSaving(false)
       }
     },
-    [db, user, updateUser, resetSessionState, logger, showNotification]
+    [
+      db,
+      user,
+      updateUser,
+      resetSessionState,
+      logger,
+      showNotification,
+      activeProfileId,
+    ]
   )
 
   return (

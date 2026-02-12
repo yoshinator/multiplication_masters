@@ -30,7 +30,7 @@ const INITIAL_TOUR_STATE = {
 const PracticePage: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
   const { latestSession, isSaving, isLoading } = useReviewSession()
-  const { user, updateUser } = useUser()
+  const { user, updateUser, activeProfileId } = useUser()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef(INITIAL_TOUR_STATE)
@@ -84,7 +84,7 @@ const PracticePage: FC = () => {
       cleanup()
       tourState.current = INITIAL_TOUR_STATE
     }
-  }, [user?.showTour])
+  }, [user?.showTour, enableTourClose])
 
   useEffect(() => {
     if (!user?.showTour || user?.onboardingCompleted === false) return
@@ -302,9 +302,18 @@ const PracticePage: FC = () => {
   }, [isKeyboardOpen])
 
   const sceneRef = useMemo(() => {
-    if (!user?.uid || !user?.activeSavedSceneId || !db) return null
-    return doc(db, 'users', user.uid, 'savedScenes', user.activeSavedSceneId)
-  }, [user?.uid, user?.activeSavedSceneId, db])
+    if (!user?.uid || !user?.activeSavedSceneId || !db || !activeProfileId)
+      return null
+    return doc(
+      db,
+      'users',
+      user.uid,
+      'profiles',
+      activeProfileId,
+      'savedScenes',
+      user.activeSavedSceneId
+    )
+  }, [user?.uid, user?.activeSavedSceneId, db, activeProfileId])
 
   const { data: sceneData } = useFirestoreDoc<SavedScene>(sceneRef)
 

@@ -20,7 +20,7 @@ export type FirebaseContextValue = {
   db: Firestore | null
   userFacts: UserFact[]
   storage: FirebaseStorage | null
-  loadUserFacts: (uid?: string) => Unsubscribe
+  loadUserFacts: (uid?: string, profileId?: string) => Unsubscribe
   setUserFacts: Dispatch<SetStateAction<UserFact[]>> | null
 }
 
