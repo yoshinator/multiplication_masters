@@ -28,16 +28,24 @@ const TAB_LABEL: Record<SceneTab, string> = {
 
 const ScenePalette: FC<Props> = ({ onClickCallBack }) => {
   const { theme, addObject, setBackground } = useSceneBuilder()
-  const { user } = useUser()
+  const { user, activeProfileId } = useUser()
   const { db } = useFirebaseContext()
   const sceneDef = SCENES[theme]
 
   const [activeTab, setActiveTab] = useState<SceneTab>('background')
 
   const sceneMetaRef = useMemo(() => {
-    if (!user?.uid || !db) return null
-    return doc(db, 'users', user.uid, 'sceneMeta', theme)
-  }, [user?.uid, db, theme])
+    if (!user?.uid || !db || !activeProfileId) return null
+    return doc(
+      db,
+      'users',
+      user.uid,
+      'profiles',
+      activeProfileId,
+      'sceneMeta',
+      theme
+    )
+  }, [user?.uid, db, theme, activeProfileId])
 
   const { data: sceneMeta } = useFirestoreDoc<UserSceneMeta>(sceneMetaRef)
   const currentXP = sceneMeta?.xp ?? 0

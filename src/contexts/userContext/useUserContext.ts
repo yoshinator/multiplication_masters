@@ -1,5 +1,10 @@
 import { createContext, useContext } from 'react'
-import type { PackMeta, User, UserSceneMeta } from '../../constants/dataModels'
+import type {
+  PackMeta,
+  User,
+  UserProfile,
+  UserSceneMeta,
+} from '../../constants/dataModels'
 import type { SceneTheme } from '../../constants/sceneDefinitions'
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
@@ -14,6 +19,9 @@ interface UserContextValue {
   activeSceneMeta: UserSceneMeta | null
   incrementSceneXP: (amount?: number) => Promise<void>
   selectScene: (sceneId: SceneTheme) => Promise<void>
+  profile: UserProfile | null
+  activeProfileId: string | null
+  setActiveProfileId: (profileId: string) => Promise<void>
 }
 
 export const UserContext = createContext<UserContextValue | undefined>(

@@ -12,24 +12,31 @@ import { useFirestoreQuery } from '../../hooks/useFirestore'
 import { useNavigate } from 'react-router-dom'
 
 const SavedScenesGallery: FC = () => {
-  const { user, updateUser } = useUser()
+  const { user, updateUser, activeProfileId } = useUser()
   const { db, storage } = useFirebaseContext()
   const { showNotification } = useNotification()
   const navigate = useNavigate()
 
   const scenesQuery = useMemo(() => {
-    if (!user?.uid || !db) return null
+    if (!user?.uid || !db || !activeProfileId) return null
     return query(
-      collection(db, 'users', user.uid, 'savedScenes'),
+      collection(
+        db,
+        'users',
+        user.uid,
+        'profiles',
+        activeProfileId,
+        'savedScenes'
+      ),
       orderBy('createdAt', 'desc')
     )
-  }, [user?.uid, db])
+  }, [user?.uid, db, activeProfileId])
 
   const { data: savedScenes } = useFirestoreQuery<SavedScene>(scenesQuery)
 
   const handleDeleteScene = async (e: MouseEvent, scene: SavedScene) => {
     e.stopPropagation()
-    if (!db || !user?.uid || !storage) return
+    if (!db || !user?.uid || !storage || !activeProfileId) return
 
     try {
       const imageRef = ref(storage, scene.thumbnailUrl)
@@ -47,7 +54,17 @@ const SavedScenesGallery: FC = () => {
     }
 
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'savedScenes', scene.id))
+      await deleteDoc(
+        doc(
+          db,
+          'users',
+          user.uid,
+          'profiles',
+          activeProfileId,
+          'savedScenes',
+          scene.id
+        )
+      )
 
       if (user.activeSavedSceneId === scene.id) {
         updateUser({ activeSavedSceneId: null })

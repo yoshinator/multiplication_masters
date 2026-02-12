@@ -2,18 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function hasProfileClaim() {
+      return request.auth != null
+        && request.auth.token is map
+        && request.auth.token.keys().hasAny(['profileId']);
+    }
+
+    function isProfileSession() {
+      return hasProfileClaim();
+    }
+
+    function profileClaim() {
+      return hasProfileClaim() ? request.auth.token.profileId : null;
+    }
+
     // User root doc
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       // User docs are created server-side (Auth onCreate Cloud Function).
       // Disallow client-side creates to prevent partial/incorrect user docs.
       allow create: if false;
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId
+        && !isProfileSession();
 
       // Prevent clients from marking username as immutable or changing it once immutable.
       // The server (Cloud Functions) can set `usernameSetByUser: true` and `hasUsernamePin: true`.
       allow update: if request.auth != null
         && request.auth.uid == userId
+        && !isProfileSession()
 
         // If the username has been locked, it cannot change.
         && (resource.data.usernameSetByUser == true
@@ -31,9 +47,42 @@ service cloud.firestore {
             : request.resource.data.hasUsernamePin != true);
     }
 
-    // Any subcollections under the user
+    // Profiles
+    match /users/{userId}/profiles/{profileId} {
+      allow read: if request.auth != null
+        && request.auth.uid == userId
+        && (!isProfileSession() || profileClaim() == profileId);
+
+      // Profile docs are created server-side to enforce unique login names.
+      allow create: if false;
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && (!isProfileSession() || profileClaim() == profileId)
+        // Prevent clients from enabling PIN or changing loginName once enabled.
+        && (resource.data.pinEnabled == true
+            ? request.resource.data.pinEnabled == true
+            : request.resource.data.pinEnabled != true)
+        && (resource.data.pinEnabled == true
+            ? request.resource.data.loginName == resource.data.loginName
+            : true);
+
+      allow delete: if request.auth != null
+        && request.auth.uid == userId
+        && !isProfileSession();
+    }
+
+    match /users/{userId}/profiles/{profileId}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId
+        && (!isProfileSession() || profileClaim() == profileId);
+    }
+
+    // Any other subcollections under the user (account-only access)
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId
+        && !isProfileSession();
     }
 
     // Feedback (write-only from client)
@@ -56,6 +105,14 @@ service cloud.firestore {
     }
 
     match /userSecrets/{uid} {
+      allow read, write: if false;
+    }
+
+    match /profileIndex/{loginNameKey} {
+      allow read, write: if false;
+    }
+
+    match /profileSecrets/{profileId} {
       allow read, write: if false;
     }
   }

@@ -7,7 +7,7 @@ type UsernamePinLoginProps = {
 }
 
 const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
-  const { loginWithUsernamePin } = useAuthActions()
+  const { loginWithProfilePin } = useAuthActions()
   const [username, setUsername] = useState('')
   const [pin, setPin] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -26,7 +26,7 @@ const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
 
     setIsSubmitting(true)
     try {
-      await loginWithUsernamePin(username.trim(), pin)
+      await loginWithProfilePin(username.trim(), pin)
       onSuccess()
     } finally {
       setIsSubmitting(false)
@@ -36,12 +36,12 @@ const UsernamePinLogin: FC<UsernamePinLoginProps> = ({ onSuccess }) => {
   return (
     <Box>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        Username + PIN
+        Profile login + PIN
       </Typography>
 
       <Stack spacing={1.5}>
         <TextField
-          label="Username"
+          label="Profile login name"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           error={Boolean(username) && !usernameOk}

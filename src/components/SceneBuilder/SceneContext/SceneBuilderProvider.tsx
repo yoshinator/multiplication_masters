@@ -43,7 +43,7 @@ export const SceneBuilderProvider: FC<Props> = ({
   const initialName = savedScene?.name
 
   const { storage, auth, app } = useFirebaseContext()
-  const { user } = useUser()
+  const { user, activeProfileId } = useUser()
   const theme =
     savedScene?.theme || user?.activeScene || ('garden' as SceneTheme)
   const [currentThumbnailUrl, setCurrentThumbnailUrl] =
@@ -161,7 +161,8 @@ export const SceneBuilderProvider: FC<Props> = ({
 
   const saveToStorage = async () => {
     const stage = stageRef.current
-    if (!stage || !storage || !auth?.currentUser || !app) return
+    if (!stage || !storage || !auth?.currentUser || !app || !activeProfileId)
+      return
 
     const previousUrl = currentThumbnailUrl
     try {
@@ -177,7 +178,7 @@ export const SceneBuilderProvider: FC<Props> = ({
       const filename = `${uuidv4()}.png`
       const storageRef = ref(
         storage,
-        `users/${auth.currentUser.uid}/scenes/${filename}`
+        `users/${auth.currentUser.uid}/profiles/${activeProfileId}/scenes/${filename}`
       )
 
       const snapshot = await uploadBytes(storageRef, blob)

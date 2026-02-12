@@ -8,16 +8,26 @@ import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { doc } from 'firebase/firestore'
 import { type SavedScene } from '../../constants/dataModels'
 import { useFirestoreDoc } from '../../hooks/useFirestore'
+import { useUser } from '../../contexts/userContext/useUserContext'
 
 const SceneBuilderPage: FC = () => {
   const [searchParams] = useSearchParams()
   const sceneId = searchParams.get('id')
   const { db, auth } = useFirebaseContext()
+  const { activeProfileId } = useUser()
 
   const docRef = useMemo(() => {
-    if (!sceneId || !db || !auth?.currentUser) return null
-    return doc(db, 'users', auth.currentUser.uid, 'savedScenes', sceneId)
-  }, [sceneId, db, auth?.currentUser])
+    if (!sceneId || !db || !auth?.currentUser || !activeProfileId) return null
+    return doc(
+      db,
+      'users',
+      auth.currentUser.uid,
+      'profiles',
+      activeProfileId,
+      'savedScenes',
+      sceneId
+    )
+  }, [sceneId, db, auth?.currentUser, activeProfileId])
 
   const { data: savedScene, loading } = useFirestoreDoc<SavedScene>(docRef)
 

@@ -10,6 +10,8 @@ import {
 import {
   type PackMeta,
   type User,
+  type UserAccount,
+  type UserProfile,
   getPackFactIds,
   getPackFactList,
   type UserSceneMeta,
@@ -39,6 +41,10 @@ type Props = {
 
 const UserProvider: FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(
+    null
+  )
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
   const { app, auth, db, loadUserFacts, userFacts } = useFirebaseContext()
@@ -51,24 +57,45 @@ const UserProvider: FC<Props> = ({ children }) => {
   const pendingUpdateRef = useRef<Partial<User>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const uidRef = useRef<string | undefined>(undefined)
+  const activeProfileIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     uidRef.current = user?.uid
   }, [user?.uid])
 
+  useEffect(() => {
+    activeProfileIdRef.current = activeProfileId
+  }, [activeProfileId])
+
   // Add this state to UserProvider
   const packMetaRef = useMemo(() => {
-    if (!user?.uid || !user?.activePack || !db) return null
-    return doc(db, 'users', user.uid, 'packMeta', user.activePack)
-  }, [user?.uid, user?.activePack, db])
+    if (!user?.uid || !user?.activePack || !db || !activeProfileId) return null
+    return doc(
+      db,
+      'users',
+      user.uid,
+      'profiles',
+      activeProfileId,
+      'packMeta',
+      user.activePack
+    )
+  }, [user?.uid, user?.activePack, db, activeProfileId])
 
   const { data: activePackMeta, loading: isPackMetaLoading } =
     useFirestoreDoc<PackMeta>(packMetaRef)
 
   const activeSceneMetaRef = useMemo(() => {
-    if (!user?.uid || !user?.activeScene || !db) return null
-    return doc(db, 'users', user.uid, 'sceneMeta', user.activeScene)
-  }, [user?.uid, user?.activeScene, db])
+    if (!user?.uid || !user?.activeScene || !db || !activeProfileId) return null
+    return doc(
+      db,
+      'users',
+      user.uid,
+      'profiles',
+      activeProfileId,
+      'sceneMeta',
+      user.activeScene
+    )
+  }, [user?.uid, user?.activeScene, db, activeProfileId])
 
   const { data: activeSceneMeta, loading: isSceneMetaLoading } =
     useFirestoreDoc<UserSceneMeta>(activeSceneMetaRef)
@@ -90,11 +117,11 @@ const UserProvider: FC<Props> = ({ children }) => {
     authStatus === 'loading' || isPackMetaLoading || isSceneMetaLoading
 
   useEffect(() => {
-    if (user?.uid) {
-      const unsubscribe = loadUserFacts(user.uid)
+    if (user?.uid && activeProfileId) {
+      const unsubscribe = loadUserFacts(user.uid, activeProfileId)
       return () => unsubscribe()
     }
-  }, [user?.uid, loadUserFacts])
+  }, [user?.uid, activeProfileId, loadUserFacts])
 
   // Automatic Migration Trigger
   useEffect(() => {
@@ -118,13 +145,21 @@ const UserProvider: FC<Props> = ({ children }) => {
   }, [user?.activePack])
 
   useEffect(() => {
-    if (!db || !user?.uid || !user.activePack) return
+    if (!db || !user?.uid || !user.activePack || !activeProfileId) return
     if (activePackMeta || isPackMetaLoading) return
     if (!activePackFactIds || activePackFactIds.size === 0) return
 
-    const initKey = `${user.uid}:${user.activePack}`
+    const initKey = `${user.uid}:${activeProfileId}:${user.activePack}`
     if (packMetaInitRef.current === initKey) return
-    const metaRef = doc(db, 'users', user.uid, 'packMeta', user.activePack)
+    const metaRef = doc(
+      db,
+      'users',
+      user.uid,
+      'profiles',
+      activeProfileId,
+      'packMeta',
+      user.activePack
+    )
     const orderedFactIds = getPackFactList(user.activePack)
     const existingFactIds = new Set(
       userFacts
@@ -161,6 +196,7 @@ const UserProvider: FC<Props> = ({ children }) => {
     userFacts,
     user?.activePack,
     user?.uid,
+    activeProfileId,
   ])
 
   // Pass activePackMeta into the Context value
@@ -168,7 +204,8 @@ const UserProvider: FC<Props> = ({ children }) => {
   // Firebase write for user
   const commitUserUpdates = useCallback(async () => {
     const uid = uidRef.current
-    if (!db || !uid) return
+    const profileId = activeProfileIdRef.current
+    if (!db || !uid || !profileId) return
 
     // save and clear the buffer
     const pending = omitUndefined(pendingUpdateRef.current)
@@ -177,14 +214,14 @@ const UserProvider: FC<Props> = ({ children }) => {
     // Avoid calling updateDoc({}) which can be a no-op.
     if (Object.keys(pending).length === 0) return
 
-    const userRef = doc(db, 'users', uid)
-    logger('Committing user updates:', pending)
+    const profileRef = doc(db, 'users', uid, 'profiles', profileId)
+    logger('Committing profile updates:', pending)
 
     try {
-      await updateDoc(userRef, pending)
-      logger('User updates committed successfully')
+      await updateDoc(profileRef, pending)
+      logger('Profile updates committed successfully')
     } catch (error) {
-      logger(`Error updating user ${error}`)
+      logger(`Error updating profile ${error}`)
     }
   }, [db, logger])
 
@@ -195,6 +232,10 @@ const UserProvider: FC<Props> = ({ children }) => {
       // It's not. prevUser can be null so keep it null until it's not
       setUser((prevUser: User | null) =>
         prevUser ? { ...prevUser, ...fields } : prevUser
+      )
+
+      setProfile((prevProfile: UserProfile | null) =>
+        prevProfile ? { ...prevProfile, ...fields } : prevProfile
       )
 
       pendingUpdateRef.current = {
@@ -215,9 +256,17 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   const incrementSceneXP = useCallback(
     async (amount = 1) => {
-      if (!db || !user?.uid) return
+      if (!db || !user?.uid || !activeProfileId) return
       const sceneId = user.activeScene || 'garden'
-      const sceneMetaRef = doc(db, 'users', user.uid, 'sceneMeta', sceneId)
+      const sceneMetaRef = doc(
+        db,
+        'users',
+        user.uid,
+        'profiles',
+        activeProfileId,
+        'sceneMeta',
+        sceneId
+      )
 
       try {
         // Use setDoc with merge: true to ensure the document exists.
@@ -235,14 +284,22 @@ const UserProvider: FC<Props> = ({ children }) => {
         logger('Error incrementing scene XP:', err)
       }
     },
-    [db, user?.uid, user?.activeScene, logger]
+    [db, user?.uid, user?.activeScene, logger, activeProfileId]
   )
 
   const selectScene = useCallback(
     async (sceneId: SceneTheme) => {
-      if (!db || !user?.uid) return
+      if (!db || !user?.uid || !activeProfileId) return
 
-      const sceneMetaRef = doc(db, 'users', user.uid, 'sceneMeta', sceneId)
+      const sceneMetaRef = doc(
+        db,
+        'users',
+        user.uid,
+        'profiles',
+        activeProfileId,
+        'sceneMeta',
+        sceneId
+      )
 
       try {
         const snap = await getDoc(sceneMetaRef)
@@ -263,7 +320,21 @@ const UserProvider: FC<Props> = ({ children }) => {
         logger('Error selecting scene:', err)
       }
     },
-    [db, user?.uid, updateUser, logger]
+    [db, user?.uid, updateUser, logger, activeProfileId]
+  )
+
+  const setActiveProfileId = useCallback(
+    async (profileId: string) => {
+      if (!db || !user?.uid) return
+      const userRef = doc(db, 'users', user.uid)
+      try {
+        await updateDoc(userRef, { activeProfileId: profileId })
+        setActiveProfileIdState(profileId)
+      } catch (err) {
+        logger('Error setting active profile:', err)
+      }
+    },
+    [db, user?.uid, logger]
   )
 
   // Create user or set user if exists effect
@@ -271,12 +342,17 @@ const UserProvider: FC<Props> = ({ children }) => {
     if (!auth || !db) return
 
     let userUnsubscribe: Unsubscribe | null = null
+    let profileUnsubscribe: Unsubscribe | null = null
     let isCancelled = false
 
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (userUnsubscribe) {
         userUnsubscribe()
         userUnsubscribe = null
+      }
+      if (profileUnsubscribe) {
+        profileUnsubscribe()
+        profileUnsubscribe = null
       }
 
       if (ensureUserInitTimerRef.current) {
@@ -292,6 +368,8 @@ const UserProvider: FC<Props> = ({ children }) => {
       if (!authUser) {
         // Logged out update user state.
         setUser(null)
+        setProfile(null)
+        setActiveProfileIdState(null)
         setAuthStatus('signedOut')
         return
       }
@@ -308,6 +386,8 @@ const UserProvider: FC<Props> = ({ children }) => {
           (docSnap) => {
             if (!docSnap.exists()) {
               setUser(null)
+              setProfile(null)
+              setActiveProfileIdState(null)
               setAuthStatus('loading')
 
               if (missingUserDocSinceRef.current == null) {
@@ -370,9 +450,78 @@ const UserProvider: FC<Props> = ({ children }) => {
             ensureUserInitInFlightRef.current = false
             missingUserDocSinceRef.current = null
 
-            const userData = docSnap.data() as User
-            setUser(userData)
-            setAuthStatus('signedIn')
+            const accountData = docSnap.data() as UserAccount
+
+            const nextProfileId = accountData.activeProfileId || null
+            setActiveProfileIdState(nextProfileId)
+
+            if (!nextProfileId && !ensureUserInitInFlightRef.current) {
+              ensureUserInitInFlightRef.current = true
+              void (async () => {
+                try {
+                  await ensureUserInitialized()
+                } catch (err) {
+                  logger('ensureUserInitialized failed:', err)
+                } finally {
+                  ensureUserInitInFlightRef.current = false
+                }
+              })()
+            }
+
+            if (!nextProfileId) {
+              setProfile(null)
+              setUser({
+                ...(accountData as User),
+                uid,
+                username: accountData.uid,
+                activeProfileId: undefined,
+              })
+              setAuthStatus('signedIn')
+              return
+            }
+
+            if (profileUnsubscribe) {
+              profileUnsubscribe()
+              profileUnsubscribe = null
+            }
+
+            const profileRef = doc(db, 'users', uid, 'profiles', nextProfileId)
+
+            profileUnsubscribe = onSnapshot(
+              profileRef,
+              (profileSnap) => {
+                if (!profileSnap.exists()) {
+                  setProfile(null)
+                  setUser({
+                    ...(accountData as User),
+                    uid,
+                    username: accountData.uid,
+                    activeProfileId: nextProfileId,
+                  })
+                  setAuthStatus('signedIn')
+                  return
+                }
+
+                const profileData = profileSnap.data() as UserProfile
+                setProfile({ ...profileData, id: profileSnap.id })
+
+                const mergedUser: User = {
+                  ...(accountData as User),
+                  ...(profileData as Partial<User>),
+                  uid,
+                  username: profileData.displayName,
+                  activeProfileId: nextProfileId,
+                }
+                setUser(mergedUser)
+                setAuthStatus('signedIn')
+              },
+              (profileError) => {
+                logger('Error listening to profile document:', profileError)
+                setProfile(null)
+                setUser(null)
+                setAuthStatus('signedOut')
+              }
+            )
           },
           (error) => {
             logger('Error listening to user document:', error)
@@ -415,9 +564,8 @@ const UserProvider: FC<Props> = ({ children }) => {
     return () => {
       isCancelled = true
       unsubscribe()
-      if (userUnsubscribe) {
-        userUnsubscribe()
-      }
+      if (userUnsubscribe) userUnsubscribe()
+      if (profileUnsubscribe) profileUnsubscribe()
 
       if (ensureUserInitTimerRef.current) {
         clearTimeout(ensureUserInitTimerRef.current)
@@ -453,6 +601,9 @@ const UserProvider: FC<Props> = ({ children }) => {
         activeSceneMeta,
         incrementSceneXP,
         selectScene,
+        profile,
+        activeProfileId,
+        setActiveProfileId,
       }}
     >
       {children}

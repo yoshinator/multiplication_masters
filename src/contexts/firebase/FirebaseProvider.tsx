@@ -165,10 +165,17 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
    * Gets and sets the updated UserCards collection to be shared in the context
    */
   const subscribeToUserFacts = useCallback(
-    (uid: string) => {
+    (uid: string, profileId: string) => {
       if (!firestoreDb) return () => {}
 
-      const userFactsCol = collection(firestoreDb, 'users', uid, 'UserFacts')
+      const userFactsCol = collection(
+        firestoreDb,
+        'users',
+        uid,
+        'profiles',
+        profileId,
+        'UserFacts'
+      )
       const q = query(userFactsCol)
 
       return onSnapshot(
@@ -191,10 +198,10 @@ const FirebaseProvider: FC<Props> = ({ children }) => {
   )
 
   const loadUserFacts = useCallback(
-    (uid?: string): Unsubscribe => {
+    (uid?: string, profileId?: string): Unsubscribe => {
       logger('Loading user facts')
-      if (!firestoreDb || !uid) return () => {}
-      return subscribeToUserFacts(uid)
+      if (!firestoreDb || !uid || !profileId) return () => {}
+      return subscribeToUserFacts(uid, profileId)
     },
     [firestoreDb, subscribeToUserFacts, logger]
   )
