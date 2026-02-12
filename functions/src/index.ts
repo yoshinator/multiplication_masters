@@ -573,6 +573,98 @@ const getOrCreatePackMeta = async (
   return newMeta
 }
 
+const ensureMetaForExistingFacts = async (
+  userRef: FirebaseFirestore.DocumentReference,
+  factsCol: FirebaseFirestore.CollectionReference
+) => {
+  const userSnap = await userRef.get()
+  const userData = userSnap.data() as
+    | {
+        activePack?: unknown
+        enabledPacks?: unknown
+        activeScene?: unknown
+        metaInitialized?: unknown
+      }
+    | undefined
+
+  const activePack =
+    typeof userData?.activePack === 'string' &&
+    userData.activePack in MASTER_FACTS
+      ? userData.activePack
+      : 'mul_36'
+
+  const rawEnabled = Array.isArray(userData?.enabledPacks)
+    ? userData?.enabledPacks
+    : []
+  const normalizedEnabled = rawEnabled.filter(
+    (pack) => typeof pack === 'string' && pack in MASTER_FACTS
+  ) as string[]
+
+  if (normalizedEnabled.length === 0) {
+    normalizedEnabled.push(...DEFAULT_ENABLED_PACKS)
+  }
+  if (!normalizedEnabled.includes(activePack)) {
+    normalizedEnabled.push(activePack)
+  }
+
+  const activeScene =
+    typeof userData?.activeScene === 'string' ? userData.activeScene : 'garden'
+
+  const masterList = MASTER_FACTS[activePack]
+  const factsSnap = await factsCol.get()
+  const factIds = new Set(factsSnap.docs.map((doc) => doc.id))
+
+  let nextSeq = masterList.length
+  for (let i = 0; i < masterList.length; i++) {
+    if (!factIds.has(masterList[i].id)) {
+      nextSeq = i
+      break
+    }
+  }
+
+  const batch = db.batch()
+
+  const packMetaRef = userRef.collection('packMeta').doc(activePack)
+  const packMetaSnap = await packMetaRef.get()
+  if (!packMetaSnap.exists) {
+    batch.set(packMetaRef, {
+      packName: activePack,
+      totalFacts: masterList.length,
+      isCompleted: nextSeq >= masterList.length,
+      nextSeqToIntroduce: nextSeq,
+      lastActivity: Date.now(),
+    })
+  }
+
+  const sceneMetaRef = userRef.collection('sceneMeta').doc(activeScene)
+  const sceneMetaSnap = await sceneMetaRef.get()
+  if (!sceneMetaSnap.exists) {
+    batch.set(sceneMetaRef, {
+      sceneId: activeScene,
+      xp: 0,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+  }
+
+  const userPatch: Record<string, unknown> = {}
+  if (userData?.metaInitialized !== true) userPatch.metaInitialized = true
+  if (userData?.activePack !== activePack) userPatch.activePack = activePack
+  if (userData?.activeScene !== activeScene) userPatch.activeScene = activeScene
+  if (
+    normalizedEnabled.length > 0 &&
+    JSON.stringify(normalizedEnabled) !== JSON.stringify(userData?.enabledPacks)
+  ) {
+    userPatch.enabledPacks = normalizedEnabled
+  }
+
+  if (Object.keys(userPatch).length > 0) {
+    batch.set(userRef, userPatch, { merge: true })
+  }
+
+  await batch.commit()
+}
+
 export const migrateUserToFacts = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
@@ -583,6 +675,7 @@ export const migrateUserToFacts = onCall(async (request) => {
 
   const existingFacts = await factsCol.limit(1).get()
   if (!existingFacts.empty) {
+    await ensureMetaForExistingFacts(userRef, factsCol)
     return {
       success: true,
       message: 'UserFacts already exist. Skipping migration.',
