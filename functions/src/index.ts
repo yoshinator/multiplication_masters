@@ -625,33 +625,38 @@ const ensureMetaForExistingFacts = async (
     }
   }
 
-  const batch = db.batch()
-
   const packMetaRef = userRef.collection('packMeta').doc(activePack)
-  const packMetaSnap = await packMetaRef.get()
-  if (!packMetaSnap.exists) {
-    batch.set(packMetaRef, {
-      packName: activePack,
-      totalFacts: masterList.length,
-      isCompleted: nextSeq >= masterList.length,
-      nextSeqToIntroduce: nextSeq,
-      lastActivity: Date.now(),
-    })
-  }
-
   const sceneMetaRef = userRef.collection('sceneMeta').doc(activeScene)
-  const sceneMetaSnap = await sceneMetaRef.get()
-  if (!sceneMetaSnap.exists) {
-    batch.set(sceneMetaRef, {
-      sceneId: activeScene,
-      xp: 0,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    })
-  }
 
   const userPatch: Record<string, unknown> = {}
   if (userData?.metaInitialized !== true) userPatch.metaInitialized = true
+
+  await db.runTransaction(async (transaction) => {
+    const packMetaSnap = await transaction.get(packMetaRef)
+    if (!packMetaSnap.exists) {
+      transaction.create(packMetaRef, {
+        packName: activePack,
+        totalFacts: masterList.length,
+        isCompleted: nextSeq >= masterList.length,
+        nextSeqToIntroduce: nextSeq,
+        lastActivity: Date.now(),
+      })
+    }
+
+    const sceneMetaSnap = await transaction.get(sceneMetaRef)
+    if (!sceneMetaSnap.exists) {
+      transaction.create(sceneMetaRef, {
+        sceneId: activeScene,
+        xp: 0,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+    }
+
+    if (Object.keys(userPatch).length > 0) {
+      transaction.set(userRef, userPatch, { merge: true })
+    }
+  })
   if (userData?.activePack !== activePack) userPatch.activePack = activePack
   if (userData?.activeScene !== activeScene) userPatch.activeScene = activeScene
   if (
