@@ -193,9 +193,9 @@ export type PackMeta = {
 }
 
 const packFactIdsCache = new Map<PackKey, Set<string>>()
-const packFactListCache = new Map<PackKey, string[]>()
+const packFactListCache = new Map<PackKey, ReadonlyArray<string>>()
 
-export const getPackFactList = (packName: PackKey): string[] => {
+export const getPackFactList = (packName: PackKey): ReadonlyArray<string> => {
   if (packFactListCache.has(packName)) {
     return packFactListCache.get(packName)!
   }
@@ -232,7 +232,7 @@ export const getPackFactList = (packName: PackKey): string[] => {
     }
   }
 
-  packFactListCache.set(packName, ids)
+  packFactListCache.set(packName, Object.freeze(ids))
   return ids
 }
 
