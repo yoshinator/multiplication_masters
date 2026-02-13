@@ -288,10 +288,10 @@ export default function HomePage() {
                     </Typography>
                   </Stack>
                   <Typography sx={{ opacity: 0.7, pl: 0 }}>
-                        We track every fact individually. If your child answers
-                        7 × 8 correctly (or 12 ÷ 3, 9 + 6, 15 − 7), we wait until the
-                        moment they are just about to forget it (e.g., 3 days later)
-                        to show it again.
+                    We track every fact individually. If your child answers
+                    7 × 8 correctly (or 12 ÷ 3, 9 + 6, 15 − 7), we wait until the
+                    moment they are just about to forget it (e.g., 3 days later)
+                    to show it again.
                   </Typography>
                 </Box>
 
