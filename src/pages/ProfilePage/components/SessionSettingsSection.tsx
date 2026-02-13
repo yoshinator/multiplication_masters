@@ -35,8 +35,9 @@ const getSessionText = (isTooltip: boolean) => (
     Choose a session size. <strong>Daily</strong> is recommended.
     <br />
     <br />
-    For difficult tables (like 4s, 6s, 7s), choose <strong>Light</strong> or{' '}
-    <strong>Quick</strong> to limit new cards.
+    For difficult tables (like 4s, 6s, 7s), choose <strong>
+      Light
+    </strong> or <strong>Quick</strong> to limit new cards.
     <br />
     <br />
     (1 new card ≈ 3 reviews)
@@ -88,7 +89,11 @@ const SessionSettingsSection: FC<SessionSettingsSectionProps> = ({
         )}
       </Box>
 
-      <Box role="group" aria-label="Session Intensity" sx={PROFILE_OPTION_GRID_STYLE}>
+      <Box
+        role="group"
+        aria-label="Session Intensity"
+        sx={PROFILE_OPTION_GRID_STYLE}
+      >
         {[
           { value: 10, label: 'Quick', reviews: 'about 30' },
           {
@@ -113,10 +118,16 @@ const SessionSettingsSection: FC<SessionSettingsSectionProps> = ({
               aria-pressed={selected}
               sx={getProfileOptionButtonStyle(selected)}
             >
-              <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, lineHeight: 1.2 }}
+              >
                 {option.label}
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8, fontSize: '0.7rem' }}>
+              <Typography
+                variant="caption"
+                sx={{ opacity: 0.8, fontSize: '0.7rem' }}
+              >
                 {option.reviews} reviews
               </Typography>
             </Box>
@@ -192,7 +203,10 @@ const SessionSettingsSection: FC<SessionSettingsSectionProps> = ({
                 aria-pressed={selected}
                 sx={getProfileOptionButtonStyle(selected)}
               >
-                <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                >
                   {option.label}
                 </Typography>
                 <Typography

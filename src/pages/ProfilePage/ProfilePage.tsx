@@ -73,8 +73,10 @@ const ProfilePage: FC = () => {
     }
   }
 
-  const handlePackChange = (event: SelectChangeEvent<PackKey>) => {
-    updateUser({ activePack: event.target.value })
+  const handlePackChange = (event: SelectChangeEvent<PackKey | ''>) => {
+    const nextPack = event.target.value
+    if (!nextPack) return
+    updateUser({ activePack: nextPack })
   }
 
   const handleThemeChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -119,9 +121,13 @@ const ProfilePage: FC = () => {
           canEnablePinSignIn={canEnablePinSignIn}
           hasPinSignIn={hasPinSignIn}
           isAnonymous={Boolean(isAnonymous)}
-          onAddLearner={() => openModal(<AddLearnerModal onClose={closeModal} />)}
+          onAddLearner={() =>
+            openModal(<AddLearnerModal onClose={closeModal} />)
+          }
           onEnablePin={() => openModal(<SetPinModal onClose={closeModal} />)}
-          onSaveProgress={() => openModal(<SaveProgressModal onClose={closeModal} />)}
+          onSaveProgress={() =>
+            openModal(<SaveProgressModal onClose={closeModal} />)
+          }
         />
 
         {canManageProfiles ? (
@@ -149,9 +155,7 @@ const ProfilePage: FC = () => {
           <SessionSettingsSection
             isMobile={isMobile}
             sessionLength={sessionLength}
-            maxNewCardsPerDay={
-              user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
-            }
+            maxNewCardsPerDay={user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY}
             onChoiceKeyDown={handleChoiceKeyDown}
             onSessionLengthChange={(value) =>
               updateUser({ userDefaultSessionLength: value })

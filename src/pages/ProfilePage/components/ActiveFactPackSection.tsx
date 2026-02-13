@@ -13,9 +13,9 @@ import ProfileSectionCard from './ProfileSectionCard'
 import { PACK_LABELS } from './profileConstants'
 
 type ActiveFactPackSectionProps = {
-  activePack: string
+  activePack: PackKey | ''
   enabledPacks: PackKey[]
-  onPackChange: (event: SelectChangeEvent<PackKey>) => void
+  onPackChange: (event: SelectChangeEvent<PackKey | ''>) => void
 }
 
 const ActiveFactPackSection: FC<ActiveFactPackSectionProps> = ({
@@ -40,7 +40,7 @@ const ActiveFactPackSection: FC<ActiveFactPackSectionProps> = ({
       <Box sx={{ maxWidth: 460 }}>
         <FormControl fullWidth size="medium">
           <InputLabel id="active-pack-label">Select Fact Pack</InputLabel>
-          <Select
+          <Select<PackKey | ''>
             label="Select Fact Pack"
             labelId="active-pack-label"
             onChange={onPackChange}
