@@ -17,6 +17,13 @@ const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const isPublicInfoRoute =
+    location.pathname === ROUTES.LEARN_MORE ||
+    location.pathname === ROUTES.PRIVACY ||
+    location.pathname === ROUTES.TERMS ||
+    location.pathname === ROUTES.COPPA ||
+    location.pathname === ROUTES.FERPA
+
   const navItems = user
     ? [
         { label: 'Train', path: ROUTES.TRAIN },
@@ -24,7 +31,9 @@ const Header = () => {
         { label: 'Builder', path: ROUTES.BUILDER },
         { label: 'Profile', path: ROUTES.PROFILE },
       ]
-    : []
+    : isPublicInfoRoute
+      ? [{ label: 'Home', path: ROUTES.HOME }]
+      : [{ label: 'Learn More', path: ROUTES.LEARN_MORE }]
 
   const isActive = (path: string) =>
     matchPath({ path, end: true }, location.pathname) != null

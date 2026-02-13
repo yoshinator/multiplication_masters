@@ -1,4 +1,4 @@
-import { type FC } from 'react'
+import { type FC, useEffect } from 'react'
 import { Box, Toolbar } from '@mui/material'
 import {
   Routes,
@@ -24,6 +24,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage/PrivacyPolicyPage'
 import CoppaPage from './pages/CoppaPage/CoppaPage'
 import FerpaPage from './pages/FerpaPage/FerpaPage'
 import TermsOfServicePage from './pages/TermsOfServicePage/TermsOfServicePage'
+import LearnMorePage from './pages/LearnMorePage/LearnMorePage'
 import Footer from './components/Footer/Footer'
 import { useUser } from './contexts/userContext/useUserContext'
 import { useAuthActions } from './hooks/useAuthActions'
@@ -38,6 +39,8 @@ const App: FC = () => {
 
   const shouldShowFooter =
     matchPath({ path: ROUTES.HOME, end: true }, location.pathname) != null ||
+    matchPath({ path: ROUTES.LEARN_MORE, end: true }, location.pathname) !=
+      null ||
     matchPath({ path: ROUTES.PRIVACY, end: true }, location.pathname) != null ||
     matchPath({ path: ROUTES.COPPA, end: true }, location.pathname) != null ||
     matchPath({ path: ROUTES.FERPA, end: true }, location.pathname) != null ||
@@ -45,6 +48,10 @@ const App: FC = () => {
 
   const isUsernamePinSession =
     authStatus === 'signedIn' && user?.lastSignInMethod === 'usernamePin'
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname])
 
   useInactivityLogout({
     enabled: Boolean(isUsernamePinSession),
@@ -68,6 +75,7 @@ const App: FC = () => {
 
       <Routes>
         <Route path={ROUTES.HOME} element={<HomePage />} />
+        <Route path={ROUTES.LEARN_MORE} element={<LearnMorePage />} />
 
         <Route
           path={ROUTES.TRAIN}
