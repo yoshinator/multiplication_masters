@@ -17,6 +17,7 @@ import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import SaveProgressModal from '../Login/SaveProgressModal'
 import { useModal } from '../../contexts/modalContext/modalContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 export const UserMenu = () => {
   const { user } = useUser()
@@ -26,6 +27,7 @@ export const UserMenu = () => {
   const { signOut } = useAuthActions()
   const navigate = useNavigate()
   const avatarRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   const open = Boolean(anchorEl)
   const handleOpen = () => setAnchorEl(avatarRef.current)
@@ -81,30 +83,34 @@ export const UserMenu = () => {
         >
           Profile
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            handleClose()
-            navigate(ROUTES.STATS)
-          }}
-        >
-          My Stats
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            handleClose()
-            navigate(ROUTES.TRAIN)
-          }}
-        >
-          Train
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            handleClose()
-            navigate(ROUTES.BUILDER)
-          }}
-        >
-          Build
-        </MenuItem>
+        {isMobile ? (
+          <>
+            <MenuItem
+              onClick={() => {
+                handleClose()
+                navigate(ROUTES.STATS)
+              }}
+            >
+              My Stats
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleClose()
+                navigate(ROUTES.TRAIN)
+              }}
+            >
+              Train
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleClose()
+                navigate(ROUTES.BUILDER)
+              }}
+            >
+              Build
+            </MenuItem>
+          </>
+        ) : null}
         <MenuItem
           sx={{ color: 'error.main' }}
           onClick={async () => {

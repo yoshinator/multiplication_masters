@@ -5,7 +5,7 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { UserMenu, UserMenuSkeleton } from '../UserMenu/UserMenu'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, matchPath } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useModal } from '../../contexts/modalContext/modalContext'
 
@@ -15,6 +15,19 @@ const Header = () => {
   const { openModal, closeModal } = useModal()
   const { loginAnonymously } = useAuthActions()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const navItems = user
+    ? [
+        { label: 'Train', path: ROUTES.TRAIN },
+        { label: 'Stats', path: ROUTES.STATS },
+        { label: 'Builder', path: ROUTES.BUILDER },
+        { label: 'Profile', path: ROUTES.PROFILE },
+      ]
+    : []
+
+  const isActive = (path: string) =>
+    matchPath({ path, end: true }, location.pathname) != null
 
   return (
     <>
@@ -59,6 +72,21 @@ const Header = () => {
           </Box>
 
           <Box sx={{ flexGrow: 1 }} />
+
+          {!isMobile && navItems.length > 0 ? (
+            <Box sx={{ display: 'flex', gap: 1.5, mr: 2 }}>
+              {navItems.map((item) => (
+                <Button
+                  key={item.path}
+                  color={isActive(item.path) ? 'primary' : 'inherit'}
+                  onClick={() => navigate(item.path)}
+                  sx={{ fontWeight: 700 }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+          ) : null}
 
           {isLoading ? (
             <UserMenuSkeleton />
