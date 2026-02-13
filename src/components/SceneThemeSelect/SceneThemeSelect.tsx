@@ -14,19 +14,21 @@ const SceneThemeSelect: FC<Props> = ({
 }) => {
   const { user, selectScene } = useUser()
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box>
       <Typography sx={{ mb: 1 }} variant="subtitle2">
         Active Scene
       </Typography>
-      {/* put sx styles in the theme. Use on ProfilePage. GRID_CONTAINER_STYLE */}
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Choose the default scene shown during practice.
+      </Typography>
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: {
             xs: 'repeat(2, 1fr)',
-            sm: 'repeat(4, 1fr)',
+            md: 'repeat(4, minmax(0, 1fr))',
           },
-          gap: 1,
+          gap: 1.25,
         }}
       >
         {Object.values(SCENES).map((scene) => {
@@ -52,7 +54,8 @@ const SceneThemeSelect: FC<Props> = ({
                 opacity: isLocked ? 0.6 : 1,
                 filter: isLocked ? 'grayscale(1)' : 'none',
                 cursor: isLocked ? 'default' : 'pointer',
-                minHeight: 100,
+                aspectRatio: { xs: '4 / 3', sm: '16 / 10' },
+                minHeight: { xs: 110, sm: 140 },
                 p: 0,
               }}
             >
