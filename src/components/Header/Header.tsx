@@ -24,7 +24,7 @@ const Header = () => {
         { label: 'Builder', path: ROUTES.BUILDER },
         { label: 'Profile', path: ROUTES.PROFILE },
       ]
-    : []
+    : [{ label: 'Learn More', path: ROUTES.LEARN_MORE }]
 
   const isActive = (path: string) =>
     matchPath({ path, end: true }, location.pathname) != null
