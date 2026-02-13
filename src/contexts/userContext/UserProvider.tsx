@@ -115,7 +115,9 @@ const UserProvider: FC<Props> = ({ children }) => {
     null
   )
   const ensureUserInitInFlightRef = useRef(false)
-  const missingUserDocSinceRef = useRef<number | null>(null)
+  const missingUserDocSignOutTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
   const signOutInFlightRef = useRef(false)
   const packMetaInitRef = useRef<string | null>(null)
 
@@ -365,8 +367,11 @@ const UserProvider: FC<Props> = ({ children }) => {
         clearTimeout(ensureUserInitTimerRef.current)
         ensureUserInitTimerRef.current = null
       }
+      if (missingUserDocSignOutTimerRef.current) {
+        clearTimeout(missingUserDocSignOutTimerRef.current)
+        missingUserDocSignOutTimerRef.current = null
+      }
       ensureUserInitInFlightRef.current = false
-      missingUserDocSinceRef.current = null
       signOutInFlightRef.current = false
 
       if (isCancelled) return
@@ -408,12 +413,6 @@ const UserProvider: FC<Props> = ({ children }) => {
               setActiveProfileIdState(null)
               setAuthStatus('loading')
 
-              if (missingUserDocSinceRef.current == null) {
-                missingUserDocSinceRef.current = Date.now()
-              }
-
-              const elapsedMs = Date.now() - missingUserDocSinceRef.current
-
               // Try to recover by asking the server to initialize the user doc.
               // This handles accounts created before the Auth onCreate initializer
               // existed, as well as slow/failed trigger delivery.
@@ -436,27 +435,28 @@ const UserProvider: FC<Props> = ({ children }) => {
                 }, 1000)
               }
 
-              // Don’t allow infinite loading. If we still have no user doc after
-              // a reasonable window, sign out so the UI can recover.
-              if (elapsedMs > 20000) {
-                logger(
-                  'User doc missing for too long; signing out to recover UI',
-                  { uid, elapsedMs }
-                )
-                if (!signOutInFlightRef.current) {
-                  signOutInFlightRef.current = true
-                  void (async () => {
-                    try {
-                      await firebaseSignOut(auth)
-                      // Let onAuthStateChanged drive state transitions.
-                    } catch (err) {
-                      logger('firebaseSignOut failed:', err)
-                      signOutInFlightRef.current = false
-                      // Avoid immediate re-attempt loops.
-                      missingUserDocSinceRef.current = Date.now()
-                    }
-                  })()
-                }
+              // Don’t allow infinite loading. Snapshot listeners for missing docs
+              // may not fire repeatedly, so use an explicit watchdog timeout.
+              if (!missingUserDocSignOutTimerRef.current) {
+                missingUserDocSignOutTimerRef.current = setTimeout(() => {
+                  missingUserDocSignOutTimerRef.current = null
+                  logger(
+                    'User doc missing for too long; signing out to recover UI',
+                    { uid }
+                  )
+                  if (!signOutInFlightRef.current) {
+                    signOutInFlightRef.current = true
+                    void (async () => {
+                      try {
+                        await firebaseSignOut(auth)
+                        // Let onAuthStateChanged drive state transitions.
+                      } catch (err) {
+                        logger('firebaseSignOut failed:', err)
+                        signOutInFlightRef.current = false
+                      }
+                    })()
+                  }
+                }, 20000)
               }
               return
             }
@@ -465,8 +465,11 @@ const UserProvider: FC<Props> = ({ children }) => {
               clearTimeout(ensureUserInitTimerRef.current)
               ensureUserInitTimerRef.current = null
             }
+            if (missingUserDocSignOutTimerRef.current) {
+              clearTimeout(missingUserDocSignOutTimerRef.current)
+              missingUserDocSignOutTimerRef.current = null
+            }
             ensureUserInitInFlightRef.current = false
-            missingUserDocSinceRef.current = null
 
             const accountData = docSnap.data() as UserAccount
 
@@ -591,8 +594,11 @@ const UserProvider: FC<Props> = ({ children }) => {
         clearTimeout(ensureUserInitTimerRef.current)
         ensureUserInitTimerRef.current = null
       }
+      if (missingUserDocSignOutTimerRef.current) {
+        clearTimeout(missingUserDocSignOutTimerRef.current)
+        missingUserDocSignOutTimerRef.current = null
+      }
       ensureUserInitInFlightRef.current = false
-      missingUserDocSinceRef.current = null
       signOutInFlightRef.current = false
     }
   }, [auth, db, logger, ensureUserInitialized])
