@@ -439,6 +439,10 @@ const UserProvider: FC<Props> = ({ children }) => {
               // may not fire repeatedly, so use an explicit watchdog timeout.
               if (!missingUserDocSignOutTimerRef.current) {
                 missingUserDocSignOutTimerRef.current = setTimeout(() => {
+                  if (isCancelled) {
+                    missingUserDocSignOutTimerRef.current = null
+                    return
+                  }
                   missingUserDocSignOutTimerRef.current = null
                   logger(
                     'User doc missing for too long; signing out to recover UI',
