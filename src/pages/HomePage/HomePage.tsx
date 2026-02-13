@@ -239,12 +239,15 @@ export default function HomePage() {
               <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
                 Research highlights
               </Typography>
-              <Box component="ul" sx={{ pl: 2.5, mb: 0, color: 'text.secondary' }}>
+              <Box
+                component="ul"
+                sx={{ pl: 2.5, mb: 0, color: 'text.secondary' }}
+              >
                 <li>
                   <Link
                     href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3779611/"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     Fuchs et al. (2012)
                   </Link>
@@ -254,7 +257,7 @@ export default function HomePage() {
                   <Link
                     href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2682421/"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     Powell et al. (2009)
                   </Link>
@@ -264,7 +267,7 @@ export default function HomePage() {
                   <Link
                     href="https://link.springer.com/article/10.1186/s41235-022-00451-0"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     Dotan et al. (2022)
                   </Link>
@@ -288,8 +291,8 @@ export default function HomePage() {
                     </Typography>
                   </Stack>
                   <Typography sx={{ opacity: 0.7, pl: 0 }}>
-                    We track every fact individually. If your child answers
-                    7 × 8 correctly (or 12 ÷ 3, 9 + 6, 15 − 7), we wait until the
+                    We track every fact individually. If your child answers 7 ×
+                    8 correctly (or 12 ÷ 3, 9 + 6, 15 − 7), we wait until the
                     moment they are just about to forget it (e.g., 3 days later)
                     to show it again.
                   </Typography>
@@ -380,6 +383,89 @@ export default function HomePage() {
                 The Result: Your child learns the entire multiplication table in
                 less time, with less frustration.
               </Typography>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ============================ */}
+      {/* STATE-OF-THE-ART ALGORITHM */}
+      {/* ============================ */}
+      <Box sx={{ py: { xs: 10, md: 16 } }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={8} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  mb: 3,
+                  fontSize: { xs: '2rem', md: '2.75rem' },
+                }}
+              >
+                A state-of-the-art learning engine.
+              </Typography>
+              <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
+                Math Builders blends spacing and retrieval practice with an
+                adaptive scheduler, the most efficient way to build durable math
+                fact fluency fast. These are the same evidence-based techniques
+                used in high-stakes learning environments, including medical
+                education.
+              </Typography>
+              <Typography sx={{ opacity: 0.8, fontSize: '1.1rem' }}>
+                Every session targets the right fact at the right moment,
+                turning practice time into measurable progress.
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  bgcolor: 'background.paper',
+                  p: 4,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                  Evidence base
+                </Typography>
+                <Box
+                  component="ul"
+                  sx={{ pl: 2.5, mb: 0, color: 'text.secondary' }}
+                >
+                  <li>
+                    <Link
+                      href="https://journals.sagepub.com/doi/10.1177/1529100612453266"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Dunlosky et al. (2013)
+                    </Link>
+                    : retrieval practice and spacing are top-tier techniques.
+                  </li>
+                  <li>
+                    <Link
+                      href="https://pubmed.ncbi.nlm.nih.gov/16719566/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Cepeda et al. (2006)
+                    </Link>
+                    : meta-analysis on the spacing effect.
+                  </li>
+                  <li>
+                    <Link
+                      href="https://www.researchgate.net/publication/394099339_A_Meta-analytic_Review_of_the_Effectiveness_of_Spacing_and_Retrieval_Practice_for_Mathematics_Learning"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      2025 math meta-analysis
+                    </Link>
+                    : spacing + retrieval practice improves math learning.
+                  </li>
+                </Box>
+              </Box>
             </Grid>
           </Grid>
         </Container>

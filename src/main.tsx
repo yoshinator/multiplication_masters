@@ -1,6 +1,5 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
 
 import App from './App.tsx'
 import FirebaseProvider from './contexts/firebase/FirebaseProvider.tsx'
@@ -14,8 +13,6 @@ import { ThemeContextProvider } from './contexts/themeContext/ThemeContextProvid
 import { NotificationProvider } from './contexts/notificationContext/NotificationProvider.tsx'
 import { BrowserRouter } from 'react-router-dom'
 import './theme/driverOverrides.css'
-
-registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
