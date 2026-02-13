@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   Stack,
+  Link,
   useTheme,
   alpha,
   CircularProgress,
@@ -91,7 +92,7 @@ export default function HomePage() {
                   letterSpacing: '-0.02em',
                 }}
               >
-                Master multiplication facts —{' '}
+                Master math facts —{' '}
                 <Box component="span" sx={{ color: 'primary.main' }}>
                   fast.
                 </Box>
@@ -107,8 +108,11 @@ export default function HomePage() {
                   lineHeight: 1.6,
                 }}
               >
-                Short daily sessions that adapt to your child’s speed and
-                accuracy. Builds automatic recall and confidence.
+                When facts are not automatic, harder math turns into a
+                memory-and-attention battle. Math Builders builds fast fact
+                retrieval across multiplication, division, addition, and
+                subtraction with short, adaptive sessions so students can focus
+                on real problem solving.
               </Typography>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -127,7 +131,7 @@ export default function HomePage() {
                     )}`,
                   }}
                 >
-                  Start Free
+                  Start 5-Min Practice
                 </Button>
                 <Button
                   variant="outlined"
@@ -150,7 +154,7 @@ export default function HomePage() {
                 variant="body2"
                 sx={{ mt: 3, opacity: 0.6, fontWeight: 500 }}
               >
-                No credit card required &bull; No setup needed
+                Build automaticity fast &bull; No credit card required
               </Typography>
             </Grid>
 
@@ -174,7 +178,7 @@ export default function HomePage() {
                 <Box
                   component="img"
                   src="/assets/homepage/MathBuildersPracticePage.png"
-                  alt="Multiplication Masters Practice Interface"
+                  alt="Math Builders practice interface"
                   sx={{
                     width: '100%',
                     height: 'auto',
@@ -206,23 +210,71 @@ export default function HomePage() {
                 fontSize: { xs: '2rem', md: '2.75rem' },
               }}
             >
-              Why "Smart Practice" Works Better
+              Why Automaticity Changes Everything
             </Typography>
             <Typography
               variant="h6"
               sx={{ opacity: 0.7, lineHeight: 1.6, fontWeight: 400 }}
             >
-              Traditional flashcards waste time because children often practice
-              facts they already know. Our app uses a scientifically proven
-              method called{' '}
+              When recall is slow, working memory gets consumed by basic
+              calculation and students struggle to keep up with multi-step
+              problems. Our app uses a scientifically proven method called{' '}
               <Box
                 component="span"
                 sx={{ color: 'primary.main', fontWeight: 700 }}
               >
                 Spaced Repetition
               </Box>{' '}
-              to fix this.
+              to build automaticity efficiently.
             </Typography>
+            <Box
+              sx={{
+                mt: 4,
+                textAlign: 'left',
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                borderRadius: 3,
+                p: 3,
+              }}
+            >
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                Research highlights
+              </Typography>
+              <Box
+                component="ul"
+                sx={{ pl: 2.5, mb: 0, color: 'text.secondary' }}
+              >
+                <li>
+                  <Link
+                    href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3779611/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Fuchs et al. (2012)
+                  </Link>
+                  : fluency building supports broader math performance.
+                </li>
+                <li>
+                  <Link
+                    href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2682421/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Powell et al. (2009)
+                  </Link>
+                  : strategic practice improves calculation skills.
+                </li>
+                <li>
+                  <Link
+                    href="https://link.springer.com/article/10.1186/s41235-022-00451-0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Dotan et al. (2022)
+                  </Link>
+                  : automaticity supports complex reasoning.
+                </li>
+              </Box>
+            </Box>
           </Box>
 
           <Grid container spacing={8} alignItems="center">
@@ -239,10 +291,10 @@ export default function HomePage() {
                     </Typography>
                   </Stack>
                   <Typography sx={{ opacity: 0.7, pl: 0 }}>
-                    We track every single multiplication fact individually. If
-                    your child answers 7 × 8 correctly, we wait until the moment
-                    they are just about to forget it (e.g., 3 days later) to
-                    show it again.
+                    We track every fact individually. If your child answers 7 ×
+                    8 correctly (or 12 ÷ 3, 9 + 6, 15 − 7), we wait until the
+                    moment they are just about to forget it (e.g., 3 days later)
+                    to show it again.
                   </Typography>
                 </Box>
 
@@ -337,6 +389,145 @@ export default function HomePage() {
       </Box>
 
       {/* ============================ */}
+      {/* STATE-OF-THE-ART ALGORITHM */}
+      {/* ============================ */}
+      <Box sx={{ py: { xs: 10, md: 16 } }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={8} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  mb: 3,
+                  fontSize: { xs: '2rem', md: '2.75rem' },
+                }}
+              >
+                A state-of-the-art learning engine.
+              </Typography>
+              <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
+                Math Builders blends spacing and retrieval practice with an
+                adaptive scheduler, the most efficient way to build durable math
+                fact fluency fast. These are the same evidence-based techniques
+                used in high-stakes learning environments, including medical
+                education.
+              </Typography>
+              <Typography sx={{ opacity: 0.8, fontSize: '1.1rem' }}>
+                Every session targets the right fact at the right moment,
+                turning practice time into measurable progress.
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  bgcolor: 'background.paper',
+                  p: 4,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                  Evidence base
+                </Typography>
+                <Box
+                  component="ul"
+                  sx={{ pl: 2.5, mb: 0, color: 'text.secondary' }}
+                >
+                  <li>
+                    <Link
+                      href="https://journals.sagepub.com/doi/10.1177/1529100612453266"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Dunlosky et al. (2013)
+                    </Link>
+                    : retrieval practice and spacing are top-tier techniques.
+                  </li>
+                  <li>
+                    <Link
+                      href="https://pubmed.ncbi.nlm.nih.gov/16719566/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Cepeda et al. (2006)
+                    </Link>
+                    : meta-analysis on the spacing effect.
+                  </li>
+                  <li>
+                    <Link
+                      href="https://www.researchgate.net/publication/394099339_A_Meta-analytic_Review_of_the_Effectiveness_of_Spacing_and_Retrieval_Practice_for_Mathematics_Learning"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      2025 math meta-analysis
+                    </Link>
+                    : spacing + retrieval practice improves math learning.
+                  </li>
+                </Box>
+              </Box>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ============================ */}
+      {/* MULTIPLICATION TABLES FEATURE */}
+      {/* ============================ */}
+      <Box sx={{ py: { xs: 10, md: 16 } }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={8} alignItems="center">
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 800,
+                  mb: 3,
+                  fontSize: { xs: '2rem', md: '2.75rem' },
+                }}
+              >
+                Multiplication is the lingua franca of math.
+              </Typography>
+              <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
+                It is the quiet language behind fractions, algebra, and
+                geometry. When the tables are fluent, everything else speaks
+                clearly. Math Builders makes that fluency feel inevitable:
+                steady, rhythmic practice that turns effort into instinct.
+              </Typography>
+              <Typography sx={{ opacity: 0.8, fontSize: '1.1rem' }}>
+                Give students a vocabulary they can trust. Give them momentum
+                that carries into every new unit.
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                  bgcolor: 'background.paper',
+                  p: 4,
+                }}
+              >
+                <Box
+                  component="img"
+                  src="/assets/homepage/MathBuildersPracticePage.png"
+                  alt="Fluent multiplication practice"
+                  sx={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  }}
+                />
+              </Box>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ============================ */}
       {/* GAMIFICATION / MOTIVATION */}
       {/* ============================ */}
       <Box sx={{ py: { xs: 10, md: 16 } }}>
@@ -381,7 +572,7 @@ export default function HomePage() {
                   fontSize: { xs: '2rem', md: '2.75rem' },
                 }}
               >
-                Motivation That Actually Works
+                Motivation That Sticks
               </Typography>
               <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
                 Every practice session earns progress towards new levels and
@@ -453,7 +644,7 @@ export default function HomePage() {
                   fontSize: { xs: '2rem', md: '2.75rem' },
                 }}
               >
-                Data-Driven Insights
+                See Mastery, Not Guesswork
               </Typography>
               <Typography sx={{ opacity: 0.8, mb: 4, fontSize: '1.1rem' }}>
                 No more guessing. See exactly which facts are mastered and which
@@ -503,7 +694,7 @@ export default function HomePage() {
                 fontSize: { xs: '2rem', md: '2.75rem' },
               }}
             >
-              Practice Math Facts Anywhere
+              Practice Anywhere, Stay Consistent
             </Typography>
             <Typography
               variant="h6"
@@ -604,7 +795,7 @@ export default function HomePage() {
               fontSize: { xs: '2rem', md: '3rem' },
             }}
           >
-            Try it tonight: 5 minutes, no setup.
+            Build automaticity in 5 minutes.
           </Typography>
           <Typography
             sx={{
@@ -615,8 +806,7 @@ export default function HomePage() {
               mx: 'auto',
             }}
           >
-            Track progress automatically and see the difference in just a few
-            sessions.
+            Fast fact retrieval frees attention for real problem solving.
           </Typography>
           <Button
             variant="contained"
@@ -635,7 +825,7 @@ export default function HomePage() {
               },
             }}
           >
-            Start Free Practice
+            Start 5-Min Practice
           </Button>
         </Container>
       </Box>

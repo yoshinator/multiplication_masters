@@ -4,7 +4,7 @@ A time-driven hybrid SRS (Spaced Repetition System) combining Leitner and SM-2 a
 
 ## Overview
 
-Multiplication Masters is a modern web application designed to help students master multiplication facts through an adaptive learning system. Built with React and TypeScript, it combines proven spaced-repetition techniques with gamification elements, real-time feedback, and personalized learning paths. The application includes a customizable scene builder, performance analytics, and Firebase-backed cloud storage for seamless cross-device learning.
+Multiplication Masters is a modern web application designed to help students master multiplication facts through an adaptive learning system. Built with React and TypeScript, it combines proven spaced-repetition techniques with gamification elements, real-time feedback, and personalized learning paths. The application includes learner profiles (multiple kids per account), profile PIN sign-in, a customizable scene builder, performance analytics, and Firebase-backed cloud storage for seamless cross-device learning.
 
 ## Language Composition
 
@@ -28,8 +28,8 @@ Multiplication Masters is a modern web application designed to help students mas
 ### Backend
 - **Platform**: Firebase 12.x
 - **Database**: Firestore
-- **Authentication**: Firebase Auth
-- **Cloud Functions**: Node.js 24 with TypeScript
+- **Authentication**: Firebase Auth (Anonymous, Google, Email Link, Profile PIN)
+- **Cloud Functions**: Node.js 22 with TypeScript
 - **Storage**: Firebase Storage
 
 ### Development Tools
@@ -72,6 +72,7 @@ Multiplication Masters is a modern web application designed to help students mas
 - **`npm run build:watch`** - Watch mode for function development
 - **`npm run deploy`** - Deploy Cloud Functions to Firebase
 - **`npm run serve`** - Run functions locally with emulators
+- **`npm run migrate:profiles`** - One-off migration to create learner profiles and move user data into profile subcollections
 
 ## Frontend Structure (`src/`)
 
@@ -88,7 +89,7 @@ Reusable UI components organized by feature:
 - **Login** - Sign-in and account upgrade flows:
   - Google sign-in
   - Email-link sign-in
-  - Username + 6-digit PIN sign-in (if enabled)
+  - Profile login + 6-digit PIN sign-in (per learner profile)
   - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance)
 - **FactCard** - Flash card interface with timer and zones (multiplication, division, addition, subtraction)
 - **OnboardingModal** - Required first-login questionnaire (role + grade defaults)
@@ -126,7 +127,7 @@ Custom React hooks for shared logic:
 - **useFirestore** - Firestore query helpers
 - **useIsMobile** - Responsive breakpoint detection
 - **useKeyboardOpen** - Mobile keyboard visibility detection
-- **useInactivityLogout** - Inactivity timeout handler (used to auto-logout username+PIN sessions)
+- **useInactivityLogout** - Inactivity timeout handler (used to auto-logout profile-PIN sessions)
 - **useLogger** - Error logging and debugging utilities
 - **useSaveProgress** - Session data persistence
 - **useThresholdAnimation** - Triggers a temporary animation flag when a value crosses a threshold (supports gating via `enabled` / `resetOnEnable` to avoid firing during initial data hydration)
@@ -166,7 +167,7 @@ Helper functions and shared logic:
 
 ## Backend Structure (`functions/`)
 
-Firebase Cloud Functions for server-side operations built with TypeScript and Node.js 24.
+Firebase Cloud Functions for server-side operations built with TypeScript and Node.js 22.
 
 ### Cloud Functions (`functions/src/`)
 
@@ -174,22 +175,26 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 **Trigger**: Firebase Auth `onCreate` event (new auth user)  
 **Purpose**: Server-side initialization of `users/{uid}` (replaces client-side seeding)  
 **Operations**:
-- Creates the `users/{uid}` root document with default fields (role, packs, stats counters, etc.)
-- Assigns a generated username
+- Creates the `users/{uid}` root document with default fields
+- Creates the first learner profile and sets `activeProfileId`
 - Sets `createdAt` / `lastLogin`
-- Creates default `sceneMeta/garden` document
+- Creates default `sceneMeta/garden` document inside the profile
 
 #### `initializeUserMeta`
 **Trigger**: Firestore `onCreate` event for `users/{userId}`  
 **Purpose**: Automatically initializes metadata for new users  
 **Operations**:
-- Creates default scene metadata (garden theme with 0 XP)
-- Sets up initial pack configuration (mul_36 and mul_144)
-- Marks user as initialized to prevent re-runs
+- Ensures a default learner profile exists and sets `activeProfileId`
 
 > Note: With `initializeUserOnAuthCreate` in place, `initializeUserMeta` acts as a defensive backstop for older data / edge cases.
 
-#### Username + PIN auth (callables)
+#### Learner profile callables
+- **`createProfile`**: Creates a learner profile with a unique `loginName` and sets it as active.
+- **`signInWithProfilePin`**: Validates profile login + PIN and returns a custom token with a `profileId` claim.
+- **`setProfilePin`**: Enables profile PIN sign-in (hash stored server-side).
+- **`resetProfilePinLockout`**: Clears temporary lockout state after a non-PIN sign-in.
+
+#### Username + PIN auth (legacy)
 - **`signInWithUsernamePin`**: Validates username + 6-digit PIN, enforces lockout (5 failed attempts → 1 hour), and returns a Firebase custom token.
 - **`setUsernamePin`**: Enables username+PIN sign-in for an existing account by storing a bcrypt hash server-side and marking `hasUsernamePin`.
   - Eligibility is enforced server-side: the user must have signed in with Google or an email link (anonymous users cannot enable a PIN).
@@ -277,8 +282,8 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
   - Anonymous sessions for quick start
   - Google sign-in
   - Email-link sign-in
-  - Optional username + 6-digit PIN sign-in (enabled from Profile after Google/email-link sign-in)
-  - Username+PIN sessions auto-logout after 5 minutes of inactivity
+  - Profile login + 6-digit PIN sign-in (enabled from Profile after Google/email-link sign-in)
+  - Profile-PIN sessions auto-logout after 5 minutes of inactivity
 
 ### Educational Use Cases
 - **Individual Learning**: Self-paced fact mastery for students
@@ -379,14 +384,14 @@ The architecture separates concerns between frontend (React/TypeScript) and back
 
 ### User Authentication
 - Firebase Auth supports Anonymous, Google, and Email-link sign-in.
-- Username + PIN is implemented via Cloud Functions minting Firebase custom tokens.
+- Profile login + PIN is implemented via Cloud Functions minting Firebase custom tokens with a profile claim.
 - PIN setup is only allowed from Profile after a user has authenticated via Google or email-link.
 - PIN security controls:
   - 6-digit numeric PIN
   - Server-side bcrypt hashing (no plaintext PIN stored)
   - 5 failed attempts triggers a 1-hour lockout
   - Lockout is reset after successful Google/email-link sign-in
-- App behavior: username+PIN sessions auto-logout after 5 minutes of inactivity.
+- App behavior: profile-PIN sessions auto-logout after 5 minutes of inactivity.
 
 Legal & compliance routes:
 - `/privacy`, `/terms`, `/coppa`, `/ferpa`
@@ -411,10 +416,10 @@ Legal & compliance routes:
 - Implement offline-first caching with IndexedDB or localStorage.
 
 ### Backend and Data Logic
-- Finalize and document Firebase data schema.
-- Add secure Firebase rules to isolate user data.
+- Finalize and document the profile-based data schema.
+- Run profile migration in production and validate counts.
 - Add data export/import feature for portability.
-- Add Scene Builder saves and unlocked items to data store.
+- Decide on Storage path strategy for profiles (and migrate thumbnails if needed).
 
 ### SRS Improvements
 - Add mirror card activation logic (unlock mirrored versions after mastery).
