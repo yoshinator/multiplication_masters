@@ -114,6 +114,7 @@ const SavedScenesGallery: FC = () => {
               component="div"
               role="button"
               tabIndex={0}
+              aria-pressed={selected}
               onClick={() => updateUser({ activeSavedSceneId: scene.id })}
               onKeyDown={(e) => handleChoiceKeyDown(e, scene.id)}
               sx={{

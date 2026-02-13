@@ -26,7 +26,7 @@ const SceneThemeSelect: FC<Props> = ({
           display: 'grid',
           gridTemplateColumns: {
             xs: 'repeat(2, 1fr)',
-            lg: 'repeat(4, minmax(0, 1fr))',
+            md: 'repeat(4, minmax(0, 1fr))',
           },
           gap: 1.25,
         }}
