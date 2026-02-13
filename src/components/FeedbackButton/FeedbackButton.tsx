@@ -16,18 +16,27 @@ const FeedbackButton: FC = () => {
 
   const isSessionActive = sessionStatus?.isSessionActive ?? false
   const isTrainRoute = location.pathname === ROUTES.TRAIN
+  const isBuilderRoute = location.pathname === ROUTES.BUILDER
   const isHomeRoute = location.pathname === ROUTES.HOME
-  const showLearnMoreOnMobileHome = isMobile && isHomeRoute
+  const isPublicInfoRoute =
+    isHomeRoute ||
+    location.pathname === ROUTES.LEARN_MORE ||
+    location.pathname === ROUTES.PRIVACY ||
+    location.pathname === ROUTES.TERMS ||
+    location.pathname === ROUTES.COPPA ||
+    location.pathname === ROUTES.FERPA
+  const showNavFabOnMobilePublic = isMobile && isPublicInfoRoute
+  const mobileNavTarget = isHomeRoute ? ROUTES.LEARN_MORE : ROUTES.HOME
+  const mobileNavLabel = isHomeRoute ? 'Learn More' : 'Home'
 
   /**
    *  Hidden when in /train route AND session is active. Hidden on the homepage and SceneBuilder page.
    *
    * */
   const isHidden =
-    !showLearnMoreOnMobileHome &&
-    ((isTrainRoute && isSessionActive) ||
-      isHomeRoute ||
-      location.pathname === ROUTES.BUILDER)
+    (isPublicInfoRoute && !showNavFabOnMobilePublic) ||
+    (isTrainRoute && isSessionActive) ||
+    isBuilderRoute
 
   if (isHidden) {
     return null
@@ -36,15 +45,15 @@ const FeedbackButton: FC = () => {
   return (
     <>
       <Tooltip
-        title={showLearnMoreOnMobileHome ? 'Learn More' : 'Send Feedback'}
+        title={showNavFabOnMobilePublic ? mobileNavLabel : 'Send Feedback'}
         placement="left"
       >
         <Fab
           color="primary"
-          aria-label={showLearnMoreOnMobileHome ? 'learn more' : 'feedback'}
+          aria-label={showNavFabOnMobilePublic ? mobileNavLabel : 'feedback'}
           onClick={() => {
-            if (showLearnMoreOnMobileHome) {
-              navigate(ROUTES.LEARN_MORE)
+            if (showNavFabOnMobilePublic) {
+              navigate(mobileNavTarget)
               return
             }
 
@@ -59,7 +68,7 @@ const FeedbackButton: FC = () => {
           size="medium"
           variant="extended"
         >
-          {showLearnMoreOnMobileHome ? 'Learn More' : 'Feedback'}
+          {showNavFabOnMobilePublic ? mobileNavLabel : 'Feedback'}
         </Fab>
       </Tooltip>
     </>
