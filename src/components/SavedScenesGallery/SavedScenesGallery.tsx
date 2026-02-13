@@ -89,11 +89,23 @@ const SavedScenesGallery: FC = () => {
   if (savedScenes.length === 0) return null
 
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box sx={{ mt: 3 }}>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
         Saved Scenes
       </Typography>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Pick a custom scene or edit one in the builder.
+      </Typography>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(4, minmax(0, 1fr))',
+          },
+          gap: 1.25,
+        }}
+      >
         {savedScenes.map((scene) => {
           const selected = user?.activeSavedSceneId === scene.id
           return (
@@ -107,8 +119,8 @@ const SavedScenesGallery: FC = () => {
               sx={{
                 cursor: 'pointer',
                 position: 'relative',
-                width: 112,
-                height: 147,
+                width: '100%',
+                aspectRatio: '4 / 3',
                 borderRadius: 1,
                 border: '2px solid',
                 borderColor: selected ? 'primary.main' : 'divider',
