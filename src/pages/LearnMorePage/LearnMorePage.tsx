@@ -12,9 +12,20 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { ROUTES } from '../../constants/routeConstants'
 import { useNavigate } from 'react-router-dom'
+import { useAuthActions } from '../../hooks/useAuthActions'
 
 const LearnMorePage = () => {
   const navigate = useNavigate()
+  const { loginAnonymously } = useAuthActions()
+
+  const handleTryItOut = async () => {
+    try {
+      await loginAnonymously()
+      navigate(ROUTES.TRAIN)
+    } catch {
+      // Errors are handled in the auth hook.
+    }
+  }
 
   return (
     <Container maxWidth="md">
@@ -384,11 +395,7 @@ const LearnMorePage = () => {
             </Typography>
           </Box>
 
-          <Button
-            size="large"
-            variant="contained"
-            onClick={() => navigate(ROUTES.TRAIN)}
-          >
+          <Button size="large" variant="contained" onClick={handleTryItOut}>
             Start Training Now
           </Button>
         </Paper>

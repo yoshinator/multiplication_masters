@@ -1,12 +1,6 @@
 import { type FC, useEffect } from 'react'
 import { Box, Toolbar } from '@mui/material'
-import {
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-  matchPath,
-} from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
 import { ROUTES } from './constants/routeConstants'
 
@@ -30,6 +24,7 @@ import { useUser } from './contexts/userContext/useUserContext'
 import { useAuthActions } from './hooks/useAuthActions'
 import { useInactivityLogout } from './hooks/useInactivityLogout'
 import { useNotification } from './contexts/notificationContext/notificationContext'
+import { isPublicInfoPath } from './constants/publicInfoRoutes'
 
 const App: FC = () => {
   const location = useLocation()
@@ -37,14 +32,9 @@ const App: FC = () => {
   const { signOut } = useAuthActions()
   const { showNotification } = useNotification()
 
-  const shouldShowFooter =
-    matchPath({ path: ROUTES.HOME, end: true }, location.pathname) != null ||
-    matchPath({ path: ROUTES.LEARN_MORE, end: true }, location.pathname) !=
-      null ||
-    matchPath({ path: ROUTES.PRIVACY, end: true }, location.pathname) != null ||
-    matchPath({ path: ROUTES.COPPA, end: true }, location.pathname) != null ||
-    matchPath({ path: ROUTES.FERPA, end: true }, location.pathname) != null ||
-    matchPath({ path: ROUTES.TERMS, end: true }, location.pathname) != null
+  const shouldShowFooter = isPublicInfoPath(location.pathname, {
+    includeHome: true,
+  })
 
   const isProfilePinSession =
     authStatus === 'signedIn' && user?.lastSignInMethod === 'profilePin'

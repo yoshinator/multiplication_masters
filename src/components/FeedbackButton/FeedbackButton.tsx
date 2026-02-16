@@ -6,6 +6,7 @@ import { ROUTES } from '../../constants/routeConstants'
 import FeedbackModal from '../FeedbackModal/FeedbackModal'
 import { useModal } from '../../contexts/modalContext/modalContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { isPublicInfoPath } from '../../constants/publicInfoRoutes'
 
 const FeedbackButton: FC = () => {
   const { closeModal, openModal } = useModal()
@@ -18,21 +19,23 @@ const FeedbackButton: FC = () => {
   const isTrainRoute = location.pathname === ROUTES.TRAIN
   const isBuilderRoute = location.pathname === ROUTES.BUILDER
   const isHomeRoute = location.pathname === ROUTES.HOME
-  const isPublicInfoRoute =
-    isHomeRoute ||
-    location.pathname === ROUTES.LEARN_MORE ||
-    location.pathname === ROUTES.PRIVACY ||
-    location.pathname === ROUTES.TERMS ||
-    location.pathname === ROUTES.COPPA ||
-    location.pathname === ROUTES.FERPA
+  const isPublicInfoRoute = isPublicInfoPath(location.pathname, {
+    includeHome: true,
+  })
   const showNavFabOnMobilePublic = isMobile && isPublicInfoRoute
   const mobileNavTarget = isHomeRoute ? ROUTES.LEARN_MORE : ROUTES.HOME
   const mobileNavLabel = isHomeRoute ? 'Learn More' : 'Home'
 
   /**
-   *  Hidden when in /train route AND session is active. Hidden on the homepage and SceneBuilder page.
+   * Determines when the FAB should not render at all.
+   * * Hidden on:
+   * - all public-info routes on non-mobile (no FAB is shown)
+   * - the /train route when a session is active
+   * - the SceneBuilder route
    *
-   * */
+   * Note: on mobile public-info routes a navigation FAB is shown instead of a
+   * feedback FAB; this is handled via `showNavFabOnMobilePublic`.
+   */
   const isHidden =
     (isPublicInfoRoute && !showNavFabOnMobilePublic) ||
     (isTrainRoute && isSessionActive) ||
