@@ -45,7 +45,7 @@ const App: FC = () => {
 
   useInactivityLogout({
     enabled: Boolean(isProfilePinSession),
-    // Ten Minute. Young learners might try login in on shared devices.
+    // Ten minutes. Young learners might try login in on shared devices.
     timeoutMs: 10 * 60 * 1000,
     onTimeout: async () => {
       await signOut()
