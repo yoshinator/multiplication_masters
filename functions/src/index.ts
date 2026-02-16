@@ -278,7 +278,6 @@ export const initializeUserOnAuthCreate = authV1
 
 export const ensureUserInitialized = onCall(async (request) => {
   const uid = request.auth?.uid
-  console.log({ uid })
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
   const userRef = db.collection('users').doc(uid)
