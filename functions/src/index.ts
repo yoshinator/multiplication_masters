@@ -19,18 +19,21 @@ const MAX_PROFILE_LOGIN_ATTEMPTS = 12
 const DEFAULT_ENABLED_PACKS = ['add_20', 'mul_36'] as const
 const PROFILE_NAME_MIN_LEN = 3
 const PROFILE_NAME_MAX_LEN = 20
+const PROFILE_NAME_REGEX_VALIDATION = new RegExp(
+  `^[a-zA-Z0-9_]{${PROFILE_NAME_MIN_LEN},${PROFILE_NAME_MAX_LEN}}$`
+)
 
 const normalizeLoginNameKey = (loginName: string): string =>
   loginName.trim().toLowerCase()
 
 const isValidLoginName = (loginName: string): boolean => {
   const u = loginName.trim()
-  return /^[a-zA-Z0-9_]{3,20}$/.test(u)
+  return PROFILE_NAME_REGEX_VALIDATION.test(u)
 }
 
 const isValidProfileName = (displayName: string): boolean => {
   const name = displayName.trim()
-  return /^[a-zA-Z0-9_]{3,20}$/.test(name)
+  return PROFILE_NAME_REGEX_VALIDATION.test(name)
 }
 
 const isValidPin = (pin: string): boolean => /^\d{6}$/.test(pin)
@@ -364,9 +367,7 @@ export const createProfile = onCall(async (request) => {
   const profile = await db.runTransaction(async (tx) => {
     const userSnap = await tx.get(userRef)
     const userExists = userSnap.exists
-    if (!userSnap.exists) {
-      // Defer account creation until after all transaction reads.
-    }
+
     const profile = await createProfileInTransaction(
       tx,
       uid,
