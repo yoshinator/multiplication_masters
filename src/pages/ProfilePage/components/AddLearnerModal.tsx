@@ -34,8 +34,10 @@ const AddLearnerModal: FC<AddLearnerModalProps> = ({ onClose }) => {
       { profileId: string; loginName: string; displayName: string }
     >('createProfile')
 
-  const canCreateProfile =
-    newProfileName.trim().length > 0 && !isCreatingProfile
+  const trimmedName = newProfileName.trim()
+  const profileNameOk = /^[a-zA-Z0-9_]{3,20}$/.test(trimmedName)
+  const showNameError = Boolean(newProfileName) && !profileNameOk
+  const canCreateProfile = profileNameOk && !isCreatingProfile
 
   const handleCreateProfile = async () => {
     if (!canCreateProfile) return
@@ -45,7 +47,7 @@ const AddLearnerModal: FC<AddLearnerModalProps> = ({ onClose }) => {
 
     try {
       const result = await createProfileFn({
-        displayName: newProfileName.trim(),
+        displayName: trimmedName,
         gradeLevel,
       })
       const profileId = result?.data?.profileId
@@ -70,6 +72,13 @@ const AddLearnerModal: FC<AddLearnerModalProps> = ({ onClose }) => {
           onChange={(event) => setNewProfileName(event.target.value)}
           placeholder="e.g., Mia"
           size="small"
+          inputProps={{ maxLength: 20 }}
+          error={showNameError}
+          helperText={
+            showNameError
+              ? '3-20 characters: letters, numbers, underscores.'
+              : ' '
+          }
           autoFocus
         />
         <FormControl size="small">

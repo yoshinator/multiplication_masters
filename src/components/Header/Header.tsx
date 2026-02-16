@@ -8,6 +8,7 @@ import { UserMenu, UserMenuSkeleton } from '../UserMenu/UserMenu'
 import { useLocation, useNavigate, matchPath } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useModal } from '../../contexts/modalContext/modalContext'
+import { isPublicInfoPath } from '../../constants/publicInfoRoutes'
 
 const Header = () => {
   const { user, isLoading } = useUser()
@@ -17,12 +18,7 @@ const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const isPublicInfoRoute =
-    location.pathname === ROUTES.LEARN_MORE ||
-    location.pathname === ROUTES.PRIVACY ||
-    location.pathname === ROUTES.TERMS ||
-    location.pathname === ROUTES.COPPA ||
-    location.pathname === ROUTES.FERPA
+  const isPublicInfoRoute = isPublicInfoPath(location.pathname)
 
   const navItems = user
     ? [

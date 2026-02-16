@@ -24,30 +24,15 @@ export const useAuthActions = () => {
   const logger = useLogger('useAuthActions')
   const { showNotification } = useNotification()
 
-  const { execute: signInWithUsernamePinFn } = useCloudFunction<
-    { username: string; pin: string },
-    { customToken: string }
-  >('signInWithUsernamePin')
-
   const { execute: signInWithProfilePinFn } = useCloudFunction<
     { loginName: string; pin: string },
     { customToken: string; profileId?: string }
   >('signInWithProfilePin')
 
-  const { execute: setUsernamePinFn } = useCloudFunction<
-    { pin: string },
-    { success: true }
-  >('setUsernamePin')
-
   const { execute: setProfilePinFn } = useCloudFunction<
     { pin: string; profileId?: string },
     { success: true }
   >('setProfilePin')
-
-  const { execute: resetUsernamePinLockoutFn } = useCloudFunction<
-    undefined,
-    { success: true }
-  >('resetUsernamePinLockout')
 
   const { execute: resetProfilePinLockoutFn } = useCloudFunction<
     { profileId?: string },
@@ -135,14 +120,6 @@ export const useAuthActions = () => {
       const credential = await signInWithPopup(auth, provider)
       await setLastSignInMethod(credential.user.uid, 'google')
 
-      // If the user also has username+PIN configured, signing in with another
-      // method should clear any temporary PIN lockout.
-      try {
-        await resetUsernamePinLockoutFn()
-      } catch {
-        // non-fatal
-      }
-
       return credential
     } catch (error: unknown) {
       logger('Error logging in with Google', error)
@@ -220,11 +197,6 @@ export const useAuthActions = () => {
         const result = await linkWithCredential(auth.currentUser, cred)
         await setLastSignInMethod(result.user.uid, 'emailLink')
 
-        try {
-          await resetUsernamePinLockoutFn()
-        } catch {
-          // non-fatal
-        }
         showNotification('Account upgraded!', 'success')
         return result
       }
@@ -232,36 +204,10 @@ export const useAuthActions = () => {
       const result = await signInWithEmailLink(auth, email, url)
       await setLastSignInMethod(result.user.uid, 'emailLink')
 
-      try {
-        await resetUsernamePinLockoutFn()
-      } catch {
-        // non-fatal
-      }
       showNotification('Successfully signed in!', 'success')
       return result
     } catch (error: unknown) {
       logger('Error finishing email sign in', error)
-      showNotification(extractErrorMessage(error), 'error')
-      throw error
-    }
-  }
-
-  const loginWithUsernamePin = async (username: string, pin: string) => {
-    try {
-      if (!auth) throw new Error('Firebase not ready')
-
-      const result = await signInWithUsernamePinFn({ username, pin })
-      const customToken = result?.data?.customToken
-      if (!customToken) {
-        throw new Error('No custom token returned')
-      }
-
-      const credential = await signInWithCustomToken(auth, customToken)
-      await setLastSignInMethod(credential.user.uid, 'usernamePin')
-
-      return credential
-    } catch (error: unknown) {
-      logger('Error logging in with username+PIN', error)
       showNotification(extractErrorMessage(error), 'error')
       throw error
     }
@@ -282,16 +228,6 @@ export const useAuthActions = () => {
       return credential
     } catch (error: unknown) {
       logger('Error logging in with profile PIN', error)
-      showNotification(extractErrorMessage(error), 'error')
-      throw error
-    }
-  }
-
-  const setUsernamePin = async (pin: string) => {
-    try {
-      await setUsernamePinFn({ pin })
-    } catch (error: unknown) {
-      logger('Error setting username+PIN', error)
       showNotification(extractErrorMessage(error), 'error')
       throw error
     }
@@ -338,9 +274,7 @@ export const useAuthActions = () => {
     sendLoginLink,
     isEmailLink,
     finishEmailSignIn,
-    loginWithUsernamePin,
     loginWithProfilePin,
-    setUsernamePin,
     setProfilePin,
     resetProfilePinLockout,
   }

@@ -32,6 +32,22 @@ const FlipCard: FC<Props> = ({
 }) => {
   const [isFlipped, setIsFlipped] = useState(false)
 
+  const baseSx: SxProps<Theme> = {
+    cursor: 'pointer',
+    userSelect: 'none',
+    outline: 'none',
+    '&:focus-visible': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
+  }
+
+  const combinedSx: SxProps<Theme> = [
+    baseSx,
+    ...(Array.isArray(cardSx) ? cardSx : cardSx ? [cardSx] : []),
+  ]
+
   const toggle = useCallback(() => {
     setIsFlipped((v) => !v)
   }, [])
@@ -69,19 +85,7 @@ const FlipCard: FC<Props> = ({
       onClick={toggle}
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
-      sx={[
-        {
-          cursor: 'pointer',
-          userSelect: 'none',
-          outline: 'none',
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineColor: 'primary.main',
-            outlineOffset: 2,
-          },
-        },
-      ]}
-      {...cardSx}
+      sx={combinedSx}
       {...cardProps}
     >
       <Box
