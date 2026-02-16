@@ -37,7 +37,7 @@ export const UserMenu = () => {
   const isAnonymous = auth?.currentUser?.isAnonymous
 
   return (
-    <>
+    <span>
       <Button
         onClick={handleOpen}
         color="inherit"
@@ -83,34 +83,37 @@ export const UserMenu = () => {
         >
           Profile
         </MenuItem>
-        {isMobile ? (
-          <>
-            <MenuItem
-              onClick={() => {
-                handleClose()
-                navigate(ROUTES.STATS)
-              }}
-            >
-              My Stats
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                handleClose()
-                navigate(ROUTES.TRAIN)
-              }}
-            >
-              Train
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                handleClose()
-                navigate(ROUTES.BUILDER)
-              }}
-            >
-              Build
-            </MenuItem>
-          </>
-        ) : null}
+        {isMobile
+          ? [
+              <MenuItem
+                key={ROUTES.STATS}
+                onClick={() => {
+                  handleClose()
+                  navigate(ROUTES.STATS)
+                }}
+              >
+                My Stats
+              </MenuItem>,
+              <MenuItem
+                key={ROUTES.TRAIN}
+                onClick={() => {
+                  handleClose()
+                  navigate(ROUTES.TRAIN)
+                }}
+              >
+                Train
+              </MenuItem>,
+              <MenuItem
+                key={ROUTES.BUILDER}
+                onClick={() => {
+                  handleClose()
+                  navigate(ROUTES.BUILDER)
+                }}
+              >
+                Build
+              </MenuItem>,
+            ]
+          : null}
         <MenuItem
           sx={{ color: 'error.main' }}
           onClick={async () => {
@@ -122,7 +125,7 @@ export const UserMenu = () => {
           Sign Out
         </MenuItem>
       </Menu>
-    </>
+    </span>
   )
 }
 

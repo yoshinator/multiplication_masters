@@ -46,16 +46,16 @@ const App: FC = () => {
     matchPath({ path: ROUTES.FERPA, end: true }, location.pathname) != null ||
     matchPath({ path: ROUTES.TERMS, end: true }, location.pathname) != null
 
-  const isUsernamePinSession =
-    authStatus === 'signedIn' && user?.lastSignInMethod === 'usernamePin'
+  const isProfilePinSession =
+    authStatus === 'signedIn' && user?.lastSignInMethod === 'profilePin'
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [location.pathname])
 
   useInactivityLogout({
-    enabled: Boolean(isUsernamePinSession),
-    timeoutMs: 5 * 60 * 1000,
+    enabled: Boolean(isProfilePinSession),
+    timeoutMs: 20 * 60 * 1000,
     onTimeout: async () => {
       await signOut()
       showNotification('Signed out due to inactivity.', 'info')

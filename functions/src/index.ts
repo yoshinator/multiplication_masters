@@ -11,22 +11,14 @@ import { MASTER_FACTS, PackMeta, UserFact } from './masterCards'
 initializeApp()
 const db = getFirestore()
 
-const USERNAME_INDEX_COLLECTION = 'usernameIndex'
-const USER_SECRETS_COLLECTION = 'userSecrets'
 const PROFILE_INDEX_COLLECTION = 'profileIndex'
 const PROFILE_SECRETS_COLLECTION = 'profileSecrets'
 const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
 const MAX_PROFILE_LOGIN_ATTEMPTS = 12
 const DEFAULT_ENABLED_PACKS = ['add_20', 'mul_36'] as const
-
-const normalizeUsernameKey = (username: string): string =>
-  username.trim().toLowerCase()
-
-const isValidUsername = (username: string): boolean => {
-  const u = username.trim()
-  return /^[a-zA-Z0-9_]{3,20}$/.test(u)
-}
+const PROFILE_NAME_MIN_LEN = 3
+const PROFILE_NAME_MAX_LEN = 20
 
 const normalizeLoginNameKey = (loginName: string): string =>
   loginName.trim().toLowerCase()
@@ -34,6 +26,11 @@ const normalizeLoginNameKey = (loginName: string): string =>
 const isValidLoginName = (loginName: string): boolean => {
   const u = loginName.trim()
   return /^[a-zA-Z0-9_]{3,20}$/.test(u)
+}
+
+const isValidProfileName = (displayName: string): boolean => {
+  const name = displayName.trim()
+  return /^[a-zA-Z0-9_]{3,20}$/.test(name)
 }
 
 const isValidPin = (pin: string): boolean => /^\d{6}$/.test(pin)
@@ -216,10 +213,16 @@ async function createInitialUserInTransaction(
   tx: FirebaseFirestore.Transaction,
   uid: string
 ): Promise<{ profileId: string; loginName: string; displayName: string }> {
-  await createUserAccountInTransaction(tx, uid)
-
   const displayName = generateRandomUsername()
-  return await createProfileInTransaction(tx, uid, displayName, null, true)
+  const profile = await createProfileInTransaction(
+    tx,
+    uid,
+    displayName,
+    null,
+    true
+  )
+  await createUserAccountInTransaction(tx, uid)
+  return profile
 }
 
 async function createUserAccountInTransaction(
@@ -275,6 +278,7 @@ export const initializeUserOnAuthCreate = authV1
 
 export const ensureUserInitialized = onCall(async (request) => {
   const uid = request.auth?.uid
+  console.log({ uid })
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
 
   const userRef = db.collection('users').doc(uid)
@@ -334,8 +338,15 @@ export const createProfile = onCall(async (request) => {
   if (!name) {
     throw new HttpsError('invalid-argument', 'Display name is required.')
   }
-  if (name.length > 40) {
-    throw new HttpsError('invalid-argument', 'Display name is too long.')
+  if (
+    name.length < PROFILE_NAME_MIN_LEN ||
+    name.length > PROFILE_NAME_MAX_LEN ||
+    !isValidProfileName(name)
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      'Display name must be 3-20 characters and use only letters, numbers, or underscores.'
+    )
   }
 
   let normalizedGrade: number | null = null
@@ -353,17 +364,21 @@ export const createProfile = onCall(async (request) => {
 
   const profile = await db.runTransaction(async (tx) => {
     const userSnap = await tx.get(userRef)
+    const userExists = userSnap.exists
     if (!userSnap.exists) {
-      await createUserAccountInTransaction(tx, uid)
+      // Defer account creation until after all transaction reads.
     }
-
-    return await createProfileInTransaction(
+    const profile = await createProfileInTransaction(
       tx,
       uid,
       name,
       normalizedGrade,
       true
     )
+    if (!userExists) {
+      await createUserAccountInTransaction(tx, uid)
+    }
+    return profile
   })
 
   logger.info('Created profile', { uid, profileId: profile.profileId })
@@ -408,125 +423,6 @@ export const initializeUserMeta = onDocumentCreated(
     logger.info(`Initialized default profile for user: ${userId}`)
   }
 )
-
-export const setUsernamePin = onCall(async (request) => {
-  const uid = request.auth?.uid
-  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
-
-  const { pin } = request.data ?? {}
-
-  if (typeof pin !== 'string') {
-    throw new HttpsError('invalid-argument', 'PIN is required.')
-  }
-
-  if (!isValidPin(pin)) {
-    throw new HttpsError('invalid-argument', 'PIN must be exactly 6 digits.')
-  }
-
-  // Only allow PIN setup after the user has signed in with Google or email-link.
-  // (Anonymous users cannot set a PIN.)
-  const authUser = await getAuth().getUser(uid)
-  const providerIds = (authUser.providerData || []).map((p) => p.providerId)
-  const isEligible =
-    providerIds.includes('google.com') || providerIds.includes('password')
-  if (!isEligible) {
-    throw new HttpsError(
-      'failed-precondition',
-      'To create a sign-in PIN, first sign in with Google or an email link.'
-    )
-  }
-
-  const userRef = db.collection('users').doc(uid)
-  const userSnap = await userRef.get()
-  const userData = userSnap.data() as
-    | {
-        username?: string
-        usernameSetByUser?: boolean
-        hasUsernamePin?: boolean
-      }
-    | undefined
-  const existingUsername = userData?.username
-  if (!existingUsername || typeof existingUsername !== 'string') {
-    throw new HttpsError(
-      'failed-precondition',
-      'Username is not set for this account.'
-    )
-  }
-  if (!isValidUsername(existingUsername)) {
-    throw new HttpsError(
-      'failed-precondition',
-      'Username is not eligible for PIN sign-in.'
-    )
-  }
-
-  const usernameKey = normalizeUsernameKey(existingUsername)
-  const indexRef = db.collection(USERNAME_INDEX_COLLECTION).doc(usernameKey)
-  const secretsRef = db.collection(USER_SECRETS_COLLECTION).doc(uid)
-  const now = Date.now()
-
-  const pinHash = await bcrypt.hash(pin, 12)
-
-  await db.runTransaction(async (tx) => {
-    const [userSnap, indexSnap] = await Promise.all([
-      tx.get(userRef),
-      tx.get(indexRef),
-    ])
-
-    const userData = userSnap.data() as
-      | { usernameSetByUser?: boolean; hasUsernamePin?: boolean }
-      | undefined
-
-    if (userData?.hasUsernamePin === true) {
-      throw new HttpsError(
-        'failed-precondition',
-        'A PIN is already configured for this account.'
-      )
-    }
-
-    if (indexSnap.exists) {
-      const existing = indexSnap.data() as { uid?: string } | undefined
-      if (existing?.uid && existing.uid !== uid) {
-        throw new HttpsError(
-          'already-exists',
-          'This username is already in use and cannot be enabled for PIN sign-in.'
-        )
-      }
-    }
-
-    tx.set(indexRef, {
-      uid,
-      username: existingUsername.trim(),
-      createdAt: FieldValue.serverTimestamp(),
-    })
-
-    tx.set(
-      secretsRef,
-      {
-        usernameKey,
-        pinHash,
-        failedAttempts: 0,
-        lockoutUntil: null,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        lockoutResetAt: now,
-      },
-      { merge: true }
-    )
-
-    tx.set(
-      userRef,
-      {
-        // Lock username going forward (cannot be changed once a PIN exists).
-        usernameSetByUser: true,
-        hasUsernamePin: true,
-      },
-      { merge: true }
-    )
-  })
-
-  logger.info('PIN sign-in enabled', { uid, usernameKey })
-  return { success: true }
-})
 
 export const setProfilePin = onCall(async (request) => {
   const uid = request.auth?.uid
@@ -650,24 +546,6 @@ export const setProfilePin = onCall(async (request) => {
   return { success: true }
 })
 
-export const resetUsernamePinLockout = onCall(async (request) => {
-  const uid = request.auth?.uid
-  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
-
-  const secretsRef = db.collection(USER_SECRETS_COLLECTION).doc(uid)
-  await secretsRef.set(
-    {
-      failedAttempts: 0,
-      lockoutUntil: null,
-      updatedAt: FieldValue.serverTimestamp(),
-      lockoutResetAt: Date.now(),
-    },
-    { merge: true }
-  )
-
-  return { success: true }
-})
-
 export const resetProfilePinLockout = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
@@ -695,119 +573,6 @@ export const resetProfilePinLockout = onCall(async (request) => {
   )
 
   return { success: true }
-})
-
-export const signInWithUsernamePin = onCall(async (request) => {
-  const { username, pin } = request.data ?? {}
-
-  if (typeof username !== 'string' || typeof pin !== 'string') {
-    throw new HttpsError('invalid-argument', 'Username and PIN are required.')
-  }
-
-  // Validate format, but keep error generic to reduce enumeration.
-  if (!isValidUsername(username) || !isValidPin(pin)) {
-    throw new HttpsError('invalid-argument', 'Invalid credentials.')
-  }
-
-  const usernameKey = normalizeUsernameKey(username)
-  const indexRef = db.collection(USERNAME_INDEX_COLLECTION).doc(usernameKey)
-  const now = Date.now()
-
-  const outcome = await db.runTransaction<
-    | { type: 'success'; uid: string }
-    | { type: 'invalid' }
-    | { type: 'locked'; lockoutUntil: number }
-  >(async (tx) => {
-    const indexSnap = await tx.get(indexRef)
-    if (!indexSnap.exists) {
-      return { type: 'invalid' }
-    }
-
-    const indexData = indexSnap.data() as { uid?: string }
-    const uid = indexData?.uid
-    if (!uid || typeof uid !== 'string') {
-      return { type: 'invalid' }
-    }
-
-    const secretsRef = db.collection(USER_SECRETS_COLLECTION).doc(uid)
-    const secretsSnap = await tx.get(secretsRef)
-    const secrets = secretsSnap.data() as
-      | {
-          pinHash?: string
-          failedAttempts?: number
-          lockoutUntil?: number | null
-        }
-      | undefined
-
-    const lockoutUntil =
-      typeof secrets?.lockoutUntil === 'number' ? secrets.lockoutUntil : null
-    if (lockoutUntil && lockoutUntil > now) {
-      return { type: 'locked', lockoutUntil }
-    }
-
-    const pinHash = secrets?.pinHash
-    if (!pinHash || typeof pinHash !== 'string') {
-      return { type: 'invalid' }
-    }
-
-    const pinOk = await bcrypt.compare(pin, pinHash)
-
-    if (pinOk) {
-      tx.set(
-        secretsRef,
-        {
-          failedAttempts: 0,
-          lockoutUntil: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      )
-      return { type: 'success', uid }
-    }
-
-    const failedAttempts =
-      (typeof secrets?.failedAttempts === 'number'
-        ? secrets.failedAttempts
-        : 0) + 1
-    if (failedAttempts >= MAX_PIN_ATTEMPTS) {
-      const until = now + PIN_LOCKOUT_MS
-      tx.set(
-        secretsRef,
-        {
-          failedAttempts,
-          lockoutUntil: until,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      )
-      return { type: 'locked', lockoutUntil: until }
-    }
-
-    tx.set(
-      secretsRef,
-      {
-        failedAttempts,
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    )
-
-    return { type: 'invalid' }
-  })
-
-  if (outcome.type === 'locked') {
-    throw new HttpsError(
-      'resource-exhausted',
-      'Account is locked for 1 hour. Sign in with Google or an email link to reset the lockout.'
-    )
-  }
-
-  if (outcome.type === 'invalid') {
-    throw new HttpsError('invalid-argument', 'Invalid credentials.')
-  }
-
-  const token = await getAuth().createCustomToken(outcome.uid)
-  return { customToken: token }
 })
 
 export const signInWithProfilePin = onCall(async (request) => {
