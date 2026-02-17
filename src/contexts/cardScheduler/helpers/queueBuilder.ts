@@ -27,7 +27,7 @@ export function buildQueue(
   sessionLength: number,
   logger: (...args: unknown[]) => void
 ) {
-  if (!user) return null
+  if (!userProfile) return null
 
   const now = Date.now()
   const sessionFacts: UserFact[] = []
