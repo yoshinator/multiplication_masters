@@ -172,6 +172,14 @@ const PracticePage: FC = () => {
           },
         },
         {
+          element: '#scene-xp-panel',
+          popover: {
+            title: 'Scene XP',
+            description:
+              'Earn XP by answering questions. As XP goes up, you unlock more scene items to build your world.',
+          },
+        },
+        {
           element: '#start-session-btn',
           popover: {
             title: 'Start Playing',
@@ -224,7 +232,7 @@ const PracticePage: FC = () => {
             popover: {
               title: 'Your Answer',
               description:
-                'Type the answer here. I paused the timer for you this time!',
+                'Type the answer here. I paused the timer for you this time! Replay this tour anytime by visiting your profile.',
             },
             onHighlighted: (_el, _step, { driver }) => {
               attachCloseListener('#game-input', driver)
