@@ -61,7 +61,7 @@ const FactCard: FC<Props> = ({ backgroundImageUrl }) => {
   const { currentFact, submitAnswer, estimatedReviews } =
     useCardSchedulerContext()
   const { setIsSessionActive } = useSessionStatusContext()
-  const { user, updateUser } = useUser()
+  const { profile, updateUser } = useUser()
   const isMobile = useIsMobile()
 
   const operands = currentFact?.operands ?? []
@@ -197,7 +197,7 @@ const FactCard: FC<Props> = ({ backgroundImageUrl }) => {
     }
   }, [answer, expectedLength, currentFact, isShowingAnswer, handleAutoSubmit])
 
-  const currentLimit = user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+  const currentLimit = profile?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
   const nextLimit = NEW_CARDS_PER_DAY_OPTIONS.find((opt) => opt > currentLimit)
 
   const handleIncreaseLimit = () => {

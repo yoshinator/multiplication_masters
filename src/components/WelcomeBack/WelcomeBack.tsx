@@ -12,14 +12,14 @@ import type { GradeLevel, PackKey } from '../../constants/dataModels'
 
 const WelcomeBack: FC = () => {
   const { startSession, isLoading } = useCardSchedulerContext()
-  const { user, updateUser } = useUser()
+  const { user, profile, updateUser, updateAccount } = useUser()
   const isMobile = useIsMobile()
   const { openModal, closeModal } = useModal()
   const onboardingOpenedRef = useRef(false)
 
   useEffect(() => {
     onboardingOpenedRef.current = false
-  }, [user?.uid])
+  }, [user?.uid, profile?.id])
 
   const getDefaultPackForGrades = (grades: GradeLevel[]): PackKey => {
     if (grades.some((grade) => ['K', '1', '2'].includes(grade))) {
@@ -29,25 +29,27 @@ const WelcomeBack: FC = () => {
   }
 
   const ensureOnboarding = useCallback(() => {
-    if (!user || user.onboardingCompleted) return true
+    if (!profile || profile.onboardingCompleted) return true
     if (!onboardingOpenedRef.current) {
       onboardingOpenedRef.current = true
       openModal(
         <OnboardingModal
           onComplete={({ role, gradeLevels, learnerCount }) => {
             const defaultPack = getDefaultPackForGrades(gradeLevels)
-            const starterPacks: PackKey[] = ['add_20', 'mul_36']
-            const isPremium = user.subscriptionStatus === 'premium'
+            const starterPacks: PackKey[] = ['add_20', 'sub_20', 'mul_36']
+            const isPremium = user?.subscriptionStatus === 'premium'
             const enabledPacks = Array.from(
               new Set(
                 isPremium
-                  ? [...(user.enabledPacks ?? []), defaultPack]
+                  ? [...(profile.enabledPacks ?? []), defaultPack]
                   : [...starterPacks, defaultPack]
               )
             )
 
-            updateUser({
+            updateAccount({
               userRole: role,
+            })
+            updateUser({
               learnerGradeLevels: gradeLevels,
               learnerCount: learnerCount ?? undefined,
               onboardingCompleted: true,
@@ -61,7 +63,7 @@ const WelcomeBack: FC = () => {
       )
     }
     return false
-  }, [closeModal, openModal, updateUser, user])
+  }, [closeModal, openModal, updateUser, updateAccount, user, profile])
 
   const handleStartSession = async () => {
     if (isLoading) {
@@ -74,9 +76,9 @@ const WelcomeBack: FC = () => {
   }
 
   useEffect(() => {
-    if (!user || user.onboardingCompleted) return
+    if (!profile || profile.onboardingCompleted) return
     ensureOnboarding()
-  }, [ensureOnboarding, user])
+  }, [ensureOnboarding, profile])
 
   return (
     <Box
@@ -112,8 +114,10 @@ const WelcomeBack: FC = () => {
               variant="h4"
               sx={{ fontWeight: 900, letterSpacing: -0.3 }}
             >
-              Welcome {(user?.totalSessions ?? 0) > 0 ? 'back ' : ''}
-              {user?.username ? `${capitalizeFirstLetter(user.username)},` : ''}
+              Welcome {(profile?.totalSessions ?? 0) > 0 ? 'back ' : ''}
+              {profile?.displayName
+                ? `${capitalizeFirstLetter(profile.displayName)},`
+                : ''}
             </Typography>
 
             <Typography

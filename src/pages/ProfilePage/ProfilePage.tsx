@@ -116,7 +116,7 @@ const ProfilePage: FC = () => {
         }}
       >
         <ProfileHeaderSection
-          title={profile?.displayName ?? user?.username ?? 'Student Profile'}
+          title={profile?.displayName ?? 'Student Profile'}
           canManageProfiles={canManageProfiles}
           canEnablePinSignIn={canEnablePinSignIn}
           hasPinSignIn={hasPinSignIn}
@@ -139,8 +139,8 @@ const ProfilePage: FC = () => {
         ) : null}
 
         <ActiveFactPackSection
-          activePack={user?.activePack || ''}
-          enabledPacks={(user?.enabledPacks || []) as PackKey[]}
+          activePack={profile?.activePack || ''}
+          enabledPacks={(profile?.enabledPacks || []) as PackKey[]}
           onPackChange={handlePackChange}
         />
 
@@ -155,7 +155,9 @@ const ProfilePage: FC = () => {
           <SessionSettingsSection
             isMobile={isMobile}
             sessionLength={sessionLength}
-            maxNewCardsPerDay={user?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY}
+            maxNewCardsPerDay={
+              profile?.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+            }
             onChoiceKeyDown={handleChoiceKeyDown}
             onSessionLengthChange={(value) =>
               updateUser({ userDefaultSessionLength: value })
@@ -167,7 +169,7 @@ const ProfilePage: FC = () => {
 
           <DisplayPreferencesSection
             mode={mode}
-            showTour={Boolean(user?.showTour)}
+            showTour={Boolean(profile?.showTour)}
             onThemeChange={handleThemeChange}
             onShowTourChange={handleShowTourChange}
           />

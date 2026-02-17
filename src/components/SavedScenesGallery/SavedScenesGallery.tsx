@@ -12,7 +12,7 @@ import { useFirestoreQuery } from '../../hooks/useFirestore'
 import { useNavigate } from 'react-router-dom'
 
 const SavedScenesGallery: FC = () => {
-  const { user, updateUser, activeProfileId } = useUser()
+  const { user, profile, updateUser, activeProfileId } = useUser()
   const { db, storage } = useFirebaseContext()
   const { showNotification } = useNotification()
   const navigate = useNavigate()
@@ -66,7 +66,7 @@ const SavedScenesGallery: FC = () => {
         )
       )
 
-      if (user.activeSavedSceneId === scene.id) {
+      if (profile?.activeSavedSceneId === scene.id) {
         updateUser({ activeSavedSceneId: null })
       }
     } catch {
@@ -107,7 +107,7 @@ const SavedScenesGallery: FC = () => {
         }}
       >
         {savedScenes.map((scene) => {
-          const selected = user?.activeSavedSceneId === scene.id
+          const selected = profile?.activeSavedSceneId === scene.id
           return (
             <Box
               key={scene.id}

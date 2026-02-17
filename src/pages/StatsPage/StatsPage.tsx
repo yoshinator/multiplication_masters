@@ -22,7 +22,7 @@ import { countDueCardsInPack } from '../../contexts/cardScheduler/helpers/srsLog
 import { MASTERY_BOX_THRESHOLD } from '../../constants/appConstants'
 
 const StatsPage: FC = () => {
-  const { user, activePackFactIds, activePackMeta } = useUser()
+  const { profile, activePackFactIds, activePackMeta } = useUser()
   const { userFacts } = useFirebaseContext()
 
   const { dueToday, dueTomorrow } = useMemo(() => {
@@ -49,10 +49,10 @@ const StatsPage: FC = () => {
   )
 
   const totalQuestions =
-    (user?.lifetimeCorrect || 0) + (user?.lifetimeIncorrect || 0)
+    (profile?.lifetimeCorrect || 0) + (profile?.lifetimeIncorrect || 0)
   const accuracy =
     totalQuestions > 0
-      ? Math.round(((user?.lifetimeCorrect || 0) / totalQuestions) * 100)
+      ? Math.round(((profile?.lifetimeCorrect || 0) / totalQuestions) * 100)
       : 0
 
   const startTour = () => {
@@ -145,7 +145,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<History color="primary" />}
             label="Total Sessions"
-            value={user?.totalSessions ?? 0}
+            value={profile?.totalSessions ?? 0}
             color="primary.main"
           />
         </Grid>
@@ -169,7 +169,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<DoneAll color="success" />}
             label="Lifetime Correct"
-            value={user?.lifetimeCorrect ?? 0}
+            value={profile?.lifetimeCorrect ?? 0}
             color="success.main"
           />
         </Grid>
@@ -177,7 +177,7 @@ const StatsPage: FC = () => {
           <StatsCard
             icon={<ErrorOutline color="error" />}
             label="Lifetime Incorrect"
-            value={user?.lifetimeIncorrect ?? 0}
+            value={profile?.lifetimeIncorrect ?? 0}
             color="error.main"
           />
         </Grid>

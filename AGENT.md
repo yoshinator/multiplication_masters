@@ -290,31 +290,54 @@ User initialization is server-side:
 
 ### User Document (`users/{uid}`)
 ```typescript
-type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'usernamePin'
+type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'profilePin'
 
-interface User {
-  id: string
-  username?: string
-  createdAt: number
-  lastLogin: number
-  lastSignInMethod?: SignInMethod
+interface UserAccount {
+  uid: string
   userRole: 'student' | 'teacher' | 'parent' | 'adult'
+  subscriptionStatus: 'free' | 'premium'
+  createdAt: Timestamp | null
+  lastLogin: Timestamp | null
+  lastSignInMethod?: SignInMethod
+  activeProfileId?: string
+  upgradePromptSnoozedUntil?: Timestamp
+  lastUpgradePromptAt?: Timestamp
+}
+```
+
+### UserProfile Document (`users/{uid}/profiles/{profileId}`)
+```typescript
+interface UserProfile {
+  id: string
+  displayName: string
+  loginName: string
+  gradeLevel: number | null
+  pinEnabled?: boolean
+  createdAt: Timestamp | null
+  updatedAt: Timestamp | null
+
+  showTour?: boolean
+  onboardingCompleted?: boolean
   learnerGradeLevels?: Array<'K' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9+' | 'adult'>
   learnerCount?: number
-  onboardingCompleted?: boolean
-  totalSessions: number
-  totalCorrect: number
-  totalIncorrect: number
-  dailyGoal: number
-  userDefaultSessionLength: number
-  showTour: boolean
-  upgradePromptSnoozedUntil?: Timestamp
-  hasUsernamePin?: boolean
-  usernameSetByUser?: boolean
-  activePack: string // e.g., "mul_144", "div_144", "add_20", or "sub_20"
+  upgradePromptCount?: number
+
+  totalAccuracy?: number
+  lifetimeCorrect?: number
+  lifetimeIncorrect?: number
+  totalSessions?: number
+  userDefaultSessionLength?: number
+
+  unlockedScenes?: SceneTheme[]
   activeScene?: SceneTheme
-  sceneXP: number
-  // ... other fields
+  newCardsSeenToday?: number
+  lastNewCardDate?: number
+  maxNewCardsPerDay?: number
+
+  enabledPacks?: PackKey[]
+  activePack?: PackKey
+  metaInitialized?: boolean
+  activeSavedSceneId?: string | null
 }
 ```
 

@@ -20,7 +20,7 @@ import { useModal } from '../../contexts/modalContext/modalContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 export const UserMenu = () => {
-  const { user } = useUser()
+  const { profile } = useUser()
   const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { openModal, closeModal } = useModal()
@@ -33,7 +33,7 @@ export const UserMenu = () => {
   const handleOpen = () => setAnchorEl(avatarRef.current)
   const handleClose = () => setAnchorEl(null)
 
-  const firstLetter = user?.username?.charAt(0)?.toUpperCase() ?? '?'
+  const firstLetter = profile?.displayName?.charAt(0)?.toUpperCase() ?? '?'
   const isAnonymous = auth?.currentUser?.isAnonymous
 
   return (
@@ -46,7 +46,7 @@ export const UserMenu = () => {
         <Typography
           sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
         >
-          {capitalizeFirstLetter(user?.username ?? 'anonymous user')}
+          {capitalizeFirstLetter(profile?.displayName ?? 'anonymous user')}
         </Typography>
 
         <Avatar

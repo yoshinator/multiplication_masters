@@ -43,9 +43,9 @@ export const SceneBuilderProvider: FC<Props> = ({
   const initialName = savedScene?.name
 
   const { storage, auth, app } = useFirebaseContext()
-  const { user, activeProfileId } = useUser()
+  const { profile, activeProfileId } = useUser()
   const theme =
-    savedScene?.theme || user?.activeScene || ('garden' as SceneTheme)
+    savedScene?.theme || profile?.activeScene || ('garden' as SceneTheme)
   const [currentThumbnailUrl, setCurrentThumbnailUrl] =
     useState(initialThumbnailUrl)
 

@@ -1,5 +1,9 @@
 import { MinPriorityQueue } from 'datastructures-js'
-import type { PackMeta, User, UserFact } from '../../../constants/dataModels'
+import type {
+  PackMeta,
+  UserFact,
+  UserProfile,
+} from '../../../constants/dataModels'
 import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
 
 /**
@@ -17,7 +21,7 @@ import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
  */
 export function buildQueue(
   userFacts: UserFact[],
-  user: User,
+  user: UserProfile,
   activePackMeta: PackMeta | null,
   activePackFactIds: Set<string>,
   sessionLength: number,
