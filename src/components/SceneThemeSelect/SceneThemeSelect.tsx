@@ -12,7 +12,7 @@ const SceneThemeSelect: FC<Props> = ({
   handleChoiceKeyDown,
   getOptionButtonStyle,
 }) => {
-  const { user, selectScene } = useUser()
+  const { profile, selectScene } = useUser()
   return (
     <Box>
       <Typography sx={{ mb: 1 }} variant="subtitle2">
@@ -33,8 +33,8 @@ const SceneThemeSelect: FC<Props> = ({
       >
         {Object.values(SCENES).map((scene) => {
           const isComingSoon = scene.id === 'garage'
-          const isLocked = (user?.lifetimeCorrect ?? 0) < (scene.unlock ?? 0)
-          const isSelected = user?.activeScene === scene.id
+          const isLocked = (profile?.lifetimeCorrect ?? 0) < (scene.unlock ?? 0)
+          const isSelected = profile?.activeScene === scene.id
           const bgImage = SCENE_ITEMS.find(
             (it) => it.theme === scene.id && it.tab === 'background'
           )?.image

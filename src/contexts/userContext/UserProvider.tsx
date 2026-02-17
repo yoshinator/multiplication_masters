@@ -55,7 +55,7 @@ const UserProvider: FC<Props> = ({ children }) => {
    * the debounce callback. This is no substitute for batch writes on
    * things like timer stops, resets, or when the queue empties.
    */
-  const pendingUpdateRef = useRef<Partial<User>>({})
+  const pendingUpdateRef = useRef<Partial<UserProfile>>({})
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const uidRef = useRef<string | undefined>(undefined)
   const activeProfileIdRef = useRef<string | null>(null)
@@ -75,7 +75,8 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Add this state to UserProvider
   const packMetaRef = useMemo(() => {
-    if (!user?.uid || !user?.activePack || !db || !activeProfileId) return null
+    if (!user?.uid || !profile?.activePack || !db || !activeProfileId)
+      return null
     return doc(
       db,
       'users',
@@ -83,15 +84,16 @@ const UserProvider: FC<Props> = ({ children }) => {
       'profiles',
       activeProfileId,
       'packMeta',
-      user.activePack
+      profile.activePack
     )
-  }, [user?.uid, user?.activePack, db, activeProfileId])
+  }, [user?.uid, profile?.activePack, db, activeProfileId])
 
   const { data: activePackMeta, loading: isPackMetaLoading } =
     useFirestoreDoc<PackMeta>(packMetaRef)
 
   const activeSceneMetaRef = useMemo(() => {
-    if (!user?.uid || !user?.activeScene || !db || !activeProfileId) return null
+    if (!user?.uid || !profile?.activeScene || !db || !activeProfileId)
+      return null
     return doc(
       db,
       'users',
@@ -99,9 +101,9 @@ const UserProvider: FC<Props> = ({ children }) => {
       'profiles',
       activeProfileId,
       'sceneMeta',
-      user.activeScene
+      profile.activeScene
     )
-  }, [user?.uid, user?.activeScene, db, activeProfileId])
+  }, [user?.uid, profile?.activeScene, db, activeProfileId])
 
   const { data: activeSceneMeta, loading: isSceneMetaLoading } =
     useFirestoreDoc<UserSceneMeta>(activeSceneMetaRef)
@@ -134,30 +136,37 @@ const UserProvider: FC<Props> = ({ children }) => {
   // Automatic Migration Trigger
   useEffect(() => {
     // If we have a user, but they haven't been initialized for the new system yet
-    if (!app || !user?.uid || user.metaInitialized === true) {
+    if (!app || !user?.uid || !activeProfileId || profile?.metaInitialized) {
       return
     }
     logger('User not initialized. Attempting migration...')
     migrateUserToFacts()
       .then((result) => {
         logger('Migration result:', result?.data)
-        // The function updates the user doc, which triggers onSnapshot,
-        // updating 'user' -> 'metaInitialized: true', stopping this loop.
+        // The function updates the profile doc, which triggers onSnapshot,
+        // updating 'profile' -> 'metaInitialized: true', stopping this loop.
       })
       .catch((err) => logger('Migration failed:', err))
-  }, [app, user?.uid, user?.metaInitialized, logger, migrateUserToFacts])
+  }, [
+    app,
+    user?.uid,
+    activeProfileId,
+    profile?.metaInitialized,
+    logger,
+    migrateUserToFacts,
+  ])
 
   const activePackFactIds = useMemo(() => {
-    if (!user?.activePack) return new Set<string>()
-    return getPackFactIds(user.activePack)
-  }, [user?.activePack])
+    if (!profile?.activePack) return new Set<string>()
+    return getPackFactIds(profile.activePack)
+  }, [profile?.activePack])
 
   useEffect(() => {
-    if (!db || !user?.uid || !user.activePack || !activeProfileId) return
+    if (!db || !user?.uid || !profile?.activePack || !activeProfileId) return
     if (activePackMeta || isPackMetaLoading) return
     if (!activePackFactIds || activePackFactIds.size === 0) return
 
-    const initKey = `${user.uid}:${activeProfileId}:${user.activePack}`
+    const initKey = `${user.uid}:${activeProfileId}:${profile.activePack}`
     if (packMetaInitRef.current === initKey) return
     const metaRef = doc(
       db,
@@ -166,9 +175,9 @@ const UserProvider: FC<Props> = ({ children }) => {
       'profiles',
       activeProfileId,
       'packMeta',
-      user.activePack
+      profile.activePack
     )
-    const orderedFactIds = getPackFactList(user.activePack)
+    const orderedFactIds = getPackFactList(profile.activePack)
     const existingFactIds = new Set(
       userFacts
         .filter((fact) => activePackFactIds.has(fact.id))
@@ -180,7 +189,7 @@ const UserProvider: FC<Props> = ({ children }) => {
     const nextSeqToIntroduce =
       firstMissingIndex === -1 ? orderedFactIds.length : firstMissingIndex
     const fallbackMeta: PackMeta = {
-      packName: user.activePack,
+      packName: profile.activePack,
       totalFacts: orderedFactIds.length,
       isCompleted: nextSeqToIntroduce >= orderedFactIds.length,
       nextSeqToIntroduce,
@@ -202,7 +211,7 @@ const UserProvider: FC<Props> = ({ children }) => {
     isPackMetaLoading,
     logger,
     userFacts,
-    user?.activePack,
+    profile?.activePack,
     user?.uid,
     activeProfileId,
   ])
@@ -235,13 +244,9 @@ const UserProvider: FC<Props> = ({ children }) => {
 
   // Used in context to update user in a debounced way.
   const updateUser = useCallback(
-    (fields: Partial<User>) => {
+    (fields: Partial<UserProfile>) => {
       // Updating the UI, null check seems redundant.
       // It's not. prevUser can be null so keep it null until it's not
-      setUser((prevUser: User | null) =>
-        prevUser ? { ...prevUser, ...fields } : prevUser
-      )
-
       setProfile((prevProfile: UserProfile | null) =>
         prevProfile ? { ...prevProfile, ...fields } : prevProfile
       )
@@ -262,10 +267,30 @@ const UserProvider: FC<Props> = ({ children }) => {
     [commitUserUpdates]
   )
 
+  const updateAccount = useCallback(
+    async (fields: Partial<User>) => {
+      if (!db || !user?.uid || profileClaimIdRef.current) return
+      const pending = omitUndefined(fields)
+      if (Object.keys(pending).length === 0) return
+
+      setUser((prevUser: User | null) =>
+        prevUser ? { ...prevUser, ...pending } : prevUser
+      )
+
+      const userRef = doc(db, 'users', user.uid)
+      try {
+        await updateDoc(userRef, pending)
+      } catch (error) {
+        logger('Error updating account:', error)
+      }
+    },
+    [db, user?.uid, logger]
+  )
+
   const incrementSceneXP = useCallback(
     async (amount = 1) => {
       if (!db || !user?.uid || !activeProfileId) return
-      const sceneId = user.activeScene || 'garden'
+      const sceneId = profile?.activeScene || 'garden'
       const sceneMetaRef = doc(
         db,
         'users',
@@ -292,7 +317,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         logger('Error incrementing scene XP:', err)
       }
     },
-    [db, user?.uid, user?.activeScene, logger, activeProfileId]
+    [db, user?.uid, profile?.activeScene, logger, activeProfileId]
   )
 
   const selectScene = useCallback(
@@ -396,9 +421,11 @@ const UserProvider: FC<Props> = ({ children }) => {
             typeof tokenResult.claims.profileId === 'string'
               ? tokenResult.claims.profileId
               : null
+          profileClaimIdRef.current = claimProfileId
           setProfileClaimId(claimProfileId)
         } catch (err) {
           logger('Failed to read profile claim:', err)
+          profileClaimIdRef.current = null
           setProfileClaimId(null)
         }
         const userRef = doc(db, 'users', uid)
@@ -500,7 +527,6 @@ const UserProvider: FC<Props> = ({ children }) => {
               setUser({
                 ...(accountData as User),
                 uid,
-                username: accountData.uid,
                 activeProfileId: undefined,
               })
               setAuthStatus('signedIn')
@@ -522,7 +548,6 @@ const UserProvider: FC<Props> = ({ children }) => {
                   setUser({
                     ...(accountData as User),
                     uid,
-                    username: accountData.uid,
                     activeProfileId: nextProfileId,
                   })
                   setAuthStatus('signedIn')
@@ -532,14 +557,12 @@ const UserProvider: FC<Props> = ({ children }) => {
                 const profileData = profileSnap.data() as UserProfile
                 setProfile({ ...profileData, id: profileSnap.id })
 
-                const mergedUser: User = {
+                const nextUser: User = {
                   ...(accountData as User),
-                  ...(profileData as Partial<User>),
                   uid,
-                  username: profileData.displayName,
                   activeProfileId: nextProfileId,
                 }
-                setUser(mergedUser)
+                setUser(nextUser)
                 setAuthStatus('signedIn')
               },
               (profileError) => {
@@ -558,17 +581,19 @@ const UserProvider: FC<Props> = ({ children }) => {
 
         // Best-effort update lastLogin. If the user doc hasn't been created yet,
         // this will throw 'not-found' and we can safely ignore it.
-        try {
-          await updateDoc(userRef, {
-            lastLogin: serverTimestamp(),
-          })
-        } catch (error: unknown) {
-          const code =
-            typeof error === 'object' && error !== null && 'code' in error
-              ? String((error as { code?: unknown }).code)
-              : null
-          if (code !== 'not-found') {
-            logger('Failed to update lastLogin:', error)
+        if (!profileClaimIdRef.current) {
+          try {
+            await updateDoc(userRef, {
+              lastLogin: serverTimestamp(),
+            })
+          } catch (error: unknown) {
+            const code =
+              typeof error === 'object' && error !== null && 'code' in error
+                ? String((error as { code?: unknown }).code)
+                : null
+            if (code !== 'not-found') {
+              logger('Failed to update lastLogin:', error)
+            }
           }
         }
       } catch (error: unknown) {
@@ -624,6 +649,7 @@ const UserProvider: FC<Props> = ({ children }) => {
         user,
         setUser,
         updateUser,
+        updateAccount,
         authStatus,
         activePackMeta,
         isLoading,
@@ -634,6 +660,8 @@ const UserProvider: FC<Props> = ({ children }) => {
         profile,
         activeProfileId,
         setActiveProfileId,
+        profileClaimId,
+        isProfileSession: Boolean(profileClaimId),
       }}
     >
       {children}

@@ -1,5 +1,9 @@
 import { MinPriorityQueue } from 'datastructures-js'
-import type { PackMeta, User, UserFact } from '../../../constants/dataModels'
+import type {
+  PackMeta,
+  UserFact,
+  UserProfile,
+} from '../../../constants/dataModels'
 import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
 
 /**
@@ -8,7 +12,7 @@ import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
  *
  *
  * @param userFacts - The array of UserFact objects available to the user.
- * @param user - The User object containing user settings and progress.
+ * @param userProfile - The UserProfile object containing user settings and progress.
  * @param activePackMeta - Metadata about the currently active pack.
  * @param activePackFactIds - Canonical IDs for facts in the active pack.
  * @param sessionLength - The desired length of the review session.
@@ -17,13 +21,13 @@ import { MAX_NEW_CARDS_PER_DAY } from '../../../constants/appConstants'
  */
 export function buildQueue(
   userFacts: UserFact[],
-  user: User,
+  userProfile: UserProfile,
   activePackMeta: PackMeta | null,
   activePackFactIds: Set<string>,
   sessionLength: number,
   logger: (...args: unknown[]) => void
 ) {
-  if (!user) return null
+  if (!userProfile) return null
 
   const now = Date.now()
   const sessionFacts: UserFact[] = []
@@ -45,14 +49,15 @@ export function buildQueue(
   }
 
   // 3. Identify NEW facts (seen = 0) already in Firestore
-  const dailyLimit = user.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
+  const dailyLimit = userProfile.maxNewCardsPerDay ?? MAX_NEW_CARDS_PER_DAY
 
   // Reset count if it's a new day
-  const lastDate = user.lastNewCardDate
-    ? new Date(user.lastNewCardDate).toDateString()
+  const lastDate = userProfile.lastNewCardDate
+    ? new Date(userProfile.lastNewCardDate).toDateString()
     : ''
   const today = new Date(now).toDateString()
-  const seenToday = lastDate === today ? (user.newCardsSeenToday ?? 0) : 0
+  const seenToday =
+    lastDate === today ? (userProfile.newCardsSeenToday ?? 0) : 0
 
   const remainingDaily = Math.max(0, dailyLimit - seenToday)
   let addedNewCount = 0

@@ -28,7 +28,7 @@ import { isPublicInfoPath } from './constants/publicInfoRoutes'
 
 const App: FC = () => {
   const location = useLocation()
-  const { user, authStatus } = useUser()
+  const { authStatus, isProfileSession } = useUser()
   const { signOut } = useAuthActions()
   const { showNotification } = useNotification()
 
@@ -36,8 +36,7 @@ const App: FC = () => {
     includeHome: true,
   })
 
-  const isProfilePinSession =
-    authStatus === 'signedIn' && user?.lastSignInMethod === 'profilePin'
+  const isProfilePinSession = authStatus === 'signedIn' && isProfileSession
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })

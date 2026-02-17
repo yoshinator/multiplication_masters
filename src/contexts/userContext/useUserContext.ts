@@ -11,7 +11,8 @@ export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
 interface UserContextValue {
   user: User | null
   setUser: (u: User | null) => void
-  updateUser: (fields: Partial<User>) => void
+  updateUser: (fields: Partial<UserProfile>) => void
+  updateAccount: (fields: Partial<User>) => Promise<void>
   authStatus: AuthStatus
   isLoading: boolean
   activePackMeta: PackMeta | null
@@ -22,6 +23,8 @@ interface UserContextValue {
   profile: UserProfile | null
   activeProfileId: string | null
   setActiveProfileId: (profileId: string) => Promise<void>
+  profileClaimId: string | null
+  isProfileSession: boolean
 }
 
 export const UserContext = createContext<UserContextValue | undefined>(

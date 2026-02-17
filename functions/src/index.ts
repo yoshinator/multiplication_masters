@@ -730,12 +730,16 @@ export const provisionFacts = onCall(async (request) => {
   const factsCol = profileRef.collection('UserFacts')
 
   return await db.runTransaction(async (transaction) => {
-    const meta = await getOrCreatePackMeta(
-      transaction,
-      metaRef,
-      packName,
-      masterList.length
-    )
+    const metaSnap = await transaction.get(metaRef)
+    const meta: PackMeta = metaSnap.exists
+      ? (metaSnap.data() as PackMeta)
+      : {
+          packName,
+          nextSeqToIntroduce: 0,
+          totalFacts: masterList.length,
+          isCompleted: false,
+          lastActivity: Date.now(),
+        }
 
     const startIdx = meta.nextSeqToIntroduce
     if (startIdx >= masterList.length) {
@@ -747,7 +751,8 @@ export const provisionFacts = onCall(async (request) => {
     const factsToProvision = masterList.slice(startIdx, sliceEnd)
 
     const factRefs = factsToProvision.map((f) => factsCol.doc(f.id))
-    const factSnaps = await transaction.getAll(...factRefs)
+    const factSnaps =
+      factRefs.length > 0 ? await transaction.getAll(...factRefs) : []
 
     let actualAddedCount = 0
     factSnaps.forEach((factSnap, idx) => {
@@ -758,11 +763,16 @@ export const provisionFacts = onCall(async (request) => {
       actualAddedCount += 1
     })
 
-    transaction.update(metaRef, {
-      nextSeqToIntroduce: sliceEnd,
-      isCompleted: sliceEnd >= masterList.length,
-      lastActivity: Date.now(),
-    })
+    transaction.set(
+      metaRef,
+      {
+        ...meta,
+        nextSeqToIntroduce: sliceEnd,
+        isCompleted: sliceEnd >= masterList.length,
+        lastActivity: Date.now(),
+      },
+      { merge: true }
+    )
 
     return {
       success: true,
@@ -771,26 +781,6 @@ export const provisionFacts = onCall(async (request) => {
     }
   })
 })
-
-const getOrCreatePackMeta = async (
-  transaction: FirebaseFirestore.Transaction,
-  metaRef: FirebaseFirestore.DocumentReference,
-  packName: string,
-  totalFacts: number
-): Promise<PackMeta> => {
-  const metaSnap = await transaction.get(metaRef)
-  if (metaSnap.exists) return metaSnap.data() as PackMeta
-
-  const newMeta: PackMeta = {
-    packName,
-    nextSeqToIntroduce: 0,
-    totalFacts,
-    isCompleted: false,
-    lastActivity: Date.now(),
-  }
-  transaction.set(metaRef, newMeta)
-  return newMeta
-}
 
 const ensureMetaForExistingFacts = async (
   profileRef: FirebaseFirestore.DocumentReference,

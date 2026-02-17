@@ -3,8 +3,8 @@ import { MinPriorityQueue } from 'datastructures-js'
 import type {
   PackKey,
   PackMeta,
-  User,
   UserFact,
+  UserProfile,
 } from '../../constants/dataModels'
 import { BOX_TIMES } from '../../constants/appConstants'
 import { useLogger } from '../../hooks/useLogger'
@@ -28,9 +28,9 @@ type CFParams = {
 // MAIN HOOK: useCardScheduler
 export function useCardScheduler(
   userFacts: UserFact[],
-  user: User | null,
+  profile: UserProfile | null,
   activePackMeta: PackMeta | null,
-  updateUser: (fields: Partial<User>) => void,
+  updateUser: (fields: Partial<UserProfile>) => void,
   activePackFactIds: Set<string>
 ) {
   const logger = useLogger('Scheduler')
@@ -51,12 +51,12 @@ export function useCardScheduler(
     useCloudFunction<CFParams, void>('provisionFacts')
 
   const startSession = useCallback(async () => {
-    if (!user || !app) return
+    if (!profile || !profile.activePack || !app) return
     const facts = userFacts ?? []
 
     const result = buildQueue(
       facts,
-      user,
+      profile,
       activePackMeta,
       activePackFactIds,
       sessionLength,
@@ -71,7 +71,7 @@ export function useCardScheduler(
         hasProvisionedRef.current = true
         logger('Low card count, provisioning more facts...')
         try {
-          await provisionFacts({ packName: user.activePack, count: 12 })
+          await provisionFacts({ packName: profile.activePack, count: 12 })
           logger('Provisioning complete.')
           // Stop here. Wait for useEffect to restart us when facts arrive.
           return
@@ -104,7 +104,7 @@ export function useCardScheduler(
     logger('➡️ First fact:', first)
   }, [
     userFacts,
-    user,
+    profile,
     logger,
     setIsSessionActive,
     sessionLength,
@@ -168,13 +168,13 @@ export function useCardScheduler(
         incrementSceneXP(xpAmount)
       }
 
-      if (fact.seen === 0 && user) {
+      if (fact.seen === 0 && profile) {
         const today = new Date(now).toDateString()
-        const lastDate = user.lastNewCardDate
-          ? new Date(user.lastNewCardDate).toDateString()
+        const lastDate = profile.lastNewCardDate
+          ? new Date(profile.lastNewCardDate).toDateString()
           : ''
 
-        const count = lastDate === today ? user.newCardsSeenToday || 0 : 0
+        const count = lastDate === today ? profile.newCardsSeenToday || 0 : 0
         updateUser({
           newCardsSeenToday: count + 1,
           lastNewCardDate: now,
@@ -226,7 +226,7 @@ export function useCardScheduler(
       logger,
       addUpdatedFactToSession,
       finishSession,
-      user,
+      profile,
       updateUser,
       incrementSceneXP,
     ]

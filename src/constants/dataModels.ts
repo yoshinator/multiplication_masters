@@ -61,39 +61,14 @@ export type GradeLevel =
 
 export interface User {
   uid: string
-  username: string
-  lastSignInMethod?: SignInMethod
   userRole: UserRole
+  subscriptionStatus: 'free' | 'premium'
+  lastSignInMethod?: SignInMethod
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
-  subscriptionStatus: 'free' | 'premium'
   activeProfileId?: string
-  showTour: boolean
-  onboardingCompleted?: boolean
-  upgradePromptCount: number
-  lastUpgradePromptAt?: Timestamp
   upgradePromptSnoozedUntil?: Timestamp
-  learnerGradeLevels?: GradeLevel[]
-  learnerCount?: number
-
-  totalAccuracy: number
-
-  lifetimeCorrect: number
-  lifetimeIncorrect: number
-  totalSessions: number // Also used in upgrade prompt logic
-  userDefaultSessionLength: number
-
-  unlockedScenes?: SceneTheme[]
-  activeScene?: SceneTheme
-  newCardsSeenToday?: number
-  lastNewCardDate?: number
-  maxNewCardsPerDay?: number
-
-  // Packs
-  enabledPacks?: PackKey[] // what they’re allowed to practice
-  activePack?: PackKey // what PracticePage uses right now
-  metaInitialized?: boolean // server-side init done
-  activeSavedSceneId?: string | null
+  lastUpgradePromptAt?: Timestamp
 }
 
 export interface UserAccount {
@@ -104,6 +79,8 @@ export interface UserAccount {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   activeProfileId?: string
+  upgradePromptSnoozedUntil?: Timestamp
+  lastUpgradePromptAt?: Timestamp
 }
 
 export type UserProfile = {

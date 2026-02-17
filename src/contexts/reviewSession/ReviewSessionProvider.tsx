@@ -17,7 +17,7 @@ import {
   increment,
 } from 'firebase/firestore'
 import { useFirebaseContext } from '../firebase/firebaseContext'
-import type { User, UserFact } from '../../constants/dataModels'
+import type { UserFact, UserProfile } from '../../constants/dataModels'
 import { useUser } from '../userContext/useUserContext'
 import { ReviewSessionContext } from './reviewSessionContext'
 import type { SessionRecord } from '../../constants/dataModels'
@@ -45,6 +45,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const { db, setUserFacts, userFacts } = useFirebaseContext()
   const {
     user,
+    profile,
     updateUser,
     activePackMeta,
     activePackFactIds,
@@ -77,7 +78,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
   const pendingUserFactsRef = useRef<Record<string, UserFact>>({})
 
   const getLatestMastery = useCallback(() => {
-    if (!user || !userFacts || !activePackFactIds) return 0
+    if (!profile || !userFacts || !activePackFactIds) return 0
 
     // Merge original facts with the ones we just updated in this session
     const currentSnapshot = userFacts.map(
@@ -89,7 +90,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
       activePackMeta,
       activePackFactIds
     )
-  }, [user, userFacts, activePackMeta, activePackFactIds])
+  }, [profile, userFacts, activePackMeta, activePackFactIds])
 
   useEffect(() => {
     setPercentageMastered(getLatestMastery())
@@ -323,13 +324,13 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
 
       // B. User Stats
       const userRef = doc(db, 'users', user.uid, 'profiles', activeProfileId)
-      const userDBUpdates: FieldValueAllowed<User> = {
+      const userDBUpdates: FieldValueAllowed<UserProfile> = {
         totalSessions: increment(1),
         lifetimeCorrect: increment(finalCorrect),
         lifetimeIncorrect: increment(finalIncorrect),
       }
-      const localUserUpdates: Partial<User> = {
-        totalSessions: (user.totalSessions || 0) + 1,
+      const localUserUpdates: Partial<UserProfile> = {
+        totalSessions: (profile?.totalSessions || 0) + 1,
       }
 
       batch.update(userRef, userDBUpdates)
@@ -361,6 +362,7 @@ const ReviewSessionProvider: FC<Props> = ({ children }) => {
     [
       db,
       user,
+      profile,
       updateUser,
       resetSessionState,
       logger,

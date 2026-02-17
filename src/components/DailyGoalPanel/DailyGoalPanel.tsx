@@ -9,8 +9,8 @@ import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
 import PanelCard from '../PanelCard/PanelCard'
 
 export const DailyGoalPanel: FC = () => {
-  const { user } = useUser()
-  const reviewsToday = useDailyReviews(user?.uid)
+  const { user, activeProfileId } = useUser()
+  const reviewsToday = useDailyReviews(user?.uid, activeProfileId)
   const isMobile = useIsMobile()
   /**
    * because the steady state of the application at 10 cards per

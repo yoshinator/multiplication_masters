@@ -30,7 +30,7 @@ const INITIAL_TOUR_STATE = {
 const PracticePage: FC = () => {
   const { isSessionActive } = useSessionStatusContext()
   const { latestSession, isSaving, isLoading } = useReviewSession()
-  const { user, updateUser, activeProfileId } = useUser()
+  const { user, profile, updateUser, activeProfileId } = useUser()
   const isMobile = useIsMobile()
   const isKeyboardOpen = useKeyboardOpen()
   const tourState = useRef(INITIAL_TOUR_STATE)
@@ -80,14 +80,14 @@ const PracticePage: FC = () => {
       tourListenersRef.current = []
     }
 
-    if (!user?.showTour) {
+    if (!profile?.showTour) {
       cleanup()
       tourState.current = INITIAL_TOUR_STATE
     }
-  }, [user?.showTour, enableTourClose])
+  }, [profile?.showTour, enableTourClose])
 
   useEffect(() => {
-    if (!user?.showTour || user?.onboardingCompleted === false) return
+    if (!profile?.showTour || profile?.onboardingCompleted === false) return
 
     const handleTourDismissed = () => {
       if (internalDestroyRef.current) {
@@ -297,8 +297,8 @@ const PracticePage: FC = () => {
     isSessionActive,
     stopTimer,
     updateUser,
-    user?.onboardingCompleted,
-    user?.showTour,
+    profile?.onboardingCompleted,
+    profile?.showTour,
   ])
 
   useEffect(() => {
@@ -310,7 +310,7 @@ const PracticePage: FC = () => {
   }, [isKeyboardOpen])
 
   const sceneRef = useMemo(() => {
-    if (!user?.uid || !user?.activeSavedSceneId || !db || !activeProfileId)
+    if (!user?.uid || !profile?.activeSavedSceneId || !db || !activeProfileId)
       return null
     return doc(
       db,
@@ -319,9 +319,9 @@ const PracticePage: FC = () => {
       'profiles',
       activeProfileId,
       'savedScenes',
-      user.activeSavedSceneId
+      profile.activeSavedSceneId
     )
-  }, [user?.uid, user?.activeSavedSceneId, db, activeProfileId])
+  }, [user?.uid, profile?.activeSavedSceneId, db, activeProfileId])
 
   const { data: sceneData } = useFirestoreDoc<SavedScene>(sceneRef)
 

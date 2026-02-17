@@ -9,9 +9,9 @@ import { useThresholdAnimation } from '../../hooks/useThresholdAnimation'
 import PanelCard from '../../components/PanelCard/PanelCard'
 
 const SceneXPDisplay: FC = () => {
-  const { user, activeSceneMeta } = useUser()
+  const { profile, activeSceneMeta } = useUser()
   const currentXP = activeSceneMeta?.xp ?? 0
-  const activeScene = user?.activeScene || 'garden'
+  const activeScene = profile?.activeScene || 'garden'
   const isMobile = useIsMobile()
 
   const nextUnlock = useMemo(() => {

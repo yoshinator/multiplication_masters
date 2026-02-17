@@ -12,14 +12,14 @@ interface Props {
 }
 
 const SessionStatusProvider: FC<Props> = ({ children }) => {
-  const { user } = useUser()
+  const { profile } = useUser()
   const [isSessionActive, setIsSessionActive] = useState(false)
 
   const sessionLength = useMemo(() => {
-    if (user?.showTour || user?.userDefaultSessionLength === 0)
+    if (profile?.showTour || profile?.userDefaultSessionLength === 0)
       return FIRST_SESSION_LENGTH
-    return user?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH
-  }, [user?.showTour, user?.userDefaultSessionLength])
+    return profile?.userDefaultSessionLength ?? DEFAULT_SESSION_LENGTH
+  }, [profile?.showTour, profile?.userDefaultSessionLength])
 
   return (
     <SessionStatusContext.Provider
