@@ -77,15 +77,18 @@ SCENE_ITEMS.push(
 
 // -------------- FARM THEME --------------
 SCENE_ITEMS.push(
-  ...range('farm', 'Background', 3, 'background', 1, {
+  ...range('farm', 'Background', 4, 'background', 1, {
     isBackground: true,
     zHint: 'back',
-  })
+  }),
+  ...range('farm', 'Friends', 11, 'friends'),
+  ...range('farm', 'Stuff', 13, 'stuff'),
+  ...range('farm', 'Effects', 7, 'effects')
 )
 
 // -------------- GARAGE THEME --------------
 SCENE_ITEMS.push(
-  ...range('garage', 'Background', 3, 'background', 1, {
+  ...range('garage', 'Background', 1, 'background', 1, {
     isBackground: true,
     zHint: 'back',
   })
