@@ -32,28 +32,30 @@ const SceneThemeSelect: FC<Props> = ({
         }}
       >
         {Object.values(SCENES).map((scene) => {
+          const isComingSoon = scene.id === 'garage'
           const isLocked = (user?.lifetimeCorrect ?? 0) < (scene.unlock ?? 0)
           const isSelected = user?.activeScene === scene.id
           const bgImage = SCENE_ITEMS.find(
             (it) => it.theme === scene.id && it.tab === 'background'
           )?.image
+          const isDisabled = isComingSoon || isLocked
 
           return (
             <Box
               key={scene.id}
               component="div"
               role="button"
-              aria-disabled={isLocked}
-              tabIndex={isLocked ? -1 : 0}
-              onClick={() => !isLocked && selectScene(scene.id)}
-              onKeyDown={(e) => !isLocked && handleChoiceKeyDown(e)}
+              aria-disabled={isDisabled}
+              tabIndex={isDisabled ? -1 : 0}
+              onClick={() => !isDisabled && selectScene(scene.id)}
+              onKeyDown={(e) => !isDisabled && handleChoiceKeyDown(e)}
               sx={{
                 ...getOptionButtonStyle(isSelected),
                 position: 'relative',
                 overflow: 'hidden',
-                opacity: isLocked ? 0.6 : 1,
-                filter: isLocked ? 'grayscale(1)' : 'none',
-                cursor: isLocked ? 'default' : 'pointer',
+                opacity: isDisabled ? 0.6 : 1,
+                filter: isDisabled ? 'grayscale(1)' : 'none',
+                cursor: isDisabled ? 'default' : 'pointer',
                 aspectRatio: { xs: '4 / 3', sm: '16 / 10' },
                 minHeight: { xs: 110, sm: 140 },
                 p: 0,
@@ -91,14 +93,21 @@ const SceneThemeSelect: FC<Props> = ({
                 >
                   {scene.label}
                 </Typography>
-                {isLocked && (
+                {isComingSoon ? (
+                  <Typography
+                    variant="caption"
+                    sx={{ fontSize: '0.65rem', opacity: 0.9 }}
+                  >
+                    Coming soon
+                  </Typography>
+                ) : isLocked ? (
                   <Typography
                     variant="caption"
                     sx={{ fontSize: '0.65rem', opacity: 0.9 }}
                   >
                     {scene.unlock} correct
                   </Typography>
-                )}
+                ) : null}
               </Box>
             </Box>
           )
