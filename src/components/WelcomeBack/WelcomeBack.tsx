@@ -12,7 +12,8 @@ import type { GradeLevel, PackKey } from '../../constants/dataModels'
 
 const WelcomeBack: FC = () => {
   const { startSession, isLoading } = useCardSchedulerContext()
-  const { user, profile, updateUser, updateAccount } = useUser()
+  const { user, profile, updateUser, updateAccount, isProfileSession } =
+    useUser()
   const isMobile = useIsMobile()
   const { openModal, closeModal } = useModal()
   const onboardingOpenedRef = useRef(false)
@@ -29,6 +30,7 @@ const WelcomeBack: FC = () => {
   }
 
   const ensureOnboarding = useCallback(() => {
+    if (isProfileSession) return true
     if (!profile || profile.onboardingCompleted) return true
     if (!onboardingOpenedRef.current) {
       onboardingOpenedRef.current = true
@@ -63,7 +65,15 @@ const WelcomeBack: FC = () => {
       )
     }
     return false
-  }, [closeModal, openModal, updateUser, updateAccount, user, profile])
+  }, [
+    closeModal,
+    openModal,
+    updateUser,
+    updateAccount,
+    user,
+    profile,
+    isProfileSession,
+  ])
 
   const handleStartSession = async () => {
     if (isLoading) {
@@ -76,9 +86,10 @@ const WelcomeBack: FC = () => {
   }
 
   useEffect(() => {
+    if (isProfileSession) return
     if (!profile || profile.onboardingCompleted) return
     ensureOnboarding()
-  }, [ensureOnboarding, profile])
+  }, [ensureOnboarding, profile, isProfileSession])
 
   return (
     <Box

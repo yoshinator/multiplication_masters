@@ -421,9 +421,11 @@ const UserProvider: FC<Props> = ({ children }) => {
             typeof tokenResult.claims.profileId === 'string'
               ? tokenResult.claims.profileId
               : null
+          profileClaimIdRef.current = claimProfileId
           setProfileClaimId(claimProfileId)
         } catch (err) {
           logger('Failed to read profile claim:', err)
+          profileClaimIdRef.current = null
           setProfileClaimId(null)
         }
         const userRef = doc(db, 'users', uid)
