@@ -143,8 +143,8 @@ const UserProvider: FC<Props> = ({ children }) => {
     migrateUserToFacts()
       .then((result) => {
         logger('Migration result:', result?.data)
-        // The function updates the user doc, which triggers onSnapshot,
-        // updating 'user' -> 'metaInitialized: true', stopping this loop.
+        // The function updates the profile doc, which triggers onSnapshot,
+        // updating 'profile' -> 'metaInitialized: true', stopping this loop.
       })
       .catch((err) => logger('Migration failed:', err))
   }, [
@@ -274,7 +274,7 @@ const UserProvider: FC<Props> = ({ children }) => {
       if (Object.keys(pending).length === 0) return
 
       setUser((prevUser: User | null) =>
-        prevUser ? { ...prevUser, ...fields } : prevUser
+        prevUser ? { ...prevUser, ...pending } : prevUser
       )
 
       const userRef = doc(db, 'users', user.uid)
