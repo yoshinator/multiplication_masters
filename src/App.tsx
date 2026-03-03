@@ -25,6 +25,9 @@ import { useAuthActions } from './hooks/useAuthActions'
 import { useInactivityLogout } from './hooks/useInactivityLogout'
 import { useNotification } from './contexts/notificationContext/notificationContext'
 import { isPublicInfoPath } from './constants/publicInfoRoutes'
+import RequireTeacher from './components/RequireTeacher/RequireTeacher'
+import ClassesPage from './pages/ClassesPage/ClassesPage'
+import ClassDetailPage from './pages/ClassDetailPage/ClassDetailPage'
 
 const App: FC = () => {
   const location = useLocation()
@@ -101,6 +104,24 @@ const App: FC = () => {
             <RequireUser>
               <SceneBuilderPage />
             </RequireUser>
+          }
+        />
+
+        <Route
+          path={ROUTES.CLASSES}
+          element={
+            <RequireTeacher>
+              <ClassesPage />
+            </RequireTeacher>
+          }
+        />
+
+        <Route
+          path={ROUTES.CLASS_DETAIL}
+          element={
+            <RequireTeacher>
+              <ClassDetailPage />
+            </RequireTeacher>
           }
         />
 

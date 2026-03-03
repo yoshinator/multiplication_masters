@@ -284,6 +284,9 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
   - Email-link sign-in
   - Profile login + 6-digit PIN sign-in (enabled from Profile after Google/email-link sign-in)
   - Profile-PIN sessions auto-logout after 5 minutes of inactivity
+- **Classroom Management (Teacher)**:
+  - Create classes, add learner profiles, and set pack defaults
+  - Apply class pack settings to individual learners or the entire roster
 
 ### Educational Use Cases
 - **Individual Learning**: Self-paced fact mastery for students
@@ -346,6 +349,7 @@ The architecture separates concerns between frontend (React/TypeScript) and back
 - Add better error states, loading screens, and improved input feedback using MUI theme colors.
 - Improve UI presentation, animations, and responsiveness.
 - Add level progression interface 
+- PWA and local caching 
 
 ### Spaced Repetition Engine (SRS)
 - Speed-Adaptive Leitner + SM-2 hybrid logic defined.
@@ -377,7 +381,8 @@ The architecture separates concerns between frontend (React/TypeScript) and back
 - Add session-level statistics (session length, cards reviewed, accuracy).
 
 ### Gamification
-- Add a scene builder so users can customize a scene with unlocked items.
+- Added a scene builder so users can customize a scene with unlocked items.
+- Added Scene Builder item picker display item images instead of labels.
 
 ### Routing
 - Add routes for Profile, Homepage, Training, Scene Builder.
@@ -397,52 +402,42 @@ Legal & compliance routes:
 - `/privacy`, `/terms`, `/coppa`, `/ferpa`
 - The `Footer` is intentionally shown only on Home + legal pages.
 
+### Security and Privacy
+- Privacy Policy, Terms, COPPA, and FERPA pages are implemented and linked from the UI.
+- Firestore rules isolate user data and block client access to sensitive auth collections
+
+### Deployment and Production Readiness
+- Added a production build pipeline for production deployment.
+- Set up CI for linting, type checks, and test running.
+- Add screenshots, GIF demos, and installation instructions.
+- Add proper licensing.
 
 ---
 
 ## Work Remaining
 
 ### Frontend and User Experience
--(show locked/unlocked tables).
-- Add unlocking mechanisms for Scene items. (Currently hard coded for garden theme)
-- Build performance dashboard (accuracy, response times, weakest facts).
-  - Show total accuracy across all cards.
-  - Show group accuracy for the highest times table group you're in (1–3, 4–6, etc.).
-  - Reset all stats if user wants to start fresh.
+Nice to haves
+- Reset all stats if user wants to start fresh.
 - Add practice modes (timed drill, review-only, mixed tables).
-- Make Scene Builder item picker display item images instead of labels.
-- Replace temporary Home Page with proper copy and CTAs.
-
-- Implement offline-first caching with IndexedDB or localStorage.
 
 ### Backend and Data Logic
-- Finalize and document the profile-based data schema.
-- Run profile migration in production and validate counts.
-- Add data export/import feature for portability.
-- Decide on Storage path strategy for profiles (and migrate thumbnails if needed).
+- payment integration
+- transactional email integration
 
 ### SRS Improvements
-- Add mirror card activation logic (unlock mirrored versions after mastery).
-- Implement weighting for mirrored cards if needed.
+Nice to haves
 - Add decay logic for overdue cards (automatic demotion after long inactivity).
 - Tune long-range intervals after user testing.
 - Add user defined intervals.
 
-### Deployment and Production Readiness
-- Add build pipeline for production deployment.
-- Set up CI for linting, type checks, and test running.
-- Add screenshots, GIF demos, and installation instructions.
-- Add proper licensing.
 
 ### User Sign Up and Auth
 - (Optional) Add email/password signup (currently uses email-link).
 - (Optional) Add additional providers / account management UX.
 - Add Parent / Teacher - Dashboard
 
-### Security and Privacy
-- Audit repository for any exposed sensitive keys.
-- Privacy Policy, Terms, COPPA, and FERPA pages are implemented and linked from the UI.
-- Firestore rules isolate user data and block client access to sensitive auth collections (`usernameIndex`, `userSecrets`).
+
 
 ## Legal Pages
 The app includes in-app legal pages for Privacy, Terms, COPPA, and FERPA. These are accessible from the `Footer` and are routed under `/privacy`, `/terms`, `/coppa`, and `/ferpa`.

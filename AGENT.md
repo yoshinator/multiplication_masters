@@ -114,6 +114,8 @@ Routes:
 - `/stats` - StatsPage (analytics dashboard) - requires auth
 - `/profile` - ProfilePage (user settings) - requires auth
 - `/builder` - SceneBuilderPage (scene customization) - requires auth
+- `/classes` - ClassesPage (teacher classroom list) - requires auth (teacher only)
+- `/classes/:classId` - ClassDetailPage (classroom management) - requires auth (teacher only)
 - `/finish-signin` - FinishSignin (email link authentication handler)
 - `/privacy` - PrivacyPolicyPage
 - `/terms` - TermsOfServicePage
@@ -224,6 +226,8 @@ Top-level route components:
 - **HomePage** - Landing page with marketing content and anonymous login
 - **PracticePage** - Main training interface with flash cards, timer, stats panel, and guided tours
 - **ProfilePage** - User profile, settings, pack selection, and account management
+- **ClassesPage** - Teacher classroom list and creation
+- **ClassDetailPage** - Classroom roster and pack management
 - **SceneBuilderPage** - Scene customization interface with Konva canvas
 - **StatsPage** - Comprehensive performance analytics dashboard with lifetime stats
 - **PrivacyPolicyPage** - Privacy policy and data handling disclosures
@@ -268,6 +272,7 @@ Node.js 24 TypeScript Cloud Functions:
 - Fact provisioning and deck generation
 - Data migration utilities
 - Scheduled functions (if applicable)
+- Classroom pack management (`applyClassroomPackDefaults`)
 - Username+PIN auth callables (custom-token minting + PIN setup + lockout reset)
 
 User initialization is server-side:
@@ -338,6 +343,40 @@ interface UserProfile {
   activePack?: PackKey
   metaInitialized?: boolean
   activeSavedSceneId?: string | null
+}
+```
+
+### Classroom Document (`users/{uid}/classrooms/{classId}`)
+```typescript
+interface Classroom {
+  id: string
+  name: string
+  schoolYear: string
+  grade: GradeLevel
+  subject?: string | null
+  section?: string | null
+  room?: string | null
+  defaultEnabledPacks?: PackKey[]
+  defaultActivePack?: PackKey
+  rosterCount?: number
+  createdAt: Timestamp | null
+  updatedAt: Timestamp | null
+}
+```
+
+### Classroom Roster (`users/{uid}/classrooms/{classId}/roster/{profileId}`)
+```typescript
+interface ClassroomRosterEntry {
+  id: string
+  profileId: string
+  displayName: string
+  loginName: string
+  gradeLevel: number | null
+  activePack?: PackKey
+  enabledPacks?: PackKey[]
+  addedAt: Timestamp | null
+  updatedAt?: Timestamp | null
+  addedBy: string
 }
 ```
 
@@ -574,5 +613,5 @@ Runs Vite dev server on `http://localhost:5173`
 Always keep AGENT.md and README.md up to date.
 ---
 
-**Last Updated**: 2026-02-11
+**Last Updated**: 2026-02-17
 **Repository**: [yoshinator/multiplication_masters](https://github.com/yoshinator/multiplication_masters)

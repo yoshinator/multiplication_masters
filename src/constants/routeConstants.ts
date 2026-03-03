@@ -5,6 +5,8 @@ export const ROUTES = {
   BUILDER: '/builder',
   PROFILE: '/profile',
   STATS: '/stats',
+  CLASSES: '/classes',
+  CLASS_DETAIL: '/classes/:classId',
   SIGNIN: '/finish-signin',
   PRIVACY: '/privacy',
   COPPA: '/coppa',

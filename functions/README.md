@@ -73,3 +73,15 @@ The new Cloud Function approach resolves these issues by:
 - Running in the background without blocking the client
 - Providing better error handling and logging
 - Reducing client bundle size and complexity
+
+### `applyClassroomPackDefaults`
+
+**Trigger**: HTTPS callable function
+
+**Purpose**: Applies classroom pack defaults across all learner profiles in a class.
+
+**What it does**:
+1. Validates the caller is authenticated and has `teacher` role
+2. Normalizes enabled/active pack selections
+3. Updates the class document defaults
+4. Updates every roster entry and the corresponding profile document

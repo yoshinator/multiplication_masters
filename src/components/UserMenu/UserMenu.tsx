@@ -20,7 +20,7 @@ import { useModal } from '../../contexts/modalContext/modalContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 export const UserMenu = () => {
-  const { profile } = useUser()
+  const { profile, user, isProfileSession } = useUser()
   const { auth } = useFirebaseContext()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { openModal, closeModal } = useModal()
@@ -112,6 +112,19 @@ export const UserMenu = () => {
               >
                 Build
               </MenuItem>,
+              ...(user?.userRole === 'teacher' && !isProfileSession
+                ? [
+                    <MenuItem
+                      key={ROUTES.CLASSES}
+                      onClick={() => {
+                        handleClose()
+                        navigate(ROUTES.CLASSES)
+                      }}
+                    >
+                      Classes
+                    </MenuItem>,
+                  ]
+                : []),
             ]
           : null}
         <MenuItem
