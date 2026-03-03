@@ -1,4 +1,4 @@
-name: Deploy to Firebase Prod on main branch merge
+name: Deploy to Firebase Prod on releases/x.x branch merge
 on:
   push:
     branches:
@@ -11,9 +11,9 @@ jobs:
         run: |
           branch_name="${{ github.ref_name }}"
           if [[ "$branch_name" =~ ^releases/[1-9]\.[1-9]$ ]]; then
-            echo "Deploy eligible: $branch_name matches releases/[1-9]\.[1-9]."
+            echo "Deploy eligible: $branch_name matches releases/[1-9]\.[1-9]"
           else
-            echo "Deploy skipped: $branch_name does not match releases/[1-9]\.[1-9]."
+            echo "Deploy skipped: $branch_name does not match releases/[1-9]\.[1-9]"
           fi
 
   build_and_deploy:
