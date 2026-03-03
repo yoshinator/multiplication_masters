@@ -1,10 +1,23 @@
-name: Deploy to Firebase Prod on main branch merge
+name: Deploy to Firebase Prod on releases/x.x branch merge
 on:
   push:
     branches:
-      - main
+      - 'releases/**'
 jobs:
+  log_deploy_condition:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Announce deploy eligibility
+        run: |
+          branch_name="${{ github.ref_name }}"
+          if [[ "$branch_name" =~ ^releases/[1-9]\.[1-9]$ ]]; then
+            echo "Deploy eligible: $branch_name matches releases/[1-9]\.[1-9]"
+          else
+            echo "Deploy skipped: $branch_name does not match releases/[1-9]\.[1-9]"
+          fi
+
   build_and_deploy:
+    if: ${{ github.ref_name =~ '^releases/[1-9]\.[1-9]$' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -41,6 +54,9 @@ jobs:
             echo "${vite_env_key}=${value}" >> "$GITHUB_ENV"
           done
         shell: bash
+
+      - name: Set build metadata
+        run: echo "VITE_APP_GIT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Build React app for production
         run: npm run build
