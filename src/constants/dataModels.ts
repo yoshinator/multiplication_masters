@@ -67,6 +67,7 @@ export interface User {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   activeProfileId?: string
+  primaryProfileId?: string
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
 }
@@ -79,6 +80,7 @@ export interface UserAccount {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   activeProfileId?: string
+  primaryProfileId?: string
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
 }
@@ -209,6 +211,34 @@ export type PackMeta = {
   isCompleted: boolean
   nextSeqToIntroduce: number
   lastActivity: number
+}
+
+export type Classroom = {
+  id: string
+  name: string
+  schoolYear: string
+  grade: GradeLevel
+  subject?: string | null
+  section?: string | null
+  room?: string | null
+  defaultEnabledPacks?: PackKey[]
+  defaultActivePack?: PackKey
+  rosterCount?: number
+  createdAt: Timestamp | null
+  updatedAt: Timestamp | null
+}
+
+export type ClassroomRosterEntry = {
+  id: string
+  profileId: string
+  displayName: string
+  loginName: string
+  gradeLevel: number | null
+  activePack?: PackKey
+  enabledPacks?: PackKey[]
+  addedAt: Timestamp | null
+  updatedAt?: Timestamp | null
+  addedBy: string
 }
 
 const packFactIdsCache = new Map<PackKey, Set<string>>()

@@ -4,24 +4,28 @@ import ProfileSectionCard from './ProfileSectionCard'
 
 type ProfileHeaderSectionProps = {
   title: string
-  canManageProfiles: boolean
   canEnablePinSignIn: boolean
   hasPinSignIn: boolean
   isAnonymous: boolean
+  showReturnToOwner?: boolean
+  showAddLearner?: boolean
   onAddLearner: () => void
   onEnablePin: () => void
   onSaveProgress: () => void
+  onReturnToOwner?: () => void
 }
 
 const ProfileHeaderSection: FC<ProfileHeaderSectionProps> = ({
   title,
-  canManageProfiles,
   canEnablePinSignIn,
   hasPinSignIn,
   isAnonymous,
+  showReturnToOwner = false,
+  showAddLearner = false,
   onAddLearner,
   onEnablePin,
   onSaveProgress,
+  onReturnToOwner,
 }) => {
   return (
     <ProfileSectionCard
@@ -49,13 +53,18 @@ const ProfileHeaderSection: FC<ProfileHeaderSectionProps> = ({
       </Box>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-        {canManageProfiles ? (
+        {showReturnToOwner ? (
+          <Button variant="outlined" onClick={onReturnToOwner}>
+            Back to my profile
+          </Button>
+        ) : null}
+        {showAddLearner ? (
           <Button variant="contained" onClick={onAddLearner}>
             Add learner
           </Button>
         ) : null}
 
-        {canManageProfiles && canEnablePinSignIn && !hasPinSignIn ? (
+        {canEnablePinSignIn && !hasPinSignIn ? (
           <Button variant="outlined" onClick={onEnablePin}>
             Enable profile PIN sign-in
           </Button>

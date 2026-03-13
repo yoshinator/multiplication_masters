@@ -509,7 +509,11 @@ const UserProvider: FC<Props> = ({ children }) => {
               (claimProfileId || accountData.activeProfileId) ?? null
             setActiveProfileIdState(nextProfileId)
 
-            if (!nextProfileId && !ensureUserInitInFlightRef.current) {
+            const missingPrimary = !accountData.primaryProfileId
+            if (
+              (!nextProfileId || missingPrimary) &&
+              !ensureUserInitInFlightRef.current
+            ) {
               ensureUserInitInFlightRef.current = true
               void (async () => {
                 try {

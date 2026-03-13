@@ -23,6 +23,31 @@ const PROFILE_NAME_REGEX_VALIDATION = new RegExp(
   `^[a-zA-Z0-9_]{${PROFILE_NAME_MIN_LEN},${PROFILE_NAME_MAX_LEN}}$`
 )
 
+const normalizePackSelection = (
+  rawEnabled: unknown,
+  rawActive: unknown
+): { enabledPacks: string[]; activePack: string } => {
+  const enabled = Array.isArray(rawEnabled)
+    ? rawEnabled.filter(
+        (pack) => typeof pack === 'string' && pack in MASTER_FACTS
+      )
+    : []
+  const uniqueEnabled = Array.from(new Set(enabled))
+  if (uniqueEnabled.length === 0) {
+    uniqueEnabled.push(...DEFAULT_ENABLED_PACKS)
+  }
+
+  const active =
+    typeof rawActive === 'string' && rawActive in MASTER_FACTS
+      ? rawActive
+      : uniqueEnabled[0]
+  if (!uniqueEnabled.includes(active)) {
+    uniqueEnabled.push(active)
+  }
+
+  return { enabledPacks: uniqueEnabled, activePack: active }
+}
+
 const normalizeLoginNameKey = (loginName: string): string =>
   loginName.trim().toLowerCase()
 
@@ -224,13 +249,14 @@ async function createInitialUserInTransaction(
     null,
     true
   )
-  await createUserAccountInTransaction(tx, uid)
+  await createUserAccountInTransaction(tx, uid, profile.profileId)
   return profile
 }
 
 async function createUserAccountInTransaction(
   tx: FirebaseFirestore.Transaction,
-  uid: string
+  uid: string,
+  primaryProfileId: string
 ): Promise<void> {
   const userRef = db.collection('users').doc(uid)
   tx.set(
@@ -241,6 +267,7 @@ async function createUserAccountInTransaction(
       subscriptionStatus: 'free',
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
+      primaryProfileId,
     },
     { merge: true }
   )
@@ -292,9 +319,25 @@ export const ensureUserInitialized = onCall(async (request) => {
   }>(async (tx) => {
     const existing = await tx.get(userRef)
     if (existing.exists) {
-      const data = existing.data() as { activeProfileId?: unknown } | undefined
+      const data = existing.data() as
+        | { activeProfileId?: unknown; primaryProfileId?: unknown }
+        | undefined
       const activeProfileId =
         typeof data?.activeProfileId === 'string' ? data.activeProfileId : null
+
+      const primaryProfileId =
+        typeof data?.primaryProfileId === 'string'
+          ? data.primaryProfileId
+          : null
+      if (!primaryProfileId && activeProfileId) {
+        tx.set(
+          userRef,
+          {
+            primaryProfileId: activeProfileId,
+          },
+          { merge: true }
+        )
+      }
 
       if (!activeProfileId) {
         const profile = await createProfileInTransaction(
@@ -304,6 +347,14 @@ export const ensureUserInitialized = onCall(async (request) => {
           null,
           true
         )
+        tx.set(
+          userRef,
+          {
+            primaryProfileId: profile.profileId,
+          },
+          { merge: true }
+        )
+
         return {
           created: true,
           profileId: profile.profileId,
@@ -376,7 +427,7 @@ export const createProfile = onCall(async (request) => {
       true
     )
     if (!userExists) {
-      await createUserAccountInTransaction(tx, uid)
+      await createUserAccountInTransaction(tx, uid, profile.profileId)
     }
     return profile
   })
@@ -1082,6 +1133,85 @@ export const migrateUserToFacts = onCall(async (request) => {
   }
 
   return { success: true, count: migratedIds.size, pack: packName }
+})
+
+export const applyClassroomPackDefaults = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+  if (request.auth?.token?.profileId) {
+    throw new HttpsError(
+      'permission-denied',
+      'Profile sessions cannot update classes.'
+    )
+  }
+
+  const userRef = db.collection('users').doc(uid)
+  const userSnap = await userRef.get()
+  const userRole = userSnap.data()?.userRole
+  if (userRole !== 'teacher') {
+    throw new HttpsError('permission-denied', 'Teacher role required.')
+  }
+
+  const { classId, defaultEnabledPacks, defaultActivePack } = request.data || {}
+  if (typeof classId !== 'string' || !classId.trim()) {
+    throw new HttpsError('invalid-argument', 'classId is required.')
+  }
+
+  const normalized = normalizePackSelection(
+    defaultEnabledPacks,
+    defaultActivePack
+  )
+
+  const classRef = userRef.collection('classrooms').doc(classId)
+  const classSnap = await classRef.get()
+  if (!classSnap.exists) {
+    throw new HttpsError('not-found', 'Classroom not found.')
+  }
+
+  await classRef.set(
+    {
+      defaultEnabledPacks: normalized.enabledPacks,
+      defaultActivePack: normalized.activePack,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  )
+
+  const rosterSnap = await classRef.collection('roster').get()
+  let batch = db.batch()
+  let opCount = 0
+  const commitThreshold = 400
+
+  const updates = {
+    enabledPacks: normalized.enabledPacks,
+    activePack: normalized.activePack,
+    updatedAt: FieldValue.serverTimestamp(),
+  }
+
+  const commitBatch = async () => {
+    if (opCount === 0) return
+    await batch.commit()
+    batch = db.batch()
+    opCount = 0
+  }
+
+  for (const rosterDoc of rosterSnap.docs) {
+    const rosterRef = classRef.collection('roster').doc(rosterDoc.id)
+    batch.update(rosterRef, updates)
+    opCount++
+
+    const profileRef = userRef.collection('profiles').doc(rosterDoc.id)
+    batch.update(profileRef, updates)
+    opCount++
+
+    if (opCount >= commitThreshold) {
+      await commitBatch()
+    }
+  }
+
+  await commitBatch()
+
+  return { success: true, updated: rosterSnap.size }
 })
 
 export const saveUserScene = onCall(async (request) => {
