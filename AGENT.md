@@ -29,6 +29,7 @@
 - Profiles live under `users/{uid}/profiles/{profileId}` and store all learner data (packs, facts, scenes, stats).
 - A unique `loginName` is generated server-side for PIN sign-in using the `profileIndex` collection.
 - PIN secrets are stored server-side in `profileSecrets` (client access blocked).
+- Teacher accounts create learner profiles from Classes > Add learners; the Profile page lets teachers switch between their profile and learners.
 
 ### Development Tools
 - **Linting**: ESLint 9.x with TypeScript ESLint
@@ -83,6 +84,25 @@ type UserProfile = {
   "emulators": "npm --prefix functions run build && firebase emulators:start --import=./firebase-data --export-on-exit --project multiplicationmaster"
 }
 ```
+
+### Admin Scripts
+- **Prune inactive users (dry run)**
+  - Build: `npm --prefix functions run build`
+  - Run: `node functions/lib/scripts/pruneInactiveUsers.js --days 7 --dry-run`
+- **Prune inactive users (apply)**
+  - Run: `node functions/lib/scripts/pruneInactiveUsers.js --days 7 --yes`
+- Optional flags:
+  - `--limit 100` to cap deletions
+  - `--include-missing` to include users with missing `lastLogin` (scans all users)
+
+- **Recompute user stats (dry run)**
+  - Build: `npm --prefix functions run build`
+  - Run: `npm --prefix functions run recompute:user-stats -- --dry-run --uid <UID>`
+- **Recompute user stats (apply)**
+  - Run: `npm --prefix functions run recompute:user-stats -- --yes --uid <UID>`
+- Optional flags:
+  - `--limit 500` to cap users processed
+  - `--start-after <UID>` to resume pagination
 
 ## Architecture Overview
 

@@ -32,6 +32,12 @@ const WelcomeBack: FC = () => {
   const ensureOnboarding = useCallback(() => {
     if (isProfileSession) return true
     if (!profile || profile.onboardingCompleted) return true
+    if (user?.userRole === 'teacher' || user?.userRole === 'parent') {
+      const ownerProfileId = user?.primaryProfileId
+      if (ownerProfileId && ownerProfileId !== profile.id) {
+        return true
+      }
+    }
     if (!onboardingOpenedRef.current) {
       onboardingOpenedRef.current = true
       openModal(

@@ -7,7 +7,13 @@ import {
   useState,
 } from 'react'
 import { Box, type SelectChangeEvent } from '@mui/material'
-import { collection, query } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  query,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore'
 
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
 import SetPinModal from '../../components/Login/SetPinModal'
@@ -22,6 +28,7 @@ import { useThemeContext } from '../../contexts/themeContext/themeContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirestoreQuery } from '../../hooks/useFirestore'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import ActiveFactPackSection from './components/ActiveFactPackSection'
 import AddLearnerModal from './components/AddLearnerModal'
 import DisplayPreferencesSection from './components/DisplayPreferencesSection'
@@ -33,6 +40,7 @@ import { getProfileOptionButtonStyle } from './components/profileUi'
 
 const ProfilePage: FC = () => {
   const { auth, db } = useFirebaseContext()
+  const { showNotification } = useNotification()
   const { openModal, closeModal } = useModal()
   const isMobile = useIsMobile()
   const { mode, setMode } = useThemeContext()
@@ -97,7 +105,53 @@ const ProfilePage: FC = () => {
     (providerIds.includes('google.com') || providerIds.includes('password'))
 
   const hasPinSignIn = Boolean(profile?.pinEnabled)
-  const canManageProfiles = !isProfileSession
+  const isTeacher = user?.userRole === 'teacher'
+  const canAddLearner = !isProfileSession && user?.userRole === 'parent'
+
+  const ownerProfileId =
+    isTeacher || user?.userRole === 'parent'
+      ? (user?.primaryProfileId ?? null)
+      : null
+
+  const isOwnerViewingLearner =
+    isTeacher &&
+    Boolean(ownerProfileId) &&
+    Boolean(activeProfileId) &&
+    ownerProfileId !== activeProfileId
+
+  const profilesToShow = isTeacher
+    ? profiles.filter((profileItem) =>
+        [ownerProfileId, activeProfileId].includes(profileItem.id)
+      )
+    : profiles
+
+  const handleReturnToOwner = async () => {
+    if (!ownerProfileId) return
+    try {
+      await setActiveProfileId(ownerProfileId)
+    } catch {
+      showNotification('Unable to switch back to your profile.', 'error')
+    }
+  }
+  const handleSelectProfile = async (profileId: string) => {
+    await setActiveProfileId(profileId)
+  }
+
+  const handleLearnerCreated = async (payload: { profileId: string }) => {
+    if (!db || !user?.uid || !payload.profileId) return
+    try {
+      await updateDoc(
+        doc(db, 'users', user.uid, 'profiles', payload.profileId),
+        {
+          onboardingCompleted: true,
+          showTour: false,
+          updatedAt: serverTimestamp(),
+        }
+      )
+    } catch {
+      showNotification('Unable to finish learner setup.', 'error')
+    }
+  }
 
   return (
     <Box
@@ -117,24 +171,41 @@ const ProfilePage: FC = () => {
       >
         <ProfileHeaderSection
           title={profile?.displayName ?? 'Student Profile'}
-          canManageProfiles={canManageProfiles}
           canEnablePinSignIn={canEnablePinSignIn}
           hasPinSignIn={hasPinSignIn}
           isAnonymous={Boolean(isAnonymous)}
+          showReturnToOwner={isOwnerViewingLearner}
+          showAddLearner={canAddLearner}
           onAddLearner={() =>
-            openModal(<AddLearnerModal onClose={closeModal} />)
+            openModal(
+              <AddLearnerModal
+                onClose={closeModal}
+                onCreated={handleLearnerCreated}
+              />
+            )
           }
           onEnablePin={() => openModal(<SetPinModal onClose={closeModal} />)}
           onSaveProgress={() =>
             openModal(<SaveProgressModal onClose={closeModal} />)
           }
+          onReturnToOwner={handleReturnToOwner}
         />
 
-        {canManageProfiles ? (
+        {profilesToShow.length > 0 && !isProfileSession ? (
           <LearnerProfilesSection
-            profiles={profiles}
+            profiles={profilesToShow}
             activeProfileId={activeProfileId}
-            onSelectProfile={setActiveProfileId}
+            onSelectProfile={handleSelectProfile}
+            title={
+              user?.userRole === 'teacher' || user?.userRole === 'parent'
+                ? 'Profiles'
+                : undefined
+            }
+            description={
+              user?.userRole === 'teacher' || user?.userRole === 'parent'
+                ? 'Switch between your profile and your learners.'
+                : undefined
+            }
           />
         ) : null}
 

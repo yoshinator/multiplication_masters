@@ -249,13 +249,14 @@ async function createInitialUserInTransaction(
     null,
     true
   )
-  await createUserAccountInTransaction(tx, uid)
+  await createUserAccountInTransaction(tx, uid, profile.profileId)
   return profile
 }
 
 async function createUserAccountInTransaction(
   tx: FirebaseFirestore.Transaction,
-  uid: string
+  uid: string,
+  primaryProfileId: string
 ): Promise<void> {
   const userRef = db.collection('users').doc(uid)
   tx.set(
@@ -266,6 +267,7 @@ async function createUserAccountInTransaction(
       subscriptionStatus: 'free',
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
+      primaryProfileId,
     },
     { merge: true }
   )
@@ -317,9 +319,25 @@ export const ensureUserInitialized = onCall(async (request) => {
   }>(async (tx) => {
     const existing = await tx.get(userRef)
     if (existing.exists) {
-      const data = existing.data() as { activeProfileId?: unknown } | undefined
+      const data = existing.data() as
+        | { activeProfileId?: unknown; primaryProfileId?: unknown }
+        | undefined
       const activeProfileId =
         typeof data?.activeProfileId === 'string' ? data.activeProfileId : null
+
+      const primaryProfileId =
+        typeof data?.primaryProfileId === 'string'
+          ? data.primaryProfileId
+          : null
+      if (!primaryProfileId && activeProfileId) {
+        tx.set(
+          userRef,
+          {
+            primaryProfileId: activeProfileId,
+          },
+          { merge: true }
+        )
+      }
 
       if (!activeProfileId) {
         const profile = await createProfileInTransaction(
@@ -329,6 +347,14 @@ export const ensureUserInitialized = onCall(async (request) => {
           null,
           true
         )
+        tx.set(
+          userRef,
+          {
+            primaryProfileId: profile.profileId,
+          },
+          { merge: true }
+        )
+
         return {
           created: true,
           profileId: profile.profileId,
@@ -401,7 +427,7 @@ export const createProfile = onCall(async (request) => {
       true
     )
     if (!userExists) {
-      await createUserAccountInTransaction(tx, uid)
+      await createUserAccountInTransaction(tx, uid, profile.profileId)
     }
     return profile
   })
@@ -1113,7 +1139,10 @@ export const applyClassroomPackDefaults = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
   if (request.auth?.token?.profileId) {
-    throw new HttpsError('permission-denied', 'Profile sessions cannot update classes.')
+    throw new HttpsError(
+      'permission-denied',
+      'Profile sessions cannot update classes.'
+    )
   }
 
   const userRef = db.collection('users').doc(uid)

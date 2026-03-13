@@ -20,9 +20,20 @@ import { PROFILE_GRADE_OPTIONS } from './profileConstants'
 
 type AddLearnerModalProps = {
   onClose: () => void
+  onCreated?: (payload: {
+    profileId: string
+    displayName: string
+    loginName: string
+    gradeLevel: number | null
+  }) => void
+  selectProfileOnCreate?: boolean
 }
 
-const AddLearnerModal: FC<AddLearnerModalProps> = ({ onClose }) => {
+const AddLearnerModal: FC<AddLearnerModalProps> = ({
+  onClose,
+  onCreated,
+  selectProfileOnCreate = true,
+}) => {
   const { setActiveProfileId } = useUser()
   const { showNotification } = useNotification()
   const [newProfileName, setNewProfileName] = useState('')
@@ -52,7 +63,15 @@ const AddLearnerModal: FC<AddLearnerModalProps> = ({ onClose }) => {
       })
       const profileId = result?.data?.profileId
       if (profileId) {
-        await setActiveProfileId(profileId)
+        onCreated?.({
+          profileId,
+          displayName: result?.data?.displayName ?? trimmedName,
+          loginName: result?.data?.loginName ?? '',
+          gradeLevel,
+        })
+        if (selectProfileOnCreate) {
+          await setActiveProfileId(profileId)
+        }
       }
       onClose()
     } catch (error: unknown) {

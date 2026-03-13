@@ -56,6 +56,7 @@ import { ROUTES } from '../../constants/routeConstants'
 import { PACK_LABELS } from '../ProfilePage/components/profileConstants'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
+import AddLearnerModal from '../ProfilePage/components/AddLearnerModal'
 
 const ALL_PACKS: PackKey[] = [
   'add_20',
@@ -81,8 +82,7 @@ const CLASS_GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
 
 const formatClassGrade = (grade: GradeLevel) => {
   return (
-    CLASS_GRADE_OPTIONS.find((option) => option.value === grade)?.label ??
-    grade
+    CLASS_GRADE_OPTIONS.find((option) => option.value === grade)?.label ?? grade
   )
 }
 
@@ -92,8 +92,7 @@ const normalizePackSettings = (
 ): { enabledPacks: PackKey[]; activePack: PackKey } => {
   const unique = Array.from(new Set<PackKey>(enabledPacks ?? []))
   const ordered = ALL_PACKS.filter((pack) => unique.includes(pack))
-  const nextEnabled: PackKey[] =
-    ordered.length > 0 ? ordered : ['mul_36']
+  const nextEnabled: PackKey[] = ordered.length > 0 ? ordered : ['mul_36']
   const candidate: PackKey = activePack ?? 'mul_36'
   const nextActive = nextEnabled.includes(candidate)
     ? candidate
@@ -195,13 +194,13 @@ const ClassDetailPage: FC = () => {
   const { classId } = useParams()
   const navigate = useNavigate()
   const { db } = useFirebaseContext()
-  const { user } = useUser()
+  const { user, activeProfileId, setActiveProfileId } = useUser()
   const { showNotification } = useNotification()
   const [isRosterDialogOpen, setIsRosterDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingProfile, setEditingProfile] = useState<ClassroomRosterEntry | null>(
-    null
-  )
+  const [isCreateLearnerOpen, setIsCreateLearnerOpen] = useState(false)
+  const [editingProfile, setEditingProfile] =
+    useState<ClassroomRosterEntry | null>(null)
 
   const { execute: applyPackDefaults, isPending: isApplyPending } =
     useCloudFunction<
@@ -218,8 +217,11 @@ const ClassDetailPage: FC = () => {
     return doc(db, 'users', user.uid, 'classrooms', classId)
   }, [db, user?.uid, classId])
 
-  const { data: classroom, exists: classExists, loading: classLoading } =
-    useFirestoreDoc<Classroom>(classRef)
+  const {
+    data: classroom,
+    exists: classExists,
+    loading: classLoading,
+  } = useFirestoreDoc<Classroom>(classRef)
 
   const rosterQuery = useMemo(() => {
     if (!db || !user?.uid || !classId) return null
@@ -289,7 +291,10 @@ const ClassDetailPage: FC = () => {
     }
   }
 
-  const handleSaveClassPacks = async (nextEnabled: PackKey[], nextActive: PackKey) => {
+  const handleSaveClassPacks = async (
+    nextEnabled: PackKey[],
+    nextActive: PackKey
+  ) => {
     if (!db || !user?.uid || !classId) return
     try {
       await updateDoc(doc(db, 'users', user.uid, 'classrooms', classId), {
@@ -380,6 +385,78 @@ const ClassDetailPage: FC = () => {
     }
   }
 
+  const handleCreateLearner = async (payload: {
+    profileId: string
+    displayName: string
+    loginName: string
+    gradeLevel: number | null
+  }) => {
+    if (!db || !user?.uid || !classId) return
+
+    const normalized = normalizePackSettings(
+      classDefaults.enabledPacks,
+      classDefaults.activePack
+    )
+    const batch = writeBatch(db)
+    const rosterRef = doc(
+      db,
+      'users',
+      user.uid,
+      'classrooms',
+      classId,
+      'roster',
+      payload.profileId
+    )
+
+    batch.set(rosterRef, {
+      profileId: payload.profileId,
+      displayName: payload.displayName,
+      loginName: payload.loginName,
+      gradeLevel: payload.gradeLevel ?? null,
+      enabledPacks: normalized.enabledPacks,
+      activePack: normalized.activePack,
+      addedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      addedBy: user.uid,
+    })
+
+    const classDocRef = doc(db, 'users', user.uid, 'classrooms', classId)
+    batch.update(classDocRef, {
+      rosterCount: increment(1),
+      updatedAt: serverTimestamp(),
+    })
+
+    const profileRef = doc(db, 'users', user.uid, 'profiles', payload.profileId)
+    batch.set(
+      profileRef,
+      {
+        enabledPacks: normalized.enabledPacks,
+        activePack: normalized.activePack,
+        onboardingCompleted: true,
+        showTour: false,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    )
+
+    try {
+      await batch.commit()
+      showNotification('Learner created and added.', 'success')
+    } catch {
+      showNotification('Unable to add learner to class.', 'error')
+    }
+  }
+
+  const handleOpenLearnerProfile = async (entry: ClassroomRosterEntry) => {
+    if (!entry.profileId) return
+    try {
+      await setActiveProfileId(entry.profileId)
+      navigate(ROUTES.PROFILE)
+    } catch {
+      showNotification('Unable to open learner profile.', 'error')
+    }
+  }
+
   const handleRemoveProfile = async (entry: ClassroomRosterEntry) => {
     if (!db || !user?.uid || !classId) return
 
@@ -432,13 +509,7 @@ const ClassDetailPage: FC = () => {
       { merge: true }
     )
 
-    const profileRef = doc(
-      db,
-      'users',
-      user.uid,
-      'profiles',
-      entry.profileId
-    )
+    const profileRef = doc(db, 'users', user.uid, 'profiles', entry.profileId)
     batch.set(
       profileRef,
       {
@@ -461,7 +532,10 @@ const ClassDetailPage: FC = () => {
   if (!classroom) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Button startIcon={<ArrowBack />} onClick={() => navigate(ROUTES.CLASSES)}>
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => navigate(ROUTES.CLASSES)}
+        >
           Back to classes
         </Button>
         <Typography sx={{ mt: 3 }} color="text.secondary">
@@ -576,17 +650,19 @@ const ClassDetailPage: FC = () => {
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Button
                   variant="outlined"
-                  onClick={() => setEditingProfile({
-                    id: 'defaults',
-                    profileId: 'defaults',
-                    displayName: 'Class defaults',
-                    loginName: '',
-                    gradeLevel: null,
-                    enabledPacks: classDefaults.enabledPacks,
-                    activePack: classDefaults.activePack,
-                    addedAt: null,
-                    addedBy: user?.uid ?? '',
-                  })}
+                  onClick={() =>
+                    setEditingProfile({
+                      id: 'defaults',
+                      profileId: 'defaults',
+                      displayName: 'Class defaults',
+                      loginName: '',
+                      gradeLevel: null,
+                      enabledPacks: classDefaults.enabledPacks,
+                      activePack: classDefaults.activePack,
+                      addedAt: null,
+                      addedBy: user?.uid ?? '',
+                    })
+                  }
                 >
                   Edit defaults
                 </Button>
@@ -626,7 +702,9 @@ const ClassDetailPage: FC = () => {
             <Divider sx={{ my: 2 }} />
 
             {rosterLoading ? (
-              <Typography color="text.secondary">Loading learners...</Typography>
+              <Typography color="text.secondary">
+                Loading learners...
+              </Typography>
             ) : roster.length === 0 ? (
               <Typography color="text.secondary">
                 No learners yet. Add profiles to start tracking this class.
@@ -653,25 +731,38 @@ const ClassDetailPage: FC = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {PACK_LABELS[entry.activePack ?? classDefaults.activePack] ??
+                        {PACK_LABELS[
+                          entry.activePack ?? classDefaults.activePack
+                        ] ??
                           entry.activePack ??
                           classDefaults.activePack}
                       </TableCell>
                       <TableCell>
                         <Stack direction="row" spacing={1} flexWrap="wrap">
-                          {(entry.enabledPacks ?? classDefaults.enabledPacks).map(
-                            (pack) => (
-                              <Chip
-                                key={pack}
-                                size="small"
-                                label={PACK_LABELS[pack] ?? pack}
-                              />
-                            )
-                          )}
+                          {(
+                            entry.enabledPacks ?? classDefaults.enabledPacks
+                          ).map((pack) => (
+                            <Chip
+                              key={pack}
+                              size="small"
+                              label={PACK_LABELS[pack] ?? pack}
+                            />
+                          ))}
                         </Stack>
                       </TableCell>
                       <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          justifyContent="flex-end"
+                        >
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => handleOpenLearnerProfile(entry)}
+                          >
+                            Profile
+                          </Button>
                           <Button
                             size="small"
                             variant="outlined"
@@ -730,26 +821,41 @@ const ClassDetailPage: FC = () => {
             })}
           </List>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
           <Button
+            variant="outlined"
             onClick={() => {
               setIsRosterDialogOpen(false)
               setSelectedProfiles([])
+              setIsCreateLearnerOpen(true)
             }}
           >
-            Cancel
+            Create learner
           </Button>
-          <Button
-            variant="contained"
-            onClick={handleAddProfiles}
-            disabled={selectedProfiles.length === 0}
-          >
-            Add selected
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              onClick={() => {
+                setIsRosterDialogOpen(false)
+                setSelectedProfiles([])
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleAddProfiles}
+              disabled={selectedProfiles.length === 0}
+            >
+              Add selected
+            </Button>
+          </Stack>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)}>
+      <Dialog
+        open={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+      >
         <DialogTitle>Edit class details</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
@@ -853,6 +959,14 @@ const ClassDetailPage: FC = () => {
             }
             handleSaveProfilePacks(editingProfile, nextEnabled, nextActive)
           }}
+        />
+      ) : null}
+
+      {isCreateLearnerOpen ? (
+        <AddLearnerModal
+          onClose={() => setIsCreateLearnerOpen(false)}
+          selectProfileOnCreate={false}
+          onCreated={handleCreateLearner}
         />
       ) : null}
     </Container>

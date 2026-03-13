@@ -74,6 +74,25 @@ Multiplication Masters is a modern web application designed to help students mas
 - **`npm run serve`** - Run functions locally with emulators
 - **`npm run migrate:profiles`** - One-off migration to create learner profiles and move user data into profile subcollections
 
+### Admin Scripts (functions/)
+- **Prune inactive users (dry run)**
+  - Build: `npm --prefix functions run build`
+  - Run: `node functions/lib/scripts/pruneInactiveUsers.js --days 7 --dry-run`
+- **Prune inactive users (apply)**
+  - Run: `node functions/lib/scripts/pruneInactiveUsers.js --days 7 --yes`
+- Optional flags:
+  - `--limit 100` to cap deletions
+  - `--include-missing` to include users with missing `lastLogin` (scans all users)
+
+- **Recompute user stats (dry run)**
+  - Build: `npm --prefix functions run build`
+  - Run: `npm --prefix functions run recompute:user-stats -- --dry-run --uid <UID>`
+- **Recompute user stats (apply)**
+  - Run: `npm --prefix functions run recompute:user-stats -- --yes --uid <UID>`
+- Optional flags:
+  - `--limit 500` to cap users processed
+  - `--start-after <UID>` to resume pagination
+
 ## Frontend Structure (`src/`)
 
 ### Components (`src/components/`)
@@ -138,6 +157,7 @@ Top-level route components:
 - **HomePage** - Landing page with call-to-action
 - **PracticePage** - Main training interface with flash cards
 - **ProfilePage** - User profile and settings management
+- Teacher accounts create learner profiles from Classes > Add learners; the Profile page lets teachers switch between their profile and learners.
 - **SceneBuilderPage** - Scene customization interface
 - **StatsPage** - Comprehensive performance analytics dashboard
 - **PrivacyPolicyPage** - Privacy policy

@@ -4,6 +4,8 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "recompute:user-stats": "npm run build && node lib/scripts/recomputeUserStats.js",
+    "prune:inactive": "npm run build && node lib/scripts/pruneInactiveUsers.js",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",

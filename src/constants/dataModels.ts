@@ -67,6 +67,7 @@ export interface User {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   activeProfileId?: string
+  primaryProfileId?: string
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
 }
@@ -79,6 +80,7 @@ export interface UserAccount {
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   activeProfileId?: string
+  primaryProfileId?: string
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
 }
