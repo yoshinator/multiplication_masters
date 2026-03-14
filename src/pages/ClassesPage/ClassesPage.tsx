@@ -35,26 +35,19 @@ import { useNotification } from '../../contexts/notificationContext/notification
 import type { Classroom, GradeLevel } from '../../constants/dataModels'
 import { ROUTES } from '../../constants/routeConstants'
 import { PACK_LABELS } from '../ProfilePage/components/profileConstants'
-
-const CLASS_GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
-  { value: 'K', label: 'K' },
-  { value: '1', label: '1st' },
-  { value: '2', label: '2nd' },
-  { value: '3', label: '3rd' },
-  { value: '4', label: '4th' },
-  { value: '5', label: '5th' },
-  { value: '6', label: '6th' },
-  { value: '7', label: '7th' },
-  { value: '8', label: '8th' },
-  { value: '9+', label: '9+' },
-]
+import {
+  ALL_PACKS,
+  CLASS_GRADE_OPTIONS,
+  FREE_PACKS,
+  MUL_36,
+} from '../../constants/appConstants'
 
 const formatClassGrade = (grade: GradeLevel) => {
   return CLASS_GRADE_OPTIONS.find((option) => option.value === grade)?.label
 }
 
 const ClassesPage: FC = () => {
-  const { user, profile } = useUser()
+  const { user } = useUser()
   const { db } = useFirebaseContext()
   const { showNotification } = useNotification()
   const navigate = useNavigate()
@@ -78,9 +71,8 @@ const ClassesPage: FC = () => {
     )
   }, [db, user?.uid])
 
-  const { data: classrooms, loading } = useFirestoreQuery<Classroom>(
-    classesQuery
-  )
+  const { data: classrooms, loading } =
+    useFirestoreQuery<Classroom>(classesQuery)
 
   const handleCreate = async () => {
     if (!db || !user?.uid) return
@@ -98,8 +90,9 @@ const ClassesPage: FC = () => {
         subject: draft.subject.trim() || null,
         section: draft.section.trim() || null,
         room: draft.room.trim() || null,
-        defaultEnabledPacks: profile?.enabledPacks ?? ['add_20', 'mul_36'],
-        defaultActivePack: profile?.activePack ?? 'mul_36',
+        defaultEnabledPacks:
+          user?.subscriptionStatus === 'premium' ? ALL_PACKS : FREE_PACKS,
+        defaultActivePack: MUL_36,
         rosterCount: 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -207,8 +200,8 @@ const ClassesPage: FC = () => {
                       </Typography>
                       <Typography variant="body2">
                         {room.defaultActivePack
-                          ? PACK_LABELS[room.defaultActivePack] ??
-                            room.defaultActivePack
+                          ? (PACK_LABELS[room.defaultActivePack] ??
+                            room.defaultActivePack)
                           : 'Not set'}
                       </Typography>
                     </Box>
@@ -243,7 +236,10 @@ const ClassesPage: FC = () => {
               label="School year"
               value={draft.schoolYear}
               onChange={(event) =>
-                setDraft((prev) => ({ ...prev, schoolYear: event.target.value }))
+                setDraft((prev) => ({
+                  ...prev,
+                  schoolYear: event.target.value,
+                }))
               }
               placeholder="2025-2026"
             />
@@ -295,7 +291,11 @@ const ClassesPage: FC = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={isSaving}>
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            disabled={isSaving}
+          >
             Create class
           </Button>
         </DialogActions>

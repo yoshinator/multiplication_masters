@@ -40,6 +40,7 @@ export type PackKey =
   | 'mul_36'
   | 'mul_144'
   | 'mul_576'
+  | 'mul_div_144'
   | 'div_144'
   | 'add_20'
   | 'sub_20'

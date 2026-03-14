@@ -32,7 +32,6 @@ import {
 import { Add, ArrowBack, DeleteOutline, Edit } from '@mui/icons-material'
 import {
   collection,
-  deleteDoc,
   doc,
   increment,
   orderBy,
@@ -57,28 +56,7 @@ import { PACK_LABELS } from '../ProfilePage/components/profileConstants'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
 import AddLearnerModal from '../ProfilePage/components/AddLearnerModal'
-
-const ALL_PACKS: PackKey[] = [
-  'add_20',
-  'sub_20',
-  'mul_36',
-  'mul_144',
-  'mul_576',
-  'div_144',
-]
-
-const CLASS_GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
-  { value: 'K', label: 'K' },
-  { value: '1', label: '1st' },
-  { value: '2', label: '2nd' },
-  { value: '3', label: '3rd' },
-  { value: '4', label: '4th' },
-  { value: '5', label: '5th' },
-  { value: '6', label: '6th' },
-  { value: '7', label: '7th' },
-  { value: '8', label: '8th' },
-  { value: '9+', label: '9+' },
-]
+import { ALL_PACKS, CLASS_GRADE_OPTIONS } from '../../constants/appConstants'
 
 const formatClassGrade = (grade: GradeLevel) => {
   return (
@@ -327,7 +305,10 @@ const ClassDetailPage: FC = () => {
   }
 
   const availableProfiles = profiles.filter(
-    (profile) => !roster.some((entry) => entry.profileId === profile.id)
+    // Filter out teacher and profiles already in the roster.
+    (profile) =>
+      profile.id !== user?.primaryProfileId &&
+      !roster.some((entry) => entry.profileId === profile.id)
   )
 
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([])
@@ -337,6 +318,8 @@ const ClassDetailPage: FC = () => {
     if (selectedProfiles.length === 0) return
 
     const batch = writeBatch(db)
+    let profilesAdded = 0
+
     selectedProfiles.forEach((profileId) => {
       const profile = profiles.find((item) => item.id === profileId)
       if (!profile) return
@@ -367,11 +350,19 @@ const ClassDetailPage: FC = () => {
         updatedAt: serverTimestamp(),
         addedBy: user.uid,
       })
+
+      profilesAdded++
     })
+
+    if (profilesAdded === 0) {
+      setSelectedProfiles([])
+      setIsRosterDialogOpen(false)
+      return
+    }
 
     const classDocRef = doc(db, 'users', user.uid, 'classrooms', classId)
     batch.update(classDocRef, {
-      rosterCount: increment(selectedProfiles.length),
+      rosterCount: increment(profilesAdded),
       updatedAt: serverTimestamp(),
     })
 
@@ -449,11 +440,12 @@ const ClassDetailPage: FC = () => {
 
   const handleOpenLearnerProfile = async (entry: ClassroomRosterEntry) => {
     if (!entry.profileId) return
+    // only navigate to profile page on success
     try {
       await setActiveProfileId(entry.profileId)
       navigate(ROUTES.PROFILE)
     } catch {
-      showNotification('Unable to open learner profile.', 'error')
+      // error caught at provider
     }
   }
 
@@ -461,18 +453,19 @@ const ClassDetailPage: FC = () => {
     if (!db || !user?.uid || !classId) return
 
     try {
-      await deleteDoc(
-        doc(
-          db,
-          'users',
-          user.uid,
-          'classrooms',
-          classId,
-          'roster',
-          entry.profileId
-        )
+      const batch = writeBatch(db)
+      const rosterRef = doc(
+        db,
+        'users',
+        user.uid,
+        'classrooms',
+        classId,
+        'roster',
+        entry.profileId
       )
-      await updateDoc(doc(db, 'users', user.uid, 'classrooms', classId), {
+      const classroomRef = doc(db, 'users', user.uid, 'classrooms', classId)
+      batch.delete(rosterRef)
+      batch.update(classroomRef, {
         rosterCount: increment(-1),
         updatedAt: serverTimestamp(),
       })
@@ -771,6 +764,7 @@ const ClassDetailPage: FC = () => {
                             Packs
                           </Button>
                           <IconButton
+                            aria-label="Remove learner"
                             color="error"
                             onClick={() => handleRemoveProfile(entry)}
                           >

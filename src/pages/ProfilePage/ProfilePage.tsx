@@ -19,7 +19,11 @@ import SaveProgressModal from '../../components/Login/SaveProgressModal'
 import SetPinModal from '../../components/Login/SetPinModal'
 import SavedScenesGallery from '../../components/SavedScenesGallery/SavedScenesGallery'
 import SceneThemeSelect from '../../components/SceneThemeSelect/SceneThemeSelect'
-import { MAX_NEW_CARDS_PER_DAY } from '../../constants/appConstants'
+import {
+  ALL_PACKS,
+  FREE_PACKS,
+  MAX_NEW_CARDS_PER_DAY,
+} from '../../constants/appConstants'
 import type { PackKey, UserProfile } from '../../constants/dataModels'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useModal } from '../../contexts/modalContext/modalContext'
@@ -127,12 +131,9 @@ const ProfilePage: FC = () => {
 
   const handleReturnToOwner = async () => {
     if (!ownerProfileId) return
-    try {
-      await setActiveProfileId(ownerProfileId)
-    } catch {
-      showNotification('Unable to switch back to your profile.', 'error')
-    }
+    await setActiveProfileId(ownerProfileId)
   }
+
   const handleSelectProfile = async (profileId: string) => {
     await setActiveProfileId(profileId)
   }
@@ -211,7 +212,11 @@ const ProfilePage: FC = () => {
 
         <ActiveFactPackSection
           activePack={profile?.activePack || ''}
-          enabledPacks={(profile?.enabledPacks || []) as PackKey[]}
+          enabledPacks={
+            (user?.subscriptionStatus === 'premium'
+              ? ALL_PACKS
+              : FREE_PACKS) as PackKey[]
+          }
           onPackChange={handlePackChange}
         />
 
