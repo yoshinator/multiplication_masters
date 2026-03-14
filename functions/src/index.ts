@@ -6,7 +6,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { getAuth } from 'firebase-admin/auth'
 import bcrypt from 'bcryptjs'
-import { MASTER_FACTS, PackMeta, UserFact } from './masterCards'
+import { MASTER_FACTS, PackMeta } from './masterCards'
 
 initializeApp()
 const db = getFirestore()
@@ -22,6 +22,31 @@ const PROFILE_NAME_MAX_LEN = 20
 const PROFILE_NAME_REGEX_VALIDATION = new RegExp(
   `^[a-zA-Z0-9_]{${PROFILE_NAME_MIN_LEN},${PROFILE_NAME_MAX_LEN}}$`
 )
+
+const normalizePackSelection = (
+  rawEnabled: unknown,
+  rawActive: unknown
+): { enabledPacks: string[]; activePack: string } => {
+  const enabled = Array.isArray(rawEnabled)
+    ? rawEnabled.filter(
+        (pack) => typeof pack === 'string' && pack in MASTER_FACTS
+      )
+    : []
+  const uniqueEnabled = Array.from(new Set(enabled))
+  if (uniqueEnabled.length === 0) {
+    uniqueEnabled.push(...DEFAULT_ENABLED_PACKS)
+  }
+
+  const active =
+    typeof rawActive === 'string' && rawActive in MASTER_FACTS
+      ? rawActive
+      : uniqueEnabled[0]
+  if (!uniqueEnabled.includes(active)) {
+    uniqueEnabled.push(active)
+  }
+
+  return { enabledPacks: uniqueEnabled, activePack: active }
+}
 
 const normalizeLoginNameKey = (loginName: string): string =>
   loginName.trim().toLowerCase()
@@ -224,13 +249,14 @@ async function createInitialUserInTransaction(
     null,
     true
   )
-  await createUserAccountInTransaction(tx, uid)
+  await createUserAccountInTransaction(tx, uid, profile.profileId)
   return profile
 }
 
 async function createUserAccountInTransaction(
   tx: FirebaseFirestore.Transaction,
-  uid: string
+  uid: string,
+  primaryProfileId: string
 ): Promise<void> {
   const userRef = db.collection('users').doc(uid)
   tx.set(
@@ -241,6 +267,7 @@ async function createUserAccountInTransaction(
       subscriptionStatus: 'free',
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
+      primaryProfileId,
     },
     { merge: true }
   )
@@ -292,9 +319,25 @@ export const ensureUserInitialized = onCall(async (request) => {
   }>(async (tx) => {
     const existing = await tx.get(userRef)
     if (existing.exists) {
-      const data = existing.data() as { activeProfileId?: unknown } | undefined
+      const data = existing.data() as
+        | { activeProfileId?: unknown; primaryProfileId?: unknown }
+        | undefined
       const activeProfileId =
         typeof data?.activeProfileId === 'string' ? data.activeProfileId : null
+
+      const primaryProfileId =
+        typeof data?.primaryProfileId === 'string'
+          ? data.primaryProfileId
+          : null
+      if (!primaryProfileId && activeProfileId) {
+        tx.set(
+          userRef,
+          {
+            primaryProfileId: activeProfileId,
+          },
+          { merge: true }
+        )
+      }
 
       if (!activeProfileId) {
         const profile = await createProfileInTransaction(
@@ -304,6 +347,14 @@ export const ensureUserInitialized = onCall(async (request) => {
           null,
           true
         )
+        tx.set(
+          userRef,
+          {
+            primaryProfileId: profile.profileId,
+          },
+          { merge: true }
+        )
+
         return {
           created: true,
           profileId: profile.profileId,
@@ -376,7 +427,7 @@ export const createProfile = onCall(async (request) => {
       true
     )
     if (!userExists) {
-      await createUserAccountInTransaction(tx, uid)
+      await createUserAccountInTransaction(tx, uid, profile.profileId)
     }
     return profile
   })
@@ -782,306 +833,83 @@ export const provisionFacts = onCall(async (request) => {
   })
 })
 
-const ensureMetaForExistingFacts = async (
-  profileRef: FirebaseFirestore.DocumentReference,
-  factsCol: FirebaseFirestore.CollectionReference
-) => {
-  const profileSnap = await profileRef.get()
-  const userData = profileSnap.data() as
-    | {
-        activePack?: unknown
-        enabledPacks?: unknown
-        activeScene?: unknown
-        metaInitialized?: unknown
-      }
-    | undefined
-
-  const activePack =
-    typeof userData?.activePack === 'string' &&
-    userData.activePack in MASTER_FACTS
-      ? userData.activePack
-      : 'mul_36'
-
-  const rawEnabled = Array.isArray(userData?.enabledPacks)
-    ? userData?.enabledPacks
-    : []
-  const normalizedEnabled = rawEnabled.filter(
-    (pack) => typeof pack === 'string' && pack in MASTER_FACTS
-  ) as string[]
-
-  if (normalizedEnabled.length === 0) {
-    normalizedEnabled.push(...DEFAULT_ENABLED_PACKS)
-  }
-  if (!normalizedEnabled.includes(activePack)) {
-    normalizedEnabled.push(activePack)
-  }
-
-  const activeScene =
-    typeof userData?.activeScene === 'string' ? userData.activeScene : 'garden'
-
-  const masterList = MASTER_FACTS[activePack]
-  const factsSnap = await factsCol.get()
-  const factIds = new Set(factsSnap.docs.map((doc) => doc.id))
-
-  let nextSeq = masterList.length
-  for (let i = 0; i < masterList.length; i++) {
-    if (!factIds.has(masterList[i].id)) {
-      nextSeq = i
-      break
-    }
-  }
-
-  const packMetaRef = profileRef.collection('packMeta').doc(activePack)
-  const sceneMetaRef = profileRef.collection('sceneMeta').doc(activeScene)
-
-  const userPatch: Record<string, unknown> = {}
-  if (userData?.metaInitialized !== true) userPatch.metaInitialized = true
-
-  await db.runTransaction(async (transaction) => {
-    const packMetaSnap = await transaction.get(packMetaRef)
-    if (!packMetaSnap.exists) {
-      transaction.create(packMetaRef, {
-        packName: activePack,
-        totalFacts: masterList.length,
-        isCompleted: nextSeq >= masterList.length,
-        nextSeqToIntroduce: nextSeq,
-        lastActivity: Date.now(),
-      })
-    }
-
-    const sceneMetaSnap = await transaction.get(sceneMetaRef)
-    if (!sceneMetaSnap.exists) {
-      transaction.create(sceneMetaRef, {
-        sceneId: activeScene,
-        xp: 0,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      })
-    }
-
-    if (Object.keys(userPatch).length > 0) {
-      transaction.set(profileRef, userPatch, { merge: true })
-    }
-  })
-  if (userData?.activePack !== activePack) userPatch.activePack = activePack
-  if (userData?.activeScene !== activeScene) userPatch.activeScene = activeScene
-  if (
-    normalizedEnabled.length > 0 &&
-    JSON.stringify(normalizedEnabled) !== JSON.stringify(userData?.enabledPacks)
-  ) {
-    userPatch.enabledPacks = normalizedEnabled
-  }
-
-  const batch = db.batch()
-  if (Object.keys(userPatch).length > 0) {
-    batch.set(profileRef, userPatch, { merge: true })
-  }
-
-  await batch.commit()
-}
-
-export const migrateUserToFacts = onCall(async (request) => {
+export const applyClassroomPackDefaults = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+  if (request.auth?.token?.profileId) {
+    throw new HttpsError(
+      'permission-denied',
+      'Profile sessions cannot update classes.'
+    )
+  }
 
   const userRef = db.collection('users').doc(uid)
-  const profileId = await resolveActiveProfileId(
-    uid,
-    request.auth?.token?.profileId
+  const userSnap = await userRef.get()
+  const userRole = userSnap.data()?.userRole
+  if (userRole !== 'teacher') {
+    throw new HttpsError('permission-denied', 'Teacher role required.')
+  }
+
+  const { classId, defaultEnabledPacks, defaultActivePack } = request.data || {}
+  if (typeof classId !== 'string' || !classId.trim()) {
+    throw new HttpsError('invalid-argument', 'classId is required.')
+  }
+
+  const normalized = normalizePackSelection(
+    defaultEnabledPacks,
+    defaultActivePack
   )
-  const profileRef = userRef.collection('profiles').doc(profileId)
-  const cardsCol = userRef.collection('UserCards')
-  const factsCol = profileRef.collection('UserFacts')
 
-  const existingFacts = await factsCol.limit(1).get()
-  if (!existingFacts.empty) {
-    await ensureMetaForExistingFacts(profileRef, factsCol)
-    return {
-      success: true,
-      message: 'UserFacts already exist. Skipping migration.',
-    }
+  const classRef = userRef.collection('classrooms').doc(classId)
+  const classSnap = await classRef.get()
+  if (!classSnap.exists) {
+    throw new HttpsError('not-found', 'Classroom not found.')
   }
 
-  // 1. Fetch only seen cards
-  const snapshot = await cardsCol.where('seen', '>', 0).get()
-  if (snapshot.empty) {
-    // If they have no seen cards, just initialize them as a fresh user
-    // so we don't keep trying to migrate them.
-    await userRef.set(
-      {
-        activeProfileId: profileId,
-      },
-      { merge: true }
-    )
-    await profileRef.set(
-      {
-        metaInitialized: true,
-        enabledPacks: [...DEFAULT_ENABLED_PACKS],
-        activePack: 'mul_36',
-      },
-      { merge: true }
-    )
-    return {
-      success: true,
-      message: 'No seen cards to migrate. Initialized as new.',
-    }
-  }
+  await classRef.set(
+    {
+      defaultEnabledPacks: normalized.enabledPacks,
+      defaultActivePack: normalized.activePack,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  )
 
-  const migratedIds = new Set<string>()
-  let maxOperand = 0
-
-  // We'll use a chunked batch approach to avoid the 500-write limit
-  const batches: FirebaseFirestore.WriteBatch[] = []
-  let currentBatch = db.batch()
+  const rosterSnap = await classRef.collection('roster').get()
+  let batch = db.batch()
   let opCount = 0
+  const commitThreshold = 400
 
-  const commitThreshold = 450 // leave buffer
+  const updates = {
+    enabledPacks: normalized.enabledPacks,
+    activePack: normalized.activePack,
+    updatedAt: FieldValue.serverTimestamp(),
+  }
 
-  for (const docSnap of snapshot.docs) {
-    const data = docSnap.data()
-    // Old ID format: "3-4"
-    const [op1Str, op2Str] = docSnap.id.split('-')
-    const op1 = parseInt(op1Str, 10)
-    const op2 = parseInt(op2Str, 10)
+  const commitBatch = async () => {
+    if (opCount === 0) return
+    await batch.commit()
+    batch = db.batch()
+    opCount = 0
+  }
 
-    if (isNaN(op1) || isNaN(op2)) continue
+  for (const rosterDoc of rosterSnap.docs) {
+    const rosterRef = classRef.collection('roster').doc(rosterDoc.id)
+    batch.update(rosterRef, updates)
+    opCount++
 
-    maxOperand = Math.max(maxOperand, op1, op2)
-    const factId = `mul:${op1}:${op2}`
-
-    const newFact: UserFact = {
-      id: factId,
-      type: 'mul',
-      operands: [op1, op2],
-      answer: data.value,
-      level: op1,
-      difficulty: data.difficulty || 'basic',
-
-      // SRS
-      box: data.box || 1,
-      nextDueTime: data.nextDueTime || 0,
-      lastReviewed: data.lastReviewed || null,
-      wasLastReviewCorrect: data.wasLastReviewCorrect || false,
-      lastElapsedTime: data.lastElapsedTime || 0,
-      avgResponseTime: data.avgResponseTime || null,
-
-      // Counters
-      seen: data.seen || 0,
-      correct: data.correct || 0,
-      incorrect: data.incorrect || 0,
-      streak: data.streak || 0,
-
-      expression: `${op1} × ${op2}`,
-    }
-
-    currentBatch.set(factsCol.doc(factId), newFact)
-    migratedIds.add(factId)
+    const profileRef = userRef.collection('profiles').doc(rosterDoc.id)
+    batch.set(profileRef, updates, { merge: true })
     opCount++
 
     if (opCount >= commitThreshold) {
-      batches.push(currentBatch)
-      currentBatch = db.batch()
-      opCount = 0
+      await commitBatch()
     }
   }
 
-  // 2. Determine Pack and Meta
-  // If they have seen 13x13, they are in the 576 pack. Otherwise default to 144.
-  const packName = maxOperand > 12 ? 'mul_576' : 'mul_144'
-  const masterList = MASTER_FACTS[packName]
+  await commitBatch()
 
-  if (masterList) {
-    // Find first missing index to set cursor.
-    // This ensures provisionFacts fills any holes in their knowledge first.
-    let nextSeq = masterList.length
-    for (let i = 0; i < masterList.length; i++) {
-      if (!migratedIds.has(masterList[i].id)) {
-        nextSeq = i
-        break
-      }
-    }
-
-    const metaRef = profileRef.collection('packMeta').doc(packName)
-    currentBatch.set(
-      metaRef,
-      {
-        packName,
-        totalFacts: masterList.length,
-        isCompleted: nextSeq >= masterList.length,
-        nextSeqToIntroduce: nextSeq,
-        lastActivity: Date.now(),
-      },
-      { merge: true }
-    )
-    // Build enabled packs list so that the active pack is always included.
-    const enabledPacks = DEFAULT_ENABLED_PACKS.includes(
-      packName as (typeof DEFAULT_ENABLED_PACKS)[number]
-    )
-      ? [...DEFAULT_ENABLED_PACKS]
-      : [...DEFAULT_ENABLED_PACKS, packName]
-    // Update user pointers
-    currentBatch.set(
-      profileRef,
-      {
-        activePack: packName,
-        enabledPacks, // Ensure basics are enabled and active pack is included
-        metaInitialized: true,
-      },
-      { merge: true }
-    )
-  }
-
-  batches.push(currentBatch)
-
-  // Commit all
-  try {
-    for (const batch of batches) {
-      await batch.commit()
-    }
-  } catch (err) {
-    logger.error('Failed to migrate user cards to facts', {
-      uid,
-      error: (err as Error)?.message ?? err,
-    })
-
-    // Attempt rollback to ensure no partial state
-    try {
-      logger.info(`Initiating rollback for user ${uid}`)
-      const rollbackBatches: FirebaseFirestore.WriteBatch[] = []
-      let rbBatch = db.batch()
-      let rbCount = 0
-
-      for (const factId of migratedIds) {
-        rbBatch.delete(factsCol.doc(factId))
-        rbCount++
-        if (rbCount >= 450) {
-          rollbackBatches.push(rbBatch)
-          rbBatch = db.batch()
-          rbCount = 0
-        }
-      }
-      // Reset metaInitialized to false to allow retry
-      rbBatch.set(userRef, { metaInitialized: false }, { merge: true })
-      rollbackBatches.push(rbBatch)
-
-      for (const batch of rollbackBatches) {
-        await batch.commit()
-      }
-      logger.info(`Rollback completed for user ${uid}`)
-    } catch (rollbackErr) {
-      logger.error('Rollback failed', {
-        uid,
-        error: (rollbackErr as Error)?.message ?? rollbackErr,
-      })
-    }
-
-    throw new HttpsError(
-      'internal',
-      'Failed to migrate user data. Please try again later.'
-    )
-  }
-
-  return { success: true, count: migratedIds.size, pack: packName }
+  return { success: true, updated: rosterSnap.size }
 })
 
 export const saveUserScene = onCall(async (request) => {

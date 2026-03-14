@@ -11,7 +11,7 @@ import { useModal } from '../../contexts/modalContext/modalContext'
 import { isPublicInfoPath } from '../../constants/publicInfoRoutes'
 
 const Header = () => {
-  const { user, isLoading } = useUser()
+  const { user, isLoading, isProfileSession } = useUser()
   const isMobile = useIsMobile()
   const { openModal, closeModal } = useModal()
   const { loginAnonymously } = useAuthActions()
@@ -25,6 +25,9 @@ const Header = () => {
         { label: 'Train', path: ROUTES.TRAIN },
         { label: 'Stats', path: ROUTES.STATS },
         { label: 'Builder', path: ROUTES.BUILDER },
+        ...(user.userRole === 'teacher' && !isProfileSession
+          ? [{ label: 'Classes', path: ROUTES.CLASSES }]
+          : []),
         { label: 'Profile', path: ROUTES.PROFILE },
       ]
     : isPublicInfoRoute

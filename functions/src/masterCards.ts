@@ -160,6 +160,7 @@ export const MASTER_FACTS: Record<string, UserFact[]> = {
   mul_144: generateMulPack(1, 12),
   mul_576: generateMulPack(1, 24),
   div_144: generateDivPack(1, 12),
+  mul_div_144: [...generateMulPack(1, 12), ...generateDivPack(1, 12)],
   add_20: generateAddPack(20),
   sub_20: generateSubPack(20),
 }

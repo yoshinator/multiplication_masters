@@ -8,20 +8,24 @@ type LearnerProfilesSectionProps = {
   profiles: UserProfile[]
   activeProfileId: string | null
   onSelectProfile: (profileId: string) => void
+  title?: string
+  description?: string
 }
 
 const LearnerProfilesSection: FC<LearnerProfilesSectionProps> = ({
   profiles,
   activeProfileId,
   onSelectProfile,
+  title = 'Learner Profiles',
+  description = 'Select which learner profile is active for this device.',
 }) => {
   return (
     <ProfileSectionCard>
       <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-        Learner Profiles
+        {title}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Select which learner profile is active for this device.
+        {description}
       </Typography>
 
       <Box

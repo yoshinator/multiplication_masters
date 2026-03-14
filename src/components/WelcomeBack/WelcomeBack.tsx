@@ -9,6 +9,7 @@ import CardLoadingSkeleton from '../CardLoadingSkeleton/CardLoadingSkeleton'
 import { useModal } from '../../contexts/modalContext/modalContext'
 import OnboardingModal from '../Onboarding/OnboardingModal'
 import type { GradeLevel, PackKey } from '../../constants/dataModels'
+import { ALL_PACKS, FREE_PACKS } from '../../constants/appConstants'
 
 const WelcomeBack: FC = () => {
   const { startSession, isLoading } = useCardSchedulerContext()
@@ -32,21 +33,20 @@ const WelcomeBack: FC = () => {
   const ensureOnboarding = useCallback(() => {
     if (isProfileSession) return true
     if (!profile || profile.onboardingCompleted) return true
+    if (user?.userRole === 'teacher' || user?.userRole === 'parent') {
+      const ownerProfileId = user?.primaryProfileId
+      if (ownerProfileId && ownerProfileId !== profile.id) {
+        return true
+      }
+    }
     if (!onboardingOpenedRef.current) {
       onboardingOpenedRef.current = true
       openModal(
         <OnboardingModal
           onComplete={({ role, gradeLevels, learnerCount }) => {
             const defaultPack = getDefaultPackForGrades(gradeLevels)
-            const starterPacks: PackKey[] = ['add_20', 'sub_20', 'mul_36']
             const isPremium = user?.subscriptionStatus === 'premium'
-            const enabledPacks = Array.from(
-              new Set(
-                isPremium
-                  ? [...(profile.enabledPacks ?? []), defaultPack]
-                  : [...starterPacks, defaultPack]
-              )
-            )
+            const enabledPacks = isPremium ? ALL_PACKS : FREE_PACKS
 
             updateAccount({
               userRole: role,

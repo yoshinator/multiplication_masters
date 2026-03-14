@@ -34,6 +34,8 @@ import { omitUndefined } from '../../utilities/firebaseHelpers'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
 import { useFirestoreDoc } from '../../hooks/useFirestore'
 import { type SceneTheme } from '../../constants/sceneDefinitions'
+import { useNotification } from '../notificationContext/notificationContext'
+import { extractErrorMessage } from '../../utilities/typeutils'
 
 type Props = {
   children: ReactNode
@@ -49,6 +51,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading')
   const logger = useLogger('UserProvider')
   const { app, auth, db, loadUserFacts, userFacts } = useFirebaseContext()
+  const { showNotification } = useNotification()
 
   /**
    * This guy is just accumulating field values during renders before
@@ -364,10 +367,13 @@ const UserProvider: FC<Props> = ({ children }) => {
         await updateDoc(userRef, { activeProfileId: profileId })
         setActiveProfileIdState(profileId)
       } catch (err) {
-        logger('Error setting active profile:', err)
+        showNotification(
+          `Error setting active profile: ${extractErrorMessage(err)}`,
+          'error'
+        )
       }
     },
-    [db, user?.uid, logger]
+    [db, user?.uid, showNotification]
   )
 
   // Create user or set user if exists effect
@@ -509,7 +515,11 @@ const UserProvider: FC<Props> = ({ children }) => {
               (claimProfileId || accountData.activeProfileId) ?? null
             setActiveProfileIdState(nextProfileId)
 
-            if (!nextProfileId && !ensureUserInitInFlightRef.current) {
+            const missingPrimary = !accountData.primaryProfileId
+            if (
+              (!nextProfileId || missingPrimary) &&
+              !ensureUserInitInFlightRef.current
+            ) {
               ensureUserInitInFlightRef.current = true
               void (async () => {
                 try {

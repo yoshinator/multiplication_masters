@@ -9,6 +9,7 @@ import {
 } from '@mui/material'
 import AppModal from '../AppModal/AppModal'
 import type { GradeLevel, UserRole } from '../../constants/dataModels'
+import { CLASS_GRADE_OPTIONS } from '../../constants/appConstants'
 
 const ROLE_OPTIONS: Array<{
   value: UserRole
@@ -35,20 +36,6 @@ const ROLE_OPTIONS: Array<{
     label: 'Adult Learner',
     helper: 'Build speed and confidence with targeted practice.',
   },
-]
-
-const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
-  { value: 'K', label: 'K' },
-  { value: '1', label: '1st' },
-  { value: '2', label: '2nd' },
-  { value: '3', label: '3rd' },
-  { value: '4', label: '4th' },
-  { value: '5', label: '5th' },
-  { value: '6', label: '6th' },
-  { value: '7', label: '7th' },
-  { value: '8', label: '8th' },
-  { value: '9+', label: '9+' },
-  { value: 'adult', label: 'Adult/Other' },
 ]
 
 type OnboardingModalProps = {
@@ -179,7 +166,7 @@ const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
                 gap: 1,
               }}
             >
-              {GRADE_OPTIONS.map((option) => {
+              {CLASS_GRADE_OPTIONS.map((option) => {
                 const selected = gradeLevels.includes(option.value)
                 return (
                   <Button
