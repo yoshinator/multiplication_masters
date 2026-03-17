@@ -260,7 +260,8 @@ Type definitions and configuration:
 
 - **appConstants.ts** - Session lengths, mastery thresholds, XP values, daily goal
 - **dataModels.ts** - TypeScript interfaces:
-  - `User` - User document schema
+  - `UserAccount` - User document schema (with billing/entitlement fields)
+  - `ClientUpdatableUserAccount` - `Omit<UserAccount, NonEditableUserField>` — use this for `updateAccount()` calls to prevent accidentally passing server-managed fields
   - `UserFact` - Individual fact card schema (includes SRS fields: box, nextDueTime, avgResponseTime, etc.)
   - `SessionRecord` - Session history document schema
   - `PackMeta` - Pack metadata (e.g., "1-12" or "13-24")
@@ -294,6 +295,7 @@ Node.js 24 TypeScript Cloud Functions:
 - Scheduled functions (if applicable)
 - Classroom pack management (`applyClassroomPackDefaults`)
 - Username+PIN auth callables (custom-token minting + PIN setup + lockout reset)
+- **stripe.ts** - Stripe Checkout and webhook handling (see Stripe Billing section below)
 
 User initialization is server-side:
 - `initializeUserOnAuthCreate` (Firebase Auth onCreate) creates `users/{uid}` with default fields and an assigned username.
@@ -306,7 +308,8 @@ User initialization is server-side:
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "firebase-admin": "^12.0.0",
-    "firebase-functions": "^7.0.3"
+    "firebase-functions": "^7.0.3",
+    "stripe": "^20.4.1"
   }
 }
 ```
@@ -316,11 +319,22 @@ User initialization is server-side:
 ### User Document (`users/{uid}`)
 ```typescript
 type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'profilePin'
+type PlanType = 'parent' | 'teacher' | 'none'
+type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
 interface UserAccount {
   uid: string
   userRole: 'student' | 'teacher' | 'parent' | 'adult'
   subscriptionStatus: 'free' | 'premium'
+  planType?: PlanType              // server-managed
+  billingPeriod?: BillingPeriod   // server-managed
+  stripeCustomerId?: string       // server-managed
+  stripeSubscriptionId?: string | null  // server-managed
+  stripePriceId?: string | null   // server-managed
+  promoCodeId?: string | null     // server-managed
+  premiumExpiresAt?: Timestamp | null   // server-managed (promo expiry)
+  classroomCount?: number         // server-managed (incremented by Cloud Function)
+  primaryProfileId?: string       // server-managed
   createdAt: Timestamp | null
   lastLogin: Timestamp | null
   lastSignInMethod?: SignInMethod
@@ -329,6 +343,13 @@ interface UserAccount {
   lastUpgradePromptAt?: Timestamp
 }
 ```
+
+Fields marked **server-managed** are blocked from client writes in both Firestore rules and the `ClientUpdatableUserAccount` TypeScript type (`Omit<UserAccount, NonEditableUserField>`).
+
+Free-tier limits (defined in `src/constants/appConstants.ts`):
+- `FREE_PACKS = ['mul_36', 'add_20', 'sub_20']`
+- `FREE_TEACHER_MAX_CLASSROOMS = 1`
+- `FREE_TEACHER_MAX_ROSTER = 25`
 
 ### UserProfile Document (`users/{uid}/profiles/{profileId}`)
 ```typescript
@@ -440,6 +461,46 @@ interface SessionRecord {
   }>
 }
 ```
+
+## Stripe Billing
+
+### Architecture
+- **Secrets** (never in env vars): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — stored in Firebase Secret Manager, injected at runtime via `defineSecret()`.
+- **Non-secret price IDs**: stored as Firebase Functions environment variables (see `functions/.env.template`). Set per environment via Firebase console or `.env` for emulator.
+
+### Cloud Functions (`functions/src/stripe.ts`)
+
+**`createCheckoutSession`** (onCall, requires auth)
+- Validates `planType` (`parent`|`teacher`), `billingPeriod` (`monthly`|`yearly`|`lifetime`), `successUrl`, `cancelUrl`.
+- Profile sessions are blocked from purchasing (must use parent/teacher account).
+- Reuses or creates a Stripe Customer, then creates a Checkout Session:
+  - `mode: 'payment'` for lifetime, `mode: 'subscription'` for monthly/yearly.
+  - Passes `metadata: { uid, planType, billingPeriod, priceId }` for webhook consumption.
+- Returns `{ checkoutUrl }`.
+
+**`stripeWebhook`** (onRequest, POST only)
+- Verifies signature via `stripe.webhooks.constructEvent(req.rawBody, sig, secret)`.
+- Handles 5 events:
+  | Event | Handler | Effect |
+  |-------|---------|--------|
+  | `checkout.session.completed` | `handleCheckoutCompleted` | Sets `subscriptionStatus: 'premium'`, stores plan fields. Lifetime purchases set `billingPeriod: 'lifetime'` and `stripeSubscriptionId: null`. |
+  | `invoice.paid` | `handleInvoicePaid` | Confirms/restores premium on renewal. Subscription ID from `invoice.parent?.subscription_details?.subscription` (Stripe v20 API). |
+  | `customer.subscription.updated` | `handleSubscriptionUpdated` | Sets premium on `active`/`trialing` status; ignores `past_due`/`unpaid` (Stripe retries before deletion). |
+  | `customer.subscription.deleted` | `handleSubscriptionDeleted` | Downgrades to free. |
+  | `charge.refunded` | `handleChargeRefunded` | Full refund only → downgrades to free. |
+- All handlers guard lifetime users: skip subscription-event processing if `billingPeriod === 'lifetime'`.
+
+### Entitlement Enforcement
+- Pack gating: enforced in `firestore.rules` (pack must be in `FREE_PACKS` or user has `subscriptionStatus: 'premium'`).
+- Classroom/roster quantity limits: **deferred to Cloud Functions (PR 2)** — client-maintained counters are untrustworthy for auth decisions; `classroomCount` is server-managed.
+
+### Local Development
+1. Copy `functions/.env.template` → `functions/.env` and fill in Stripe test price IDs.
+2. Create `functions/.secret.local` with `STRIPE_SECRET_KEY=sk_test_...` and `STRIPE_WEBHOOK_SECRET=whsec_...`.
+3. Use the Stripe CLI (`stripe listen --forward-to localhost:5001/.../stripeWebhook`) to forward test events.
+
+### Webhook Registration
+Register `https://REGION-PROJECT_ID.cloudfunctions.net/stripeWebhook` in Stripe Dashboard > Developers > Webhooks with events: `checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`.
 
 ## Key Features and Workflows
 
@@ -633,5 +694,5 @@ Runs Vite dev server on `http://localhost:5173`
 Always keep AGENT.md and README.md up to date.
 ---
 
-**Last Updated**: 2026-02-17
+**Last Updated**: 2026-03-17
 **Repository**: [yoshinator/multiplication_masters](https://github.com/yoshinator/multiplication_masters)
