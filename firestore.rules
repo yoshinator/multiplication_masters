@@ -22,6 +22,49 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(userId)).data.userRole == 'teacher';
     }
 
+    // Returns true when the user has an active premium subscription.
+    function isPremium(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.subscriptionStatus == 'premium';
+    }
+
+    // The set of pack keys available to free users.
+    function freePacks() {
+      return ['mul_36', 'add_20', 'sub_20'];
+    }
+
+    // Returns true when both the activePack and every pack in enabledPacks are free.
+    function packsAreFree(enabledPacks, activePack) {
+      return activePack in freePacks() && enabledPacks.hasOnly(freePacks());
+    }
+
+    // Returns true when the pack fields being written are permitted for the user's tier.
+    function packUpdateAllowed(userId, incoming, existing) {
+      return isPremium(userId)
+        || !incoming.diff(existing).affectedKeys().hasAny(['activePack', 'enabledPacks'])
+        || packsAreFree(
+             incoming.get('enabledPacks', ['mul_36']),
+             incoming.get('activePack', 'mul_36')
+           );
+    }
+
+    // Fields the client must never write to the user doc.
+    // Mirrors ClientUpdatableUserAccount in dataModels.ts — keep in sync.
+    function clientImmutableWriteBlocked(incoming, existing) {
+      return !incoming.diff(existing).affectedKeys().hasAny([
+        // Billing & entitlements — written only by Cloud Functions
+        'subscriptionStatus', 'planType', 'billingPeriod',
+        'stripeCustomerId', 'stripeSubscriptionId', 'stripePriceId',
+        'promoCodeId', 'premiumExpiresAt',
+        // classroomCount is server-maintained (Cloud Function trigger, PR 2).
+        // Blocking client writes here prevents free-tier classroom-limit bypass.
+        'classroomCount',
+        // Server-set identity fields
+        'createdAt', 'primaryProfileId'
+        // lastLogin and lastSignInMethod are intentionally NOT listed here because
+        // UserProvider legitimately writes them on auth state change.
+      ]);
+    }
+
     // User root doc
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
@@ -33,7 +76,8 @@ service cloud.firestore {
 
       allow update: if request.auth != null
         && request.auth.uid == userId
-        && !isProfileSession();
+        && !isProfileSession()
+        && clientImmutableWriteBlocked(request.resource.data, resource.data);
     }
 
     // Profiles
@@ -52,7 +96,9 @@ service cloud.firestore {
         && (resource.data.pinEnabled == true
             ? request.resource.data.pinEnabled == true
             : request.resource.data.pinEnabled != true)
-        && request.resource.data.loginName == resource.data.loginName;
+        && request.resource.data.loginName == resource.data.loginName
+        // Free users may only assign free packs.
+        && packUpdateAllowed(userId, request.resource.data, resource.data);
 
       allow delete: if request.auth != null
         && request.auth.uid == userId
@@ -67,10 +113,59 @@ service cloud.firestore {
 
     // Teacher-only classrooms
     match /users/{userId}/classrooms/{classId} {
-      allow read, write: if isTeacher(userId) && !isProfileSession();
+      allow read: if isTeacher(userId) && !isProfileSession();
+
+      // Free-tier classroom count limit (max 1) is enforced server-side via a
+      // Cloud Function trigger that maintains classroomCount on the user doc (PR 2).
+      // Client writes to classroomCount are blocked above, so the stored value is
+      // trustworthy once Cloud Functions maintain it.
+      allow create: if isTeacher(userId) && !isProfileSession()
+        // Free teachers may only set free packs as class defaults.
+        && (isPremium(userId)
+            || packsAreFree(
+                 request.resource.data.get('defaultEnabledPacks', ['mul_36']),
+                 request.resource.data.get('defaultActivePack', 'mul_36')
+               ));
+
+      allow update: if isTeacher(userId) && !isProfileSession()
+        // Free teachers may not switch class defaults to premium packs.
+        && (isPremium(userId)
+            || !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['defaultEnabledPacks', 'defaultActivePack'])
+            || packsAreFree(
+                 request.resource.data.get('defaultEnabledPacks', ['mul_36']),
+                 request.resource.data.get('defaultActivePack', 'mul_36')
+               ));
+
+      allow delete: if isTeacher(userId) && !isProfileSession();
 
       match /roster/{profileId} {
-        allow read, write: if isTeacher(userId) && !isProfileSession();
+        allow read: if isTeacher(userId) && !isProfileSession();
+
+        // Free-tier roster size limit (max 25) is enforced server-side via Cloud
+        // Functions (PR 2). rosterCount on the classroom doc is client-maintained
+        // and not a trustworthy authorization source, so the count limit is not
+        // enforced here. Pack entitlement checks below are reliable because pack
+        // keys are static, known values that don't depend on a client counter.
+        allow create: if isTeacher(userId) && !isProfileSession()
+          // Free teachers may only assign free packs to learners.
+          && (isPremium(userId)
+              || packsAreFree(
+                   request.resource.data.get('enabledPacks', ['mul_36']),
+                   request.resource.data.get('activePack', 'mul_36')
+                 ));
+
+        allow update: if isTeacher(userId) && !isProfileSession()
+          // Free teachers may not switch learners to premium packs.
+          && (isPremium(userId)
+              || !request.resource.data.diff(resource.data).affectedKeys()
+                   .hasAny(['enabledPacks', 'activePack'])
+              || packsAreFree(
+                   request.resource.data.get('enabledPacks', ['mul_36']),
+                   request.resource.data.get('activePack', 'mul_36')
+                 ));
+
+        allow delete: if isTeacher(userId) && !isProfileSession();
       }
     }
 

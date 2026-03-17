@@ -42,6 +42,9 @@ functions/node_modules/
 .env.production
 .env.development
 
+# ai
+.claude/**
+
 
 # individual project notes
 zzz.*

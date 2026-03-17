@@ -60,18 +60,41 @@ export type GradeLevel =
   | '9+'
   | 'adult'
 
-export interface User {
-  uid: string
-  userRole: UserRole
-  subscriptionStatus: 'free' | 'premium'
-  lastSignInMethod?: SignInMethod
-  createdAt: Timestamp | null
-  lastLogin: Timestamp | null
-  activeProfileId?: string
-  primaryProfileId?: string
-  upgradePromptSnoozedUntil?: Timestamp
-  lastUpgradePromptAt?: Timestamp
-}
+export type PlanType = 'parent' | 'teacher' | 'none'
+export type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
+
+/**
+ * Fields on UserAccount that must not be written through updateAccount.
+ * This covers:
+ *  - Server-managed billing/entitlement fields (written only by Cloud Functions)
+ *  - classroomCount (server-maintained counter — PR 2 Cloud Function trigger)
+ *  - userRole: clients must not self-escalate (e.g. student → teacher)
+ *  - Immutable identity/audit fields set at account creation or by auth
+ */
+type NonEditableUserField =
+  // Billing & entitlements — Cloud Function managed
+  | 'subscriptionStatus'
+  | 'planType'
+  | 'billingPeriod'
+  | 'stripeCustomerId'
+  | 'stripeSubscriptionId'
+  | 'stripePriceId'
+  | 'promoCodeId'
+  | 'premiumExpiresAt'
+  | 'classroomCount'
+  // Server-set identity fields
+  | 'primaryProfileId'
+  // Immutable identity and auth-managed audit fields
+  | 'uid'
+  | 'createdAt'
+  | 'lastLogin'
+  | 'lastSignInMethod'
+
+/**
+ * The subset of UserAccount that updateAccount() is permitted to write.
+ * Remaining fields: activeProfileId, upgradePromptSnoozedUntil, lastUpgradePromptAt.
+ */
+export type ClientUpdatableUserAccount = Omit<UserAccount, NonEditableUserField>
 
 export interface UserAccount {
   uid: string
@@ -84,6 +107,15 @@ export interface UserAccount {
   primaryProfileId?: string
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
+  // Billing & entitlements (server-managed — do not write from client)
+  planType?: PlanType
+  billingPeriod?: BillingPeriod | null
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  promoCodeId?: string | null
+  premiumExpiresAt?: Timestamp | null
+  classroomCount?: number
 }
 
 export type UserProfile = {

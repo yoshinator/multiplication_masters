@@ -8,8 +8,8 @@ import {
   useMemo,
 } from 'react'
 import {
+  type ClientUpdatableUserAccount,
   type PackMeta,
-  type User,
   type UserAccount,
   type UserProfile,
   getPackFactIds,
@@ -42,7 +42,7 @@ type Props = {
 }
 
 const UserProvider: FC<Props> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserAccount | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(
     null
@@ -271,12 +271,12 @@ const UserProvider: FC<Props> = ({ children }) => {
   )
 
   const updateAccount = useCallback(
-    async (fields: Partial<User>) => {
+    async (fields: Partial<ClientUpdatableUserAccount>) => {
       if (!db || !user?.uid || profileClaimIdRef.current) return
       const pending = omitUndefined(fields)
       if (Object.keys(pending).length === 0) return
 
-      setUser((prevUser: User | null) =>
+      setUser((prevUser: UserAccount | null) =>
         prevUser ? { ...prevUser, ...pending } : prevUser
       )
 
@@ -535,7 +535,7 @@ const UserProvider: FC<Props> = ({ children }) => {
             if (!nextProfileId) {
               setProfile(null)
               setUser({
-                ...(accountData as User),
+                ...(accountData as UserAccount),
                 uid,
                 activeProfileId: undefined,
               })
@@ -556,7 +556,7 @@ const UserProvider: FC<Props> = ({ children }) => {
                 if (!profileSnap.exists()) {
                   setProfile(null)
                   setUser({
-                    ...(accountData as User),
+                    ...(accountData as UserAccount),
                     uid,
                     activeProfileId: nextProfileId,
                   })
@@ -567,8 +567,8 @@ const UserProvider: FC<Props> = ({ children }) => {
                 const profileData = profileSnap.data() as UserProfile
                 setProfile({ ...profileData, id: profileSnap.id })
 
-                const nextUser: User = {
-                  ...(accountData as User),
+                const nextUser: UserAccount = {
+                  ...(accountData as UserAccount),
                   uid,
                   activeProfileId: nextProfileId,
                 }
