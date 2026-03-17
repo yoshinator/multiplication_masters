@@ -21,13 +21,11 @@ import {
 } from '@mui/material'
 import { Add } from '@mui/icons-material'
 import {
+  addDoc,
   collection,
-  doc,
-  increment,
   orderBy,
   query,
   serverTimestamp,
-  writeBatch,
 } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../../contexts/userContext/useUserContext'
@@ -85,9 +83,7 @@ const ClassesPage: FC = () => {
 
     setIsSaving(true)
     try {
-      const batch = writeBatch(db)
-      const classroomRef = doc(collection(db, 'users', user.uid, 'classrooms'))
-      batch.set(classroomRef, {
+      await addDoc(collection(db, 'users', user.uid, 'classrooms'), {
         name: draft.name.trim(),
         schoolYear: draft.schoolYear.trim(),
         grade: draft.grade,
@@ -101,10 +97,6 @@ const ClassesPage: FC = () => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
-      // classroomCount on the user doc is the source of truth used by Firestore rules
-      // to enforce the free-tier classroom limit via getAfter() validation.
-      batch.update(doc(db, 'users', user.uid), { classroomCount: increment(1) })
-      await batch.commit()
       showNotification('Class created.', 'success')
       setIsCreateOpen(false)
       setDraft({

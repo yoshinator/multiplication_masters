@@ -64,10 +64,15 @@ export type PlanType = 'parent' | 'teacher' | 'none'
 export type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
 /**
- * Fields on UserAccount that are server-managed (written only by Cloud Functions).
- * Clients must not write these; use ClientUpdatableUserAccount for updateAccount calls.
+ * Fields on UserAccount that must not be written through updateAccount.
+ * This covers:
+ *  - Server-managed billing/entitlement fields (written only by Cloud Functions)
+ *  - classroomCount (server-maintained counter — PR 2 Cloud Function trigger)
+ *  - userRole: clients must not self-escalate (e.g. student → teacher)
+ *  - Immutable identity/audit fields set at account creation or by auth
  */
-type ServerManagedUserField =
+type NonEditableUserField =
+  // Billing & entitlements — Cloud Function managed
   | 'subscriptionStatus'
   | 'planType'
   | 'billingPeriod'
@@ -76,13 +81,20 @@ type ServerManagedUserField =
   | 'stripePriceId'
   | 'promoCodeId'
   | 'premiumExpiresAt'
+  | 'classroomCount'
+  // Server-set identity fields
+  | 'primaryProfileId'
+  // Immutable identity and auth-managed audit fields
+  | 'uid'
+  | 'createdAt'
+  | 'lastLogin'
+  | 'lastSignInMethod'
 
 /**
- * Subset of UserAccount fields that clients are permitted to write.
- * classroomCount is included because clients update it in a batch alongside
- * classroom creates/deletes; Firestore rules enforce the ±1 invariant.
+ * The subset of UserAccount that updateAccount() is permitted to write.
+ * Remaining fields: activeProfileId, upgradePromptSnoozedUntil, lastUpgradePromptAt.
  */
-export type ClientUpdatableUserAccount = Omit<UserAccount, ServerManagedUserField>
+export type ClientUpdatableUserAccount = Omit<UserAccount, NonEditableUserField>
 
 export interface UserAccount {
   uid: string

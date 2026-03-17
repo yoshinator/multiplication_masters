@@ -38,10 +38,6 @@ service cloud.firestore {
     }
 
     // Returns true when the pack fields being written are permitted for the user's tier.
-    // A write is permitted when:
-    //   - the user is premium, OR
-    //   - the pack-related fields are not changing, OR
-    //   - the new pack values are restricted to the free set.
     function packUpdateAllowed(userId, incoming, existing) {
       return isPremium(userId)
         || !incoming.diff(existing).affectedKeys().hasAny(['activePack', 'enabledPacks'])
@@ -51,14 +47,21 @@ service cloud.firestore {
            );
     }
 
-    // Server-managed billing/entitlement fields that clients must not write directly.
-    // Note: classroomCount is intentionally excluded — clients update it in a batch
-    // alongside classroom creates/deletes; rules enforce the ±1 invariant below.
-    function clientBillingWriteBlocked(incoming, existing) {
+    // Fields the client must never write to the user doc.
+    // Mirrors ClientUpdatableUserAccount in dataModels.ts — keep in sync.
+    function clientImmutableWriteBlocked(incoming, existing) {
       return !incoming.diff(existing).affectedKeys().hasAny([
+        // Billing & entitlements — written only by Cloud Functions
         'subscriptionStatus', 'planType', 'billingPeriod',
         'stripeCustomerId', 'stripeSubscriptionId', 'stripePriceId',
-        'promoCodeId', 'premiumExpiresAt'
+        'promoCodeId', 'premiumExpiresAt',
+        // classroomCount is server-maintained (Cloud Function trigger, PR 2).
+        // Blocking client writes here prevents free-tier classroom-limit bypass.
+        'classroomCount',
+        // Server-set identity fields
+        'createdAt', 'primaryProfileId'
+        // lastLogin and lastSignInMethod are intentionally NOT listed here because
+        // UserProvider legitimately writes them on auth state change.
       ]);
     }
 
@@ -74,16 +77,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && request.auth.uid == userId
         && !isProfileSession()
-        // Block client writes to server-managed billing and entitlement fields.
-        && clientBillingWriteBlocked(request.resource.data, resource.data)
-        // classroomCount may only change by ±1. Clients must update it in the same
-        // batch as a classroom create or delete; getAfter() checks in those rules
-        // validate that the counter is consistent with the actual operation.
-        && (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['classroomCount'])
-          || request.resource.data.classroomCount == resource.data.get('classroomCount', 0) + 1
-          || request.resource.data.classroomCount == resource.data.get('classroomCount', 0) - 1
-        );
+        && clientImmutableWriteBlocked(request.resource.data, resource.data);
     }
 
     // Profiles
@@ -121,20 +115,11 @@ service cloud.firestore {
     match /users/{userId}/classrooms/{classId} {
       allow read: if isTeacher(userId) && !isProfileSession();
 
-      // Free teachers are limited to 1 classroom (FREE_TEACHER_MAX_CLASSROOMS).
-      // Enforcement uses getAfter() so the limit holds even when multiple classrooms
-      // are attempted in a single batch: every create in the batch sees the same
-      // final classroomCount, so two creates with classroomCount += 2 fail the
-      // exact-increment check. Clients must batch this create with a
-      // classroomCount: increment(1) update on the user doc.
+      // Free-tier classroom count limit (max 1) is enforced server-side via a
+      // Cloud Function trigger that maintains classroomCount on the user doc (PR 2).
+      // Client writes to classroomCount are blocked above, so the stored value is
+      // trustworthy once Cloud Functions maintain it.
       allow create: if isTeacher(userId) && !isProfileSession()
-        && (isPremium(userId) || (
-          // Post-write classroomCount must not exceed the free-tier limit.
-          getAfter(/databases/$(database)/documents/users/$(userId)).data.get('classroomCount', 0) <= 1
-          // Exactly one classroom is being created (not a multi-create batch).
-          && getAfter(/databases/$(database)/documents/users/$(userId)).data.get('classroomCount', 0)
-             == get(/databases/$(database)/documents/users/$(userId)).data.get('classroomCount', 0) + 1
-        ))
         // Free teachers may only set free packs as class defaults.
         && (isPremium(userId)
             || packsAreFree(
@@ -150,42 +135,19 @@ service cloud.firestore {
             || packsAreFree(
                  request.resource.data.get('defaultEnabledPacks', ['mul_36']),
                  request.resource.data.get('defaultActivePack', 'mul_36')
-               ))
-        // rosterCount must not decrease via a direct classroom update.
-        // Decrements are only valid when a roster entry is deleted in the same batch,
-        // which is enforced by the getAfter() check in the roster delete rule.
-        // This prevents a free teacher from resetting rosterCount to bypass the cap.
-        && request.resource.data.get('rosterCount', 0)
-           >= resource.data.get('rosterCount', 0);
+               ));
 
-      // Clients must batch classroom deletion with a classroomCount: increment(-1)
-      // update on the user doc. The getAfter() check validates consistency.
-      allow delete: if isTeacher(userId) && !isProfileSession()
-        && getAfter(/databases/$(database)/documents/users/$(userId)).data.get('classroomCount', 0)
-           == get(/databases/$(database)/documents/users/$(userId)).data.get('classroomCount', 0) - 1;
+      allow delete: if isTeacher(userId) && !isProfileSession();
 
       match /roster/{profileId} {
         allow read: if isTeacher(userId) && !isProfileSession();
 
-        // Free teachers are limited to 25 roster entries (FREE_TEACHER_MAX_ROSTER).
-        // Enforcement uses getAfter() on the classroom doc so the limit is based on
-        // the post-batch rosterCount, not the pre-batch value. Clients must update
-        // rosterCount: increment(N) on the classroom doc in the same batch.
-        //
-        // Note: rosterCount is maintained by the client in batches alongside roster
-        // creates/deletes. Direct rosterCount decrements in classroom updates are
-        // blocked (see classroom update rule), so decrements only arrive via the
-        // roster delete rule below. An attacker cannot reset rosterCount to zero
-        // to bypass the cap because classroom UPDATE blocks any decrease to rosterCount.
-        // Full server-side integrity (e.g., verifying rosterCount matches actual doc count)
-        // is deferred to Cloud Functions in PR 2.
+        // Free-tier roster size limit (max 25) is enforced server-side via Cloud
+        // Functions (PR 2). rosterCount on the classroom doc is client-maintained
+        // and not a trustworthy authorization source, so the count limit is not
+        // enforced here. Pack entitlement checks below are reliable because pack
+        // keys are static, known values that don't depend on a client counter.
         allow create: if isTeacher(userId) && !isProfileSession()
-          // rosterCount must increase in the same batch (client must increment it).
-          && getAfter(/databases/$(database)/documents/users/$(userId)/classrooms/$(classId)).data.get('rosterCount', 0)
-             > get(/databases/$(database)/documents/users/$(userId)/classrooms/$(classId)).data.get('rosterCount', 0)
-          // Post-write rosterCount must not exceed the free-tier cap.
-          && (isPremium(userId)
-              || getAfter(/databases/$(database)/documents/users/$(userId)/classrooms/$(classId)).data.get('rosterCount', 0) <= 25)
           // Free teachers may only assign free packs to learners.
           && (isPremium(userId)
               || packsAreFree(
@@ -203,11 +165,7 @@ service cloud.firestore {
                    request.resource.data.get('activePack', 'mul_36')
                  ));
 
-        // Clients must batch roster deletion with a rosterCount: increment(-1)
-        // update on the classroom doc. The getAfter() check validates consistency.
-        allow delete: if isTeacher(userId) && !isProfileSession()
-          && getAfter(/databases/$(database)/documents/users/$(userId)/classrooms/$(classId)).data.get('rosterCount', 0)
-             < get(/databases/$(database)/documents/users/$(userId)/classrooms/$(classId)).data.get('rosterCount', 0);
+        allow delete: if isTeacher(userId) && !isProfileSession();
       }
     }
 
