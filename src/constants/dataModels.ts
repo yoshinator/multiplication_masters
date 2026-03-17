@@ -63,6 +63,27 @@ export type GradeLevel =
 export type PlanType = 'parent' | 'teacher' | 'none'
 export type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
+/**
+ * Fields on UserAccount that are server-managed (written only by Cloud Functions).
+ * Clients must not write these; use ClientUpdatableUserAccount for updateAccount calls.
+ */
+type ServerManagedUserField =
+  | 'subscriptionStatus'
+  | 'planType'
+  | 'billingPeriod'
+  | 'stripeCustomerId'
+  | 'stripeSubscriptionId'
+  | 'stripePriceId'
+  | 'promoCodeId'
+  | 'premiumExpiresAt'
+
+/**
+ * Subset of UserAccount fields that clients are permitted to write.
+ * classroomCount is included because clients update it in a batch alongside
+ * classroom creates/deletes; Firestore rules enforce the ±1 invariant.
+ */
+export type ClientUpdatableUserAccount = Omit<UserAccount, ServerManagedUserField>
+
 export interface UserAccount {
   uid: string
   userRole: UserRole

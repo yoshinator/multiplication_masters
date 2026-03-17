@@ -8,6 +8,7 @@ import {
   useMemo,
 } from 'react'
 import {
+  type ClientUpdatableUserAccount,
   type PackMeta,
   type UserAccount,
   type UserProfile,
@@ -270,7 +271,7 @@ const UserProvider: FC<Props> = ({ children }) => {
   )
 
   const updateAccount = useCallback(
-    async (fields: Partial<UserAccount>) => {
+    async (fields: Partial<ClientUpdatableUserAccount>) => {
       if (!db || !user?.uid || profileClaimIdRef.current) return
       const pending = omitUndefined(fields)
       if (Object.keys(pending).length === 0) return

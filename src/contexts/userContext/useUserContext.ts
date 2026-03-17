@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type {
+  ClientUpdatableUserAccount,
   PackMeta,
   UserAccount,
   UserProfile,
@@ -12,7 +13,7 @@ interface UserContextValue {
   user: UserAccount | null
   setUser: (u: UserAccount | null) => void
   updateUser: (fields: Partial<UserProfile>) => void
-  updateAccount: (fields: Partial<UserAccount>) => Promise<void>
+  updateAccount: (fields: Partial<ClientUpdatableUserAccount>) => Promise<void>
   authStatus: AuthStatus
   isLoading: boolean
   activePackMeta: PackMeta | null
