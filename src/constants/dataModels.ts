@@ -60,18 +60,8 @@ export type GradeLevel =
   | '9+'
   | 'adult'
 
-export interface User {
-  uid: string
-  userRole: UserRole
-  subscriptionStatus: 'free' | 'premium'
-  lastSignInMethod?: SignInMethod
-  createdAt: Timestamp | null
-  lastLogin: Timestamp | null
-  activeProfileId?: string
-  primaryProfileId?: string
-  upgradePromptSnoozedUntil?: Timestamp
-  lastUpgradePromptAt?: Timestamp
-}
+export type PlanType = 'parent' | 'teacher' | 'none'
+export type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
 export interface UserAccount {
   uid: string
@@ -84,6 +74,15 @@ export interface UserAccount {
   primaryProfileId?: string
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
+  // Billing & entitlements (server-managed — do not write from client)
+  planType?: PlanType
+  billingPeriod?: BillingPeriod | null
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  promoCodeId?: string | null
+  premiumExpiresAt?: Timestamp | null
+  classroomCount?: number
 }
 
 export type UserProfile = {

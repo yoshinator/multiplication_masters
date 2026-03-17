@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import type {
   PackMeta,
-  User,
+  UserAccount,
   UserProfile,
   UserSceneMeta,
 } from '../../constants/dataModels'
@@ -9,10 +9,10 @@ import type { SceneTheme } from '../../constants/sceneDefinitions'
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn'
 interface UserContextValue {
-  user: User | null
-  setUser: (u: User | null) => void
+  user: UserAccount | null
+  setUser: (u: UserAccount | null) => void
   updateUser: (fields: Partial<UserProfile>) => void
-  updateAccount: (fields: Partial<User>) => Promise<void>
+  updateAccount: (fields: Partial<UserAccount>) => Promise<void>
   authStatus: AuthStatus
   isLoading: boolean
   activePackMeta: PackMeta | null

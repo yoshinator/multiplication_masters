@@ -81,6 +81,10 @@ export const PACK_LABELS: Record<PackKey, string> = {
 // Packs that are available to free users. The rest are for premium users.
 export const FREE_PACKS: PackKey[] = [MUL_36, ADD_20, SUB_20]
 
+// Free-tier limits for teacher accounts (enforced in Firestore rules + Cloud Functions)
+export const FREE_TEACHER_MAX_CLASSROOMS = 1
+export const FREE_TEACHER_MAX_ROSTER = 25
+
 export const CLASS_GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> =
   [
     { value: 'K', label: 'K' },

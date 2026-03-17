@@ -22,6 +22,52 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(userId)).data.userRole == 'teacher';
     }
 
+    // Returns true when the user has an active premium subscription.
+    function isPremium(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.subscriptionStatus == 'premium';
+    }
+
+    // The set of pack keys available to free users.
+    function freePacks() {
+      return ['mul_36', 'add_20', 'sub_20'];
+    }
+
+    // Returns true when both the activePack and every pack in enabledPacks are free.
+    function packsAreFree(enabledPacks, activePack) {
+      return activePack in freePacks() && enabledPacks.hasOnly(freePacks());
+    }
+
+    // Returns true when the pack fields being written are permitted for the user's tier.
+    // A write is permitted when:
+    //   - the user is premium, OR
+    //   - the pack-related fields are not changing, OR
+    //   - the new pack values are restricted to the free set.
+    function packUpdateAllowed(userId, incoming, existing) {
+      return isPremium(userId)
+        || !incoming.diff(existing).affectedKeys().hasAny(['activePack', 'enabledPacks'])
+        || packsAreFree(
+             incoming.get('enabledPacks', ['mul_36']),
+             incoming.get('activePack', 'mul_36')
+           );
+    }
+
+    // Server-managed billing/entitlement fields that clients must not write directly.
+    function isBillingField(key) {
+      return key in [
+        'subscriptionStatus', 'planType', 'billingPeriod',
+        'stripeCustomerId', 'stripeSubscriptionId', 'stripePriceId',
+        'promoCodeId', 'premiumExpiresAt', 'classroomCount'
+      ];
+    }
+
+    function clientBillingWriteBlocked(incoming, existing) {
+      return !incoming.diff(existing).affectedKeys().hasAny([
+        'subscriptionStatus', 'planType', 'billingPeriod',
+        'stripeCustomerId', 'stripeSubscriptionId', 'stripePriceId',
+        'promoCodeId', 'premiumExpiresAt', 'classroomCount'
+      ]);
+    }
+
     // User root doc
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
@@ -33,7 +79,9 @@ service cloud.firestore {
 
       allow update: if request.auth != null
         && request.auth.uid == userId
-        && !isProfileSession();
+        && !isProfileSession()
+        // Block client writes to server-managed billing and entitlement fields.
+        && clientBillingWriteBlocked(request.resource.data, resource.data);
     }
 
     // Profiles
@@ -52,7 +100,9 @@ service cloud.firestore {
         && (resource.data.pinEnabled == true
             ? request.resource.data.pinEnabled == true
             : request.resource.data.pinEnabled != true)
-        && request.resource.data.loginName == resource.data.loginName;
+        && request.resource.data.loginName == resource.data.loginName
+        // Free users may only assign free packs.
+        && packUpdateAllowed(userId, request.resource.data, resource.data);
 
       allow delete: if request.auth != null
         && request.auth.uid == userId
@@ -67,10 +117,59 @@ service cloud.firestore {
 
     // Teacher-only classrooms
     match /users/{userId}/classrooms/{classId} {
-      allow read, write: if isTeacher(userId) && !isProfileSession();
+      allow read: if isTeacher(userId) && !isProfileSession();
+
+      // Free teachers are limited to FREE_TEACHER_MAX_CLASSROOMS (1) classroom.
+      // Full enforcement requires the classroomCount field on the user doc to be
+      // maintained by Cloud Functions (incremented on create, decremented on delete).
+      allow create: if isTeacher(userId) && !isProfileSession()
+        && (isPremium(userId)
+            || get(/databases/$(database)/documents/users/$(userId)).data.get('classroomCount', 0) < 1)
+        // Free teachers may only set free packs as class defaults.
+        && (isPremium(userId)
+            || packsAreFree(
+                 request.resource.data.get('defaultEnabledPacks', ['mul_36']),
+                 request.resource.data.get('defaultActivePack', 'mul_36')
+               ));
+
+      allow update: if isTeacher(userId) && !isProfileSession()
+        // Free teachers may not switch class defaults to premium packs.
+        && (isPremium(userId)
+            || !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['defaultEnabledPacks', 'defaultActivePack'])
+            || packsAreFree(
+                 request.resource.data.get('defaultEnabledPacks', ['mul_36']),
+                 request.resource.data.get('defaultActivePack', 'mul_36')
+               ));
+
+      allow delete: if isTeacher(userId) && !isProfileSession();
 
       match /roster/{profileId} {
-        allow read, write: if isTeacher(userId) && !isProfileSession();
+        allow read: if isTeacher(userId) && !isProfileSession();
+
+        // Free teachers are limited to FREE_TEACHER_MAX_ROSTER (25) students.
+        // rosterCount on the classroom doc is maintained via client batch writes.
+        allow create: if isTeacher(userId) && !isProfileSession()
+          && (isPremium(userId)
+              || get(/databases/$(database)/documents/users/$(userId)/classrooms/$(classId)).data.get('rosterCount', 0) < 25)
+          // Free teachers may only assign free packs to learners.
+          && (isPremium(userId)
+              || packsAreFree(
+                   request.resource.data.get('enabledPacks', ['mul_36']),
+                   request.resource.data.get('activePack', 'mul_36')
+                 ));
+
+        allow update: if isTeacher(userId) && !isProfileSession()
+          // Free teachers may not switch learners to premium packs.
+          && (isPremium(userId)
+              || !request.resource.data.diff(resource.data).affectedKeys()
+                   .hasAny(['enabledPacks', 'activePack'])
+              || packsAreFree(
+                   request.resource.data.get('enabledPacks', ['mul_36']),
+                   request.resource.data.get('activePack', 'mul_36')
+                 ));
+
+        allow delete: if isTeacher(userId) && !isProfileSession();
       }
     }
 
