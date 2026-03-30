@@ -58,11 +58,18 @@ function validateRedirectUrl(urlStr: string): void {
     throw new HttpsError('invalid-argument', 'Invalid redirect URL.')
   }
 
+  // Only http/https are ever allowed as schemes
   if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
     throw new HttpsError('invalid-argument', 'Invalid redirect URL protocol.')
   }
-
   if (!isDevelopmentRuntime()) {
+    // In non-emulator/production runtimes, require HTTPS to avoid downgrade/MITM
+    if (parsedUrl.protocol !== 'https:') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Redirect URL must use HTTPS in production.'
+      )
+    }
     const hostname = parsedUrl.hostname.toLowerCase()
     if (!ALLOWED_REDIRECT_HOSTS.has(hostname)) {
       throw new HttpsError(
@@ -133,7 +140,10 @@ async function getOrCreateStripeCustomerId(
 
   let newCustomerId = ''
   try {
-    const customer = await stripe.customers.create({ metadata: { uid } })
+    const customer = await stripe.customers.create(
+      { metadata: { uid } },
+      { idempotencyKey: `stripe-customer-${uid}` }
+    )
     newCustomerId = customer.id
 
     const resolvedCustomerId = await db.runTransaction(async (tx) => {
@@ -395,7 +405,7 @@ async function handleSubscriptionDeleted(
     userRef,
     {
       subscriptionStatus: 'free',
-      planType: 'none',
+      planType: null,
       billingPeriod: null,
       stripeSubscriptionId: null,
       updatedAt: FieldValue.serverTimestamp(),
@@ -422,7 +432,7 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
     userRef,
     {
       subscriptionStatus: 'free',
-      planType: 'none',
+      planType: null,
       billingPeriod: null,
       stripeSubscriptionId: null,
       stripePriceId: null,

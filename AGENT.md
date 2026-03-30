@@ -320,7 +320,7 @@ User initialization is server-side:
 ### User Document (`users/{uid}`)
 ```typescript
 type SignInMethod = 'anonymous' | 'google' | 'emailLink' | 'profilePin'
-type PlanType = 'parent' | 'teacher' | 'none'
+type PlanType = 'parent' | 'teacher'
 type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
 interface UserAccount {

@@ -60,7 +60,7 @@ export type GradeLevel =
   | '9+'
   | 'adult'
 
-export type PlanType = 'parent' | 'teacher' | 'none'
+export type PlanType = 'parent' | 'teacher'
 export type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
 /**
@@ -108,7 +108,7 @@ export interface UserAccount {
   upgradePromptSnoozedUntil?: Timestamp
   lastUpgradePromptAt?: Timestamp
   // Billing & entitlements (server-managed — do not write from client)
-  planType?: PlanType
+  planType?: PlanType | null
   billingPeriod?: BillingPeriod | null
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
