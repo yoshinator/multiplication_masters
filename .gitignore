@@ -37,13 +37,12 @@ functions/lib/
 functions/node_modules/
 
 # secrets
-.env
 .env.local
 .env.production
 .env.development
 
 # ai
-.claude/**
+.claude/**  
 
 
 # individual project notes

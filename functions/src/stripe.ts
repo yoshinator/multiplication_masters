@@ -34,6 +34,45 @@ const PRICE_ID_ENV: Record<PlanType, Record<BillingPeriod, string>> = {
   },
 }
 
+const ALLOWED_REDIRECT_HOSTS = new Set<string>([
+  'mathbuilders.app',
+  'mathbuildersapp.web.app',
+  'mathbuildersapp.firebase.com',
+  'mathbuilders.com',
+  'multiplicationmaster.web.app',
+  'multiplicationmaster.firebase.com',
+])
+
+function isDevelopmentRuntime(): boolean {
+  return (
+    process.env.NODE_ENV === 'development' ||
+    process.env.FUNCTIONS_EMULATOR === 'true'
+  )
+}
+
+function validateRedirectUrl(urlStr: string): void {
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(urlStr)
+  } catch {
+    throw new HttpsError('invalid-argument', 'Invalid redirect URL.')
+  }
+
+  if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+    throw new HttpsError('invalid-argument', 'Invalid redirect URL protocol.')
+  }
+
+  if (!isDevelopmentRuntime()) {
+    const hostname = parsedUrl.hostname.toLowerCase()
+    if (!ALLOWED_REDIRECT_HOSTS.has(hostname)) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Redirect URL host is not allowed.'
+      )
+    }
+  }
+}
+
 function getPriceId(planType: PlanType, billingPeriod: BillingPeriod): string {
   const priceId = PRICE_ID_ENV[planType][billingPeriod]
   if (!priceId) {
@@ -45,6 +84,102 @@ function getPriceId(planType: PlanType, billingPeriod: BillingPeriod): string {
   return priceId
 }
 
+const CUSTOMER_CREATE_LOCK_TTL_MS = 60_000
+
+function buildClaimId(uid: string): string {
+  return `${uid}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+async function getOrCreateStripeCustomerId(
+  uid: string,
+  userRef: FirebaseFirestore.DocumentReference,
+  stripe: Stripe
+): Promise<string> {
+  const db = getFirestore()
+  const lockRef = db.collection('stripeCustomerCreationLocks').doc(uid)
+  const claimId = buildClaimId(uid)
+  const nowMs = Date.now()
+
+  const existingIdOrNull = await db.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef)
+    const existingId = userSnap.data()?.stripeCustomerId
+    if (typeof existingId === 'string' && existingId.length > 0) {
+      return existingId
+    }
+
+    const lockSnap = await tx.get(lockRef)
+    if (lockSnap.exists) {
+      const expiresAtMs = Number(lockSnap.data()?.expiresAtMs ?? 0)
+      if (expiresAtMs > nowMs) {
+        throw new HttpsError(
+          'aborted',
+          'Stripe customer creation in progress. Please retry.'
+        )
+      }
+    }
+
+    tx.set(lockRef, {
+      claimId,
+      uid,
+      createdAtMs: nowMs,
+      expiresAtMs: nowMs + CUSTOMER_CREATE_LOCK_TTL_MS,
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    return null
+  })
+
+  if (existingIdOrNull) return existingIdOrNull
+
+  let newCustomerId = ''
+  try {
+    const customer = await stripe.customers.create({ metadata: { uid } })
+    newCustomerId = customer.id
+
+    const resolvedCustomerId = await db.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef)
+      const existingId = userSnap.data()?.stripeCustomerId
+      if (typeof existingId === 'string' && existingId.length > 0) {
+        tx.delete(lockRef)
+        return existingId
+      }
+
+      const lockSnap = await tx.get(lockRef)
+      const lockClaimId = lockSnap.data()?.claimId
+      if (!lockSnap.exists || lockClaimId !== claimId) {
+        throw new HttpsError(
+          'aborted',
+          'Stripe customer creation lock lost. Please retry.'
+        )
+      }
+
+      tx.update(userRef, {
+        stripeCustomerId: customer.id,
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+      tx.delete(lockRef)
+
+      return customer.id
+    })
+
+    return resolvedCustomerId
+  } finally {
+    // Best-effort cleanup if customer creation fails after lock claim.
+    if (!newCustomerId) {
+      try {
+        await db.runTransaction(async (tx) => {
+          const lockSnap = await tx.get(lockRef)
+          if (lockSnap.exists && lockSnap.data()?.claimId === claimId) {
+            tx.delete(lockRef)
+          }
+        })
+      } catch {
+        // Ignore cleanup failures; lock has a TTL.
+      }
+    }
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function extractCustomerId(
   customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
@@ -54,11 +189,7 @@ function extractCustomerId(
 }
 
 function extractSubscriptionId(
-  subscription:
-    | string
-    | Stripe.Subscription
-    | null
-    | undefined
+  subscription: string | Stripe.Subscription | null | undefined
 ): string | null {
   if (!subscription) return null
   return typeof subscription === 'string' ? subscription : subscription.id
@@ -96,9 +227,12 @@ async function handleCheckoutCompleted(
   // Guard: never overwrite a lifetime purchase with a subscription event
   const snap = await userRef.get()
   if (snap.data()?.billingPeriod === 'lifetime') {
-    logger.info('checkout.session.completed: user already has lifetime; skipping', {
-      uid,
-    })
+    logger.info(
+      'checkout.session.completed: user already has lifetime; skipping',
+      {
+        uid,
+      }
+    )
     return
   }
 
@@ -279,30 +413,13 @@ export const createCheckoutSession = onCall(
 
     // Basic URL validation to prevent open-redirect misuse
     for (const urlStr of [successUrl, cancelUrl]) {
-      try {
-        const { protocol } = new URL(urlStr)
-        if (protocol !== 'https:' && protocol !== 'http:') throw new Error()
-      } catch {
-        throw new HttpsError('invalid-argument', 'Invalid redirect URL.')
-      }
+      validateRedirectUrl(urlStr)
     }
 
     const stripe = new Stripe(stripeSecretKey.value())
     const db = getFirestore()
     const userRef = db.collection('users').doc(uid)
-    const userSnap = await userRef.get()
-    const userData = userSnap.data()
-
-    // Reuse existing Stripe customer record if present
-    let customerId: string = userData?.stripeCustomerId ?? ''
-    if (!customerId) {
-      const customer = await stripe.customers.create({ metadata: { uid } })
-      customerId = customer.id
-      await userRef.update({
-        stripeCustomerId: customerId,
-        updatedAt: FieldValue.serverTimestamp(),
-      })
-    }
+    const customerId = await getOrCreateStripeCustomerId(uid, userRef, stripe)
 
     const priceId = getPriceId(planType, billingPeriod)
     const isLifetime = billingPeriod === 'lifetime'
@@ -323,6 +440,13 @@ export const createCheckoutSession = onCall(
       billingPeriod,
       sessionId: session.id,
     })
+
+    if (!session.url) {
+      throw new HttpsError(
+        'internal',
+        'Failed to create Stripe checkout session.'
+      )
+    }
 
     return { checkoutUrl: session.url }
   }
