@@ -21,7 +21,8 @@
 - **Platform**: Firebase 12.x
 - **Database**: Firestore
 - **Authentication**: Firebase Auth (Anonymous, Google, Email Link)
-- **Cloud Functions**: Node.js 24 with TypeScript
+- **Cloud Functions**: Node.js 22 with TypeScript
+- **Functions SDK**: firebase-functions 7.0.5
 - **Storage**: Firebase Storage (for scene builder images)
 - **User Doc**: `activeProfileId?: string` for the current learner profile
 
@@ -286,7 +287,7 @@ Helper functions:
 ## Backend Structure (`functions/`)
 
 ### Cloud Functions (`functions/src/`)
-Node.js 24 TypeScript Cloud Functions:
+Node.js 22 TypeScript Cloud Functions:
 
 - **index.ts** - Main exports file
 - User initialization functions
@@ -304,11 +305,11 @@ User initialization is server-side:
 **Package**: `functions/package.json`
 ```json
 {
-  "engines": { "node": "24" },
+  "engines": { "node": "22" },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "firebase-admin": "^12.0.0",
-    "firebase-functions": "^7.0.3",
+    "firebase-functions": "^7.0.5",
     "stripe": "^20.4.1"
   }
 }
