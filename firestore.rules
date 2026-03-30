@@ -175,8 +175,8 @@ service cloud.firestore {
         && request.auth.uid == userId
         && !isProfileSession()
         // Exclude classrooms so only the teacher-only rule applies there.
-        && !request.path.matches("/databases/$(database)/documents/users/$(userId)/classrooms/{classId}")
-        && !request.path.matches("/databases/$(database)/documents/users/$(userId)/classrooms/{classId}/{document=**}");
+        && !request.path.matches("^/databases/[^/]+/documents/users/[^/]+/classrooms/[^/]+$")
+        && !request.path.matches("^/databases/[^/]+/documents/users/[^/]+/classrooms/[^/]+/.+$");
     }
 
     // Feedback (write-only from client)
