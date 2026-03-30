@@ -3,9 +3,6 @@ on:
   push:
     branches:
       - 'releases/*.*.*'
-    branches-ignore:
-      - 'releases/*.*.*.*'
-      - 'releases/*.*.*-*'
 jobs:
   log_deploy_trigger:
     runs-on: ubuntu-latest
