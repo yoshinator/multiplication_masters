@@ -208,6 +208,30 @@ async function getUserRefByCustomerId(
   return snap.docs[0].ref
 }
 
+function isFirestoreNotFoundError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const code = (err as { code?: unknown }).code
+  return code === 5 || code === '5' || code === 'not-found'
+}
+
+async function updateUserIfExists(
+  userRef: FirebaseFirestore.DocumentReference,
+  updates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>,
+  eventName: string,
+  context: Record<string, unknown>
+): Promise<boolean> {
+  try {
+    await userRef.update(updates)
+    return true
+  } catch (err) {
+    if (isFirestoreNotFoundError(err)) {
+      logger.warn(`${eventName}: user doc missing; skipping`, context)
+      return false
+    }
+    throw err
+  }
+}
+
 // ── Webhook event handlers ────────────────────────────────────────────────────
 
 async function handleCheckoutCompleted(
@@ -224,8 +248,16 @@ async function handleCheckoutCompleted(
   const db = getFirestore()
   const userRef = db.collection('users').doc(uid)
 
-  // Guard: never overwrite a lifetime purchase with a subscription event
   const snap = await userRef.get()
+  if (!snap.exists) {
+    logger.warn('checkout.session.completed: user doc missing; skipping', {
+      uid,
+      sessionId: session.id,
+    })
+    return
+  }
+
+  // Guard: never overwrite a lifetime purchase with a subscription event
   if (snap.data()?.billingPeriod === 'lifetime') {
     logger.info(
       'checkout.session.completed: user already has lifetime; skipping',
@@ -239,30 +271,44 @@ async function handleCheckoutCompleted(
   const customerId = extractCustomerId(session.customer)
 
   if (billingPeriod === 'lifetime') {
-    await userRef.update({
-      subscriptionStatus: 'premium',
-      planType,
-      billingPeriod: 'lifetime',
-      ...(customerId && { stripeCustomerId: customerId }),
-      stripeSubscriptionId: null,
-      stripePriceId: priceId,
-      premiumExpiresAt: null,
-      updatedAt: FieldValue.serverTimestamp(),
-    })
+    const updated = await updateUserIfExists(
+      userRef,
+      {
+        subscriptionStatus: 'premium',
+        planType,
+        billingPeriod: 'lifetime',
+        ...(customerId && { stripeCustomerId: customerId }),
+        stripeSubscriptionId: null,
+        stripePriceId: priceId,
+        premiumExpiresAt: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      'checkout.session.completed',
+      { uid, sessionId: session.id, billingPeriod }
+    )
+    if (!updated) return
+
     logger.info('Lifetime purchase applied', { uid, planType, priceId })
     return
   }
 
-  await userRef.update({
-    subscriptionStatus: 'premium',
-    planType,
-    billingPeriod,
-    ...(customerId && { stripeCustomerId: customerId }),
-    stripeSubscriptionId: extractSubscriptionId(session.subscription),
-    stripePriceId: priceId,
-    premiumExpiresAt: null,
-    updatedAt: FieldValue.serverTimestamp(),
-  })
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      subscriptionStatus: 'premium',
+      planType,
+      billingPeriod,
+      ...(customerId && { stripeCustomerId: customerId }),
+      stripeSubscriptionId: extractSubscriptionId(session.subscription),
+      stripePriceId: priceId,
+      premiumExpiresAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'checkout.session.completed',
+    { uid, sessionId: session.id, billingPeriod }
+  )
+  if (!updated) return
+
   logger.info('Subscription checkout applied', { uid, planType, billingPeriod })
 }
 
@@ -281,14 +327,21 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   if (snap.data()?.billingPeriod === 'lifetime') return
 
   // Confirms or restores premium status on successful payment (including renewals)
-  await userRef.update({
-    subscriptionStatus: 'premium',
-    stripeSubscriptionId: extractSubscriptionId(
-      invoice.parent?.subscription_details?.subscription
-    ),
-    premiumExpiresAt: null,
-    updatedAt: FieldValue.serverTimestamp(),
-  })
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      subscriptionStatus: 'premium',
+      stripeSubscriptionId: extractSubscriptionId(
+        invoice.parent?.subscription_details?.subscription
+      ),
+      premiumExpiresAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'invoice.paid',
+    { customerId }
+  )
+  if (!updated) return
+
   logger.info('invoice.paid: premium confirmed', { customerId })
 }
 
@@ -307,11 +360,18 @@ async function handleSubscriptionUpdated(
   // Only act on clearly active states. past_due and unpaid keep the current
   // status — Stripe retries before deletion, which fires subscription.deleted.
   if (subscription.status === 'active' || subscription.status === 'trialing') {
-    await userRef.update({
-      subscriptionStatus: 'premium',
-      stripeSubscriptionId: subscription.id,
-      updatedAt: FieldValue.serverTimestamp(),
-    })
+    const updated = await updateUserIfExists(
+      userRef,
+      {
+        subscriptionStatus: 'premium',
+        stripeSubscriptionId: subscription.id,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      'customer.subscription.updated',
+      { customerId, subscriptionId: subscription.id }
+    )
+    if (!updated) return
+
     logger.info('subscription.updated: premium confirmed', {
       customerId,
       status: subscription.status,
@@ -331,13 +391,20 @@ async function handleSubscriptionDeleted(
   const snap = await userRef.get()
   if (snap.data()?.billingPeriod === 'lifetime') return
 
-  await userRef.update({
-    subscriptionStatus: 'free',
-    planType: 'none',
-    billingPeriod: null,
-    stripeSubscriptionId: null,
-    updatedAt: FieldValue.serverTimestamp(),
-  })
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      subscriptionStatus: 'free',
+      planType: 'none',
+      billingPeriod: null,
+      stripeSubscriptionId: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'customer.subscription.deleted',
+    { customerId, subscriptionId: subscription.id }
+  )
+  if (!updated) return
+
   logger.info('subscription.deleted: downgraded to free', { customerId })
 }
 
@@ -351,14 +418,21 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
   const userRef = await getUserRefByCustomerId(customerId)
   if (!userRef) return
 
-  await userRef.update({
-    subscriptionStatus: 'free',
-    planType: 'none',
-    billingPeriod: null,
-    stripeSubscriptionId: null,
-    stripePriceId: null,
-    updatedAt: FieldValue.serverTimestamp(),
-  })
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      subscriptionStatus: 'free',
+      planType: 'none',
+      billingPeriod: null,
+      stripeSubscriptionId: null,
+      stripePriceId: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'charge.refunded',
+    { customerId, chargeId: charge.id }
+  )
+  if (!updated) return
+
   logger.info('charge.refunded: downgraded to free', { customerId })
 }
 
