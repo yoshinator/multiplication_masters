@@ -62,6 +62,22 @@ export type GradeLevel =
 
 export type PlanType = 'parent' | 'teacher'
 export type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
+export type PromoCodeType = 'premium_unlock'
+
+/**
+ * Firestore document shape for promoCodes/{code}.
+ * Written by admins; read and mutated only by Cloud Functions.
+ */
+export interface PromoCode {
+  type: PromoCodeType
+  /** Number of months of premium to grant on redemption. */
+  durationMonths: number
+  /** When the code itself expires (null = no expiry). */
+  expiresAt: Timestamp | null
+  maxUses: number
+  uses: number
+  createdAt: Timestamp
+}
 
 /**
  * Fields on UserAccount that must not be written through updateAccount.

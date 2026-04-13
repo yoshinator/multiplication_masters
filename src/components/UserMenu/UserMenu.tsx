@@ -128,9 +128,22 @@ export const UserMenu = () => {
             ]
           : null}
         <MenuItem
-          sx={{ color: 'error.main' }}
+          sx={{ color: isAnonymous ? 'text.secondary' : 'error.main' }}
           onClick={async () => {
             handleClose()
+            if (isAnonymous) {
+              openModal(
+                <SaveProgressModal
+                  onClose={closeModal}
+                  onSignOutAnyway={async () => {
+                    closeModal()
+                    await signOut()
+                    navigate('/')
+                  }}
+                />
+              )
+              return
+            }
             await signOut()
             navigate('/')
           }}
