@@ -255,7 +255,7 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 
 #### `redeemPromoCode`
 **Trigger**: HTTPS callable function
-**Purpose**: Redeems a `premium_unlock` promo code for a 6-month premium grant
+**Purpose**: Redeems a `premium_unlock` promo code, granting premium for the duration specified on the code document (`durationMonths`)
 **Operations**:
 - Validates code exists, has remaining uses, and has not expired
 - Skips lifetime subscribers (already at top tier)
@@ -448,7 +448,7 @@ Legal & compliance routes:
 ### Payment Gating and Subscriptions
 - Stripe Checkout integration for parent/teacher monthly, yearly, and lifetime plans.
 - Webhook handler keeps `subscriptionStatus` in sync for checkout, renewal, cancellation, and refund events.
-- Promo code system: 6-month premium unlock codes redeemed via callable; daily scheduled job downgrades expired codes.
+- Promo code system: variable-duration premium unlock codes redeemed via callable (`durationMonths` set per code); daily scheduled job downgrades expired codes.
 - Free-tier limits enforced server-side (Firestore rules + Cloud Functions) and in UI:
   - Free packs: `mul_36`, `add_20`, `sub_20`
   - Teacher free: 1 classroom, 25-student roster cap

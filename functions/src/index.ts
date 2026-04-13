@@ -1040,7 +1040,8 @@ export const saveUserScene = onCall(async (request) => {
 // ── Promo Codes ───────────────────────────────────────────────────────────────
 
 /**
- * Redeems a 6-month premium unlock promo code.
+ * Redeems a premium_unlock promo code, granting premium for the duration
+ * specified on the code document (durationMonths — variable per code).
  * Validates the code, increments its use counter, and sets premiumExpiresAt
  * on the user doc. Lifetime subscribers cannot redeem promo codes.
  */

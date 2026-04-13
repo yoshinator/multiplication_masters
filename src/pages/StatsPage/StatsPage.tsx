@@ -1,7 +1,7 @@
 import { useMemo, type FC } from 'react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
-import { Box, Card, Container, Grid, Stack, Typography, IconButton } from '@mui/material'
+import { Box, Button, Card, Container, Grid, Stack, Typography, IconButton } from '@mui/material'
 import {
   History,
   Functions,
@@ -265,14 +265,14 @@ const StatsPage: FC = () => {
               <Typography variant="caption" color="text.secondary">
                 Showing 1 of {topTenMissedMultiplication.length}.
               </Typography>
-              <Typography
-                variant="caption"
-                color="primary"
-                sx={{ cursor: 'pointer', fontWeight: 600 }}
+              <Button
+                variant="text"
+                size="small"
                 onClick={() => openModal(<UpgradeModal onClose={closeModal} />)}
+                sx={{ fontWeight: 600, fontSize: 'caption.fontSize', p: 0, minWidth: 0, textTransform: 'none' }}
               >
                 Upgrade to see all missed facts.
-              </Typography>
+              </Button>
             </Stack>
           </Grid>
         )}

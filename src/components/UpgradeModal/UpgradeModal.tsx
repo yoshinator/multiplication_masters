@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardContent,
   Chip,
   Stack,
@@ -145,41 +146,44 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
               <Card
                 key={plan.billingPeriod}
                 variant="outlined"
-                onClick={() => setSelectedPeriod(plan.billingPeriod)}
                 sx={{
-                  cursor: 'pointer',
                   borderColor: selected ? 'primary.main' : 'divider',
                   borderWidth: selected ? 2 : 1,
                   bgcolor: selected ? 'action.selected' : 'background.paper',
                 }}
               >
-                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Box>
-                      <Typography fontWeight={700}>{plan.label}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {plan.subLabel}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      {plan.badge && (
-                        <Chip
-                          label={plan.badge}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      )}
-                      <Typography fontWeight={800} variant="h6">
-                        {plan.price}
-                      </Typography>
+                <CardActionArea
+                  onClick={() => setSelectedPeriod(plan.billingPeriod)}
+                  aria-pressed={selected}
+                >
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box>
+                        <Typography fontWeight={700}>{plan.label}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {plan.subLabel}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {plan.badge && (
+                          <Chip
+                            label={plan.badge}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        )}
+                        <Typography fontWeight={800} variant="h6">
+                          {plan.price}
+                        </Typography>
+                      </Stack>
                     </Stack>
-                  </Stack>
-                </CardContent>
+                  </CardContent>
+                </CardActionArea>
               </Card>
             )
           })}

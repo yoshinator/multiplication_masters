@@ -174,7 +174,13 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
           <Button
             size="small"
             color="error"
-            onClick={onSignOutAnyway}
+            onClick={() => {
+              setEmail('')
+              setMode('menu')
+              setAcceptedTerms(false)
+              setShowTermsError(false)
+              onSignOutAnyway()
+            }}
             sx={{ alignSelf: 'center', opacity: 0.7 }}
           >
             Sign out and lose progress
