@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { useState, useEffect, type FC } from 'react'
 import {
   Box,
   Button,
@@ -22,6 +22,11 @@ type UpgradeModalProps = {
   onClose: () => void
 }
 
+type LivePrices = {
+  parent: Record<BillingPeriod, string>
+  teacher: Record<BillingPeriod, string>
+}
+
 type PlanCard = {
   billingPeriod: BillingPeriod
   label: string
@@ -34,20 +39,20 @@ const PARENT_PLANS: PlanCard[] = [
   {
     billingPeriod: 'monthly',
     label: 'Monthly',
-    price: '$9.99',
+    price: '$8.99',
     subLabel: 'per month',
   },
   {
     billingPeriod: 'yearly',
     label: 'Yearly',
-    price: '$99.99',
+    price: '$79.99',
     subLabel: 'per year',
-    badge: 'Save 17%',
+    badge: 'Save 26%',
   },
   {
     billingPeriod: 'lifetime',
     label: 'Lifetime',
-    price: '$150',
+    price: '$149.99',
     subLabel: 'one-time',
     badge: 'Best value',
   },
@@ -57,20 +62,20 @@ const TEACHER_PLANS: PlanCard[] = [
   {
     billingPeriod: 'monthly',
     label: 'Monthly',
-    price: '$25.00',
+    price: '$19.99',
     subLabel: 'per month',
   },
   {
     billingPeriod: 'yearly',
     label: 'Yearly',
-    price: '$199.99',
+    price: '$199.00',
     subLabel: 'per year',
-    badge: 'Save 33%',
+    badge: 'Save 17%',
   },
   {
     billingPeriod: 'lifetime',
     label: 'Lifetime',
-    price: '$500',
+    price: '$599.00',
     subLabel: 'one-time',
     badge: 'Best value',
   },
@@ -97,6 +102,20 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
     user?.userRole === 'teacher' ? 'teacher' : 'parent'
   const [planType, setPlanType] = useState<PlanType>(defaultTab)
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod>('yearly')
+
+  const [livePrices, setLivePrices] = useState<LivePrices | null>(null)
+
+  const { execute: fetchPrices } = useCloudFunction<
+    Record<string, never>,
+    LivePrices
+  >('getPlanPrices')
+
+  useEffect(() => {
+    fetchPrices({})
+      .then((result) => { if (result?.data) setLivePrices(result.data) })
+      .catch(() => { /* fall back to hardcoded prices */ })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { execute: createCheckout, isPending } = useCloudFunction<
     {
@@ -142,6 +161,7 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
         <Stack spacing={1}>
           {plans.map((plan) => {
             const selected = plan.billingPeriod === selectedPeriod
+            const displayPrice = livePrices?.[planType]?.[plan.billingPeriod] ?? plan.price
             return (
               <Card
                 key={plan.billingPeriod}
@@ -178,7 +198,7 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
                           />
                         )}
                         <Typography fontWeight={800} variant="h6">
-                          {plan.price}
+                          {displayPrice}
                         </Typography>
                       </Stack>
                     </Stack>

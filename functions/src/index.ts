@@ -913,7 +913,7 @@ export const applyClassroomPackDefaults = onCall(async (request) => {
   return { success: true, updated: rosterSnap.size }
 })
 
-export { createCheckoutSession, stripeWebhook } from './stripe'
+export { createCheckoutSession, stripeWebhook, getPlanPrices } from './stripe'
 
 export const saveUserScene = onCall(async (request) => {
   const uid = request.auth?.uid

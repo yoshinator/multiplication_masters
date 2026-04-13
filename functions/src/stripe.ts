@@ -465,6 +465,56 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
 // ── Exported Cloud Functions ──────────────────────────────────────────────────
 
 /**
+ * Returns live Stripe prices for all plans as formatted currency strings.
+ * Called by UpgradeModal on mount so displayed prices always match the Stripe catalog.
+ * No auth required — pricing is public.
+ */
+export const getPlanPrices = onCall(
+  { secrets: [stripeSecretKey, ...PRICE_SECRETS] },
+  async () => {
+    const stripe = new Stripe(stripeSecretKey.value())
+
+    const [
+      parentMonthly,
+      parentYearly,
+      parentLifetime,
+      teacherMonthly,
+      teacherYearly,
+      teacherLifetime,
+    ] = await Promise.all([
+      stripe.prices.retrieve(stripePriceParentMonthly.value()),
+      stripe.prices.retrieve(stripePriceParentYearly.value()),
+      stripe.prices.retrieve(stripePriceParentLifetime.value()),
+      stripe.prices.retrieve(stripePriceTeacherMonthly.value()),
+      stripe.prices.retrieve(stripePriceTeacherYearly.value()),
+      stripe.prices.retrieve(stripePriceTeacherLifetime.value()),
+    ])
+
+    const format = (price: Stripe.Price): string => {
+      const amount = price.unit_amount ?? 0
+      const currency = price.currency.toUpperCase()
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+      }).format(amount / 100)
+    }
+
+    return {
+      parent: {
+        monthly: format(parentMonthly),
+        yearly: format(parentYearly),
+        lifetime: format(parentLifetime),
+      },
+      teacher: {
+        monthly: format(teacherMonthly),
+        yearly: format(teacherYearly),
+        lifetime: format(teacherLifetime),
+      },
+    }
+  }
+)
+
+/**
  * Creates a Stripe Checkout session for the requested plan.
  * Returns { checkoutUrl } — the client redirects the user to this URL.
  * Promo-code redemption is handled separately via redeemPromoCode (index.ts).
