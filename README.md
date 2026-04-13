@@ -103,13 +103,13 @@ Reusable UI components organized by feature:
 - **DailyGoalPanel** - Daily learning goals and progress tracking
 - **FeedbackButton/FeedbackModal** - User feedback collection system
 - **FinishSignin** - Email-link authentication completion handler
-- **Header** - Application navigation bar
+- **Header** - Navigation bar with subscription status chip (Free / Premium / Save Progress) between nav and user menu; chip opens UpgradeModal or SaveProgressModal depending on user state
 - **LevelUpAnimation** - Achievement celebration animations
 - **Login** - Sign-in and account upgrade flows:
   - Google sign-in
   - Email-link sign-in
   - Profile login + 6-digit PIN sign-in (per learner profile)
-  - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance)
+  - Anonymous users can upgrade via the Save Progress modal (requires Terms acceptance); sign-out is intercepted for anonymous users to prevent accidental data loss
 - **FactCard** - Flash card interface with timer and zones (multiplication, division, addition, subtraction)
 - **OnboardingModal** - Required first-login questionnaire (role + grade defaults)
 - **PanelCard** - Reusable responsive panel shell (shared layout for dashboard-style panels like DailyGoalPanel and SceneXPDisplay)
@@ -120,6 +120,7 @@ Reusable UI components organized by feature:
 - **SessionSummary** - Post-session statistics and performance review
 - **StatsPanel** - Detailed analytics and performance metrics
 - **Timer** - Session countdown timer
+- **UpgradeModal** - Shared pricing and upgrade modal (parent/teacher tabs, monthly/yearly/lifetime plans, Stripe Checkout integration)
 - **UserMenu** - User profile and settings dropdown
 - **WelcomeBack** - Returning user greeting
 
@@ -243,14 +244,35 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 - Handles batched writes for large datasets
 
 #### `saveUserScene`
-**Trigger**: HTTPS callable function  
-**Purpose**: Saves customized scene layouts to user's collection  
+**Trigger**: HTTPS callable function
+**Purpose**: Saves customized scene layouts to user's collection
 **Operations**:
 - Validates scene data and thumbnail URL
 - Enforces 4-scene storage limit per user
 - Validates thumbnail path matches user's storage location
 - Supports both new scene creation and updates
 - Includes security checks for emulator vs production environments
+
+#### `redeemPromoCode`
+**Trigger**: HTTPS callable function
+**Purpose**: Redeems a `premium_unlock` promo code for a 6-month premium grant
+**Operations**:
+- Validates code exists, has remaining uses, and has not expired
+- Skips lifetime subscribers (already at top tier)
+- Sets `subscriptionStatus: 'premium'`, `promoCodeId`, and `premiumExpiresAt = now + durationMonths` on the user doc
+- Atomically increments the code's `uses` counter
+
+#### `checkExpiredPremium`
+**Trigger**: Scheduled (every 24 hours)
+**Purpose**: Downgrades promo-code premium users whose `premiumExpiresAt` has passed
+**Operations**:
+- Queries users with `subscriptionStatus: 'premium'` and `premiumExpiresAt <= now`
+- Skips Stripe-managed subscriptions and lifetime plans
+- Batch-updates eligible users to `subscriptionStatus: 'free'`
+
+#### Stripe billing (`functions/src/stripe.ts`)
+- **`createCheckoutSession`** (onCall) - Creates a Stripe Checkout session for parent/teacher monthly, yearly, or lifetime plans; returns `checkoutUrl`.
+- **`stripeWebhook`** (onRequest) - Handles `checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`, and `charge.refunded` events to keep `subscriptionStatus` in sync.
 
 ### Data Models (`functions/src/masterCards.ts`)
 - **MASTER_FACTS** - Pre-generated fact databases for mul_36, mul_144, mul_576, div_144, add_20, and sub_20 packs
@@ -322,9 +344,10 @@ Firebase Cloud Functions for server-side operations built with TypeScript and No
 Multiplication Masters combines a speed-adaptive Leitner system with SM-2 scheduling to create a highly effective multiplication fact trainer. The project includes:
 - Complete session scheduler with intelligent card selection
 - Session update pipeline with batched writes for performance
-- Cloud Functions for user initialization, fact provisioning, and data migration
+- Cloud Functions for user initialization, fact provisioning, data migration, and billing
+- Stripe-backed subscriptions (monthly/yearly/lifetime) and promo code system with server-enforced free-tier limits
 - Customizable scene builder with persistent storage
-- Comprehensive analytics dashboard
+- Comprehensive analytics dashboard with premium gating
 - Responsive UI with real-time feedback
 - Firebase-backed authentication and data persistence
 
@@ -422,6 +445,17 @@ Legal & compliance routes:
 - `/privacy`, `/terms`, `/coppa`, `/ferpa`
 - The `Footer` is intentionally shown only on Home + legal pages.
 
+### Payment Gating and Subscriptions
+- Stripe Checkout integration for parent/teacher monthly, yearly, and lifetime plans.
+- Webhook handler keeps `subscriptionStatus` in sync for checkout, renewal, cancellation, and refund events.
+- Promo code system: 6-month premium unlock codes redeemed via callable; daily scheduled job downgrades expired codes.
+- Free-tier limits enforced server-side (Firestore rules + Cloud Functions) and in UI:
+  - Free packs: `mul_36`, `add_20`, `sub_20`
+  - Teacher free: 1 classroom, 25-student roster cap
+  - Parent free: 1 learner profile
+  - Stats: only the #1 missed fact visible; facts 2–10 locked with upgrade CTA
+- Shared `UpgradeModal` with pricing cards wired to Stripe Checkout at all gating points.
+
 ### Security and Privacy
 - Privacy Policy, Terms, COPPA, and FERPA pages are implemented and linked from the UI.
 - Firestore rules isolate user data and block client access to sensitive auth collections
@@ -442,7 +476,6 @@ Nice to haves
 - Add practice modes (timed drill, review-only, mixed tables).
 
 ### Backend and Data Logic
-- payment integration
 - transactional email integration
 
 ### SRS Improvements

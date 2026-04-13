@@ -33,6 +33,7 @@ import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirestoreQuery } from '../../hooks/useFirestore'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import UpgradeModal from '../../components/UpgradeModal/UpgradeModal'
 import ActiveFactPackSection from './components/ActiveFactPackSection'
 import AddLearnerModal from './components/AddLearnerModal'
 import DisplayPreferencesSection from './components/DisplayPreferencesSection'
@@ -110,7 +111,14 @@ const ProfilePage: FC = () => {
 
   const hasPinSignIn = Boolean(profile?.pinEnabled)
   const isTeacher = user?.userRole === 'teacher'
-  const canAddLearner = !isProfileSession && user?.userRole === 'parent'
+  const isPremium = user?.subscriptionStatus === 'premium'
+  const learnerProfileCount = profiles.filter(
+    (p) => p.id !== user?.primaryProfileId
+  ).length
+  const isAtLearnerLimit =
+    !isPremium && user?.userRole === 'parent' && learnerProfileCount >= 1
+  const canAddLearner =
+    !isProfileSession && user?.userRole === 'parent' && !isAtLearnerLimit
 
   const ownerProfileId =
     isTeacher || user?.userRole === 'parent'
@@ -176,15 +184,19 @@ const ProfilePage: FC = () => {
           hasPinSignIn={hasPinSignIn}
           isAnonymous={Boolean(isAnonymous)}
           showReturnToOwner={isOwnerViewingLearner}
-          showAddLearner={canAddLearner}
-          onAddLearner={() =>
+          showAddLearner={canAddLearner || isAtLearnerLimit}
+          onAddLearner={() => {
+            if (isAtLearnerLimit) {
+              openModal(<UpgradeModal onClose={closeModal} />)
+              return
+            }
             openModal(
               <AddLearnerModal
                 onClose={closeModal}
                 onCreated={handleLearnerCreated}
               />
             )
-          }
+          }}
           onEnablePin={() => openModal(<SetPinModal onClose={closeModal} />)}
           onSaveProgress={() =>
             openModal(<SaveProgressModal onClose={closeModal} />)

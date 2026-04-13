@@ -31,7 +31,9 @@ import { useNavigate } from 'react-router-dom'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useFirestoreQuery } from '../../hooks/useFirestore'
+import { useModal } from '../../contexts/modalContext/modalContext'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import UpgradeModal from '../../components/UpgradeModal/UpgradeModal'
 import type { Classroom, GradeLevel } from '../../constants/dataModels'
 import { ROUTES } from '../../constants/routeConstants'
 import { PACK_LABELS } from '../ProfilePage/components/profileConstants'
@@ -39,6 +41,7 @@ import {
   ALL_PACKS,
   CLASS_GRADE_OPTIONS,
   FREE_PACKS,
+  FREE_TEACHER_MAX_CLASSROOMS,
   MUL_36,
 } from '../../constants/appConstants'
 
@@ -50,6 +53,7 @@ const ClassesPage: FC = () => {
   const { user } = useUser()
   const { db } = useFirebaseContext()
   const { showNotification } = useNotification()
+  const { openModal, closeModal } = useModal()
   const navigate = useNavigate()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -73,6 +77,11 @@ const ClassesPage: FC = () => {
 
   const { data: classrooms, loading } =
     useFirestoreQuery<Classroom>(classesQuery)
+
+  const isPremium = user?.subscriptionStatus === 'premium'
+  const isAtClassLimit =
+    !isPremium &&
+    (user?.classroomCount ?? 0) >= FREE_TEACHER_MAX_CLASSROOMS
 
   const handleCreate = async () => {
     if (!db || !user?.uid) return
@@ -134,11 +143,21 @@ const ClassesPage: FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setIsCreateOpen(true)}
+          onClick={() =>
+            isAtClassLimit
+              ? openModal(<UpgradeModal onClose={closeModal} />)
+              : setIsCreateOpen(true)
+          }
         >
-          New Class
+          {isAtClassLimit ? 'Class limit reached' : 'New Class'}
         </Button>
       </Stack>
+
+      {isAtClassLimit && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Free plan supports {FREE_TEACHER_MAX_CLASSROOMS} classroom. Upgrade for unlimited classrooms.
+        </Typography>
+      )}
 
       {loading ? (
         <Typography color="text.secondary">Loading classes...</Typography>
@@ -151,8 +170,15 @@ const ClassesPage: FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Create your first class to organize learners and pack settings.
             </Typography>
-            <Button variant="contained" onClick={() => setIsCreateOpen(true)}>
-              Create a class
+            <Button
+              variant="contained"
+              onClick={() =>
+                isAtClassLimit
+                  ? openModal(<UpgradeModal onClose={closeModal} />)
+                  : setIsCreateOpen(true)
+              }
+            >
+              {isAtClassLimit ? 'Upgrade to add more classes' : 'Create a class'}
             </Button>
           </CardContent>
         </Card>

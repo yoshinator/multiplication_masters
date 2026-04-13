@@ -157,11 +157,15 @@ Organized by feature, key components include:
 - **DailyGoalPanel** - Daily learning goals and progress tracking
 - **FeedbackButton/FeedbackModal** - User feedback collection system
 - **FinishSignin** - OAuth authentication completion handler
-- **Header** - Application navigation bar with user menu
+- **Header** - Navigation bar. Shows subscription status chip between nav links and UserMenu:
+  - Anonymous user → amber "Save Progress" chip → opens `SaveProgressModal`
+  - Free authenticated user → "Free" chip → opens `UpgradeModal`
+  - Premium user → green "Premium" chip (display only, non-clickable)
+  - Chip hidden during profile sessions (`isProfileSession`)
 - **LevelUpAnimation** - Achievement celebration animations
 - **Login** - Sign-in and account upgrade flows:
   - `LoginModal` for Google / email-link / username+PIN sign-in
-  - `SaveProgressModal` for upgrading anonymous accounts (requires Terms acceptance)
+  - `SaveProgressModal` for upgrading anonymous accounts (requires Terms acceptance). Accepts optional `onSignOutAnyway?: () => void` prop — when provided, shows a red "Sign out and lose progress" button at the bottom of the modal (used by UserMenu sign-out flow).
   - `UsernamePinLogin` for kid-friendly username + 6-digit PIN sign-in
   - `SetPinModal` (opened from Profile) to enable username+PIN sign-in
 - **FactCard** - Flash card interface with timer and zones (correct/incorrect/skip)
@@ -174,7 +178,8 @@ Organized by feature, key components include:
 - **SessionSummary** - Post-session statistics and performance review
 - **StatsPanel** - Detailed analytics and performance metrics
 - **Timer** - Session countdown timer
-- **UserMenu** - User profile and settings dropdown
+- **UserMenu** - User profile and settings dropdown. Sign-out for anonymous users is intercepted: opens `SaveProgressModal` with `onSignOutAnyway` callback instead of immediately signing out, preventing accidental data loss.
+- **UpgradeModal** - Pricing modal shown at all free-tier gating points (parent/teacher tabs, monthly/yearly/lifetime cards, calls `createCheckoutSession` → Stripe Checkout redirect)
 - **WelcomeBack** - Returning user greeting and session start
 
 ### Contexts (`src/contexts/`)
@@ -293,9 +298,10 @@ Node.js 22 TypeScript Cloud Functions:
 - User initialization functions
 - Fact provisioning and deck generation
 - Data migration utilities
-- Scheduled functions (if applicable)
 - Classroom pack management (`applyClassroomPackDefaults`)
 - Username+PIN auth callables (custom-token minting + PIN setup + lockout reset)
+- **`redeemPromoCode`** (onCall) - Validates and redeems a `premium_unlock` promo code; sets `premiumExpiresAt = now + durationMonths` on the user doc. Blocks profile sessions and lifetime subscribers.
+- **`checkExpiredPremium`** (onSchedule, daily) - Queries users with `premiumExpiresAt <= now` and downgrades them to free; skips Stripe-managed subscriptions and lifetime plans.
 - **stripe.ts** - Stripe Checkout and webhook handling (see Stripe Billing section below)
 
 User initialization is server-side:
@@ -422,6 +428,19 @@ interface ClassroomRosterEntry {
 }
 ```
 
+### Promo Code Document (`promoCodes/{code}`)
+```typescript
+interface PromoCode {
+  type: 'premium_unlock'
+  durationMonths: number      // months of premium to grant
+  expiresAt: Timestamp | null // when the code itself expires (null = no expiry)
+  maxUses: number
+  uses: number                // incremented atomically on redemption
+  createdAt: Timestamp
+}
+```
+Written by admins; accessible only via the `redeemPromoCode` Cloud Function. Client reads/writes are blocked in `firestore.rules`.
+
 ### UserFact Document (`users/{uid}/Facts/{factId}`)
 ```typescript
 interface UserFact {
@@ -466,8 +485,9 @@ interface SessionRecord {
 ## Stripe Billing
 
 ### Architecture
-- **Secrets** (never in env vars): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — stored in Firebase Secret Manager, injected at runtime via `defineSecret()`.
-- **Non-secret price IDs**: stored as Firebase Functions environment variables (see `functions/.env.template`). Set per environment via Firebase console or `.env` for emulator.
+- **All Stripe secrets** (keys + price IDs) stored in Firebase Secret Manager, injected at runtime via `defineSecret()`. Never in env vars or committed files.
+- Secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PARENT_MONTHLY`, `STRIPE_PRICE_PARENT_YEARLY`, `STRIPE_PRICE_PARENT_LIFETIME`, `STRIPE_PRICE_TEACHER_MONTHLY`, `STRIPE_PRICE_TEACHER_YEARLY`, `STRIPE_PRICE_TEACHER_LIFETIME`.
+- See `functions/.env.template` for the full list of secrets needed locally and the `firebase functions:secrets:set` commands for production.
 
 ### Cloud Functions (`functions/src/stripe.ts`)
 
@@ -493,12 +513,15 @@ interface SessionRecord {
 
 ### Entitlement Enforcement
 - Pack gating: enforced in `firestore.rules` (pack must be in `FREE_PACKS` or user has `subscriptionStatus: 'premium'`).
-- Classroom/roster quantity limits: **deferred to Cloud Functions (PR 2)** — client-maintained counters are untrustworthy for auth decisions; `classroomCount` is server-managed.
+- Classroom/roster quantity limits: `classroomCount` is server-managed (Cloud Function trigger); client UI checks `classroomCount` and `rosterCount` to disable controls and show the `UpgradeModal` when free-tier limits are hit.
+- Stats gating: `StatsPage` shows only the #1 missed fact to free users; facts 2–10 render as `LockedFactCard` with an upgrade CTA.
+- Parent learner limit: free parents are limited to 1 learner profile; the "Add learner" button triggers `UpgradeModal` when the limit is reached.
+- Promo codes: redeemed via `redeemPromoCode` callable; expiry enforced by `checkExpiredPremium` scheduled function.
+- `promoCodes/{code}` is read/write blocked from clients (`firestore.rules`); Cloud Functions are the only accessor.
 
 ### Local Development
-1. Copy `functions/.env.template` → `functions/.env` and fill in Stripe test price IDs.
-2. Create `functions/.secret.local` with `STRIPE_SECRET_KEY=sk_test_...` and `STRIPE_WEBHOOK_SECRET=whsec_...`.
-3. Use the Stripe CLI (`stripe listen --forward-to localhost:5001/.../stripeWebhook`) to forward test events.
+1. Copy `functions/.env.template` → `functions/.secret.local` and fill in all 8 Stripe test secrets (keys + price IDs).
+2. Use the Stripe CLI (`stripe listen --forward-to localhost:5001/.../stripeWebhook`) to forward test events. The webhook secret printed by `stripe listen` is your `STRIPE_WEBHOOK_SECRET` value in `.secret.local`.
 
 ### Webhook Registration
 Register `https://REGION-PROJECT_ID.cloudfunctions.net/stripeWebhook` in Stripe Dashboard > Developers > Webhooks with events: `checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`.
@@ -695,5 +718,5 @@ Runs Vite dev server on `http://localhost:5173`
 Always keep AGENT.md and README.md up to date.
 ---
 
-**Last Updated**: 2026-03-17
+**Last Updated**: 2026-04-12
 **Repository**: [yoshinator/multiplication_masters](https://github.com/yoshinator/multiplication_masters)

@@ -2,8 +2,9 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
 import { auth as authV1 } from 'firebase-functions/v1'
 import { initializeApp } from 'firebase-admin/app'
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { getAuth } from 'firebase-admin/auth'
 import bcrypt from 'bcryptjs'
 import { MASTER_FACTS, PackMeta } from './masterCards'
@@ -1034,4 +1035,130 @@ export const saveUserScene = onCall(async (request) => {
     createdAt: Date.now(),
   })
   return { success: true, id: docRef.id }
+})
+
+// ── Promo Codes ───────────────────────────────────────────────────────────────
+
+/**
+ * Redeems a 6-month premium unlock promo code.
+ * Validates the code, increments its use counter, and sets premiumExpiresAt
+ * on the user doc. Lifetime subscribers cannot redeem promo codes.
+ */
+export const redeemPromoCode = onCall(async (request) => {
+  const uid = request.auth?.uid
+  if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+  if (request.auth?.token?.profileId) {
+    throw new HttpsError(
+      'permission-denied',
+      'Profile sessions cannot redeem promo codes.'
+    )
+  }
+
+  const { code } = request.data ?? {}
+  if (typeof code !== 'string' || !code.trim()) {
+    throw new HttpsError('invalid-argument', 'Promo code is required.')
+  }
+  const codeKey = code.trim().toUpperCase()
+
+  const codeRef = db.collection('promoCodes').doc(codeKey)
+  const userRef = db.collection('users').doc(uid)
+
+  const result = await db.runTransaction(async (tx) => {
+    const [codeSnap, userSnap] = await Promise.all([
+      tx.get(codeRef),
+      tx.get(userRef),
+    ])
+
+    if (!codeSnap.exists) {
+      throw new HttpsError('not-found', 'Promo code not found or invalid.')
+    }
+
+    const codeData = codeSnap.data() as {
+      type: string
+      durationMonths: number
+      expiresAt: FirebaseFirestore.Timestamp | null
+      maxUses: number
+      uses: number
+    }
+
+    if (codeData.type !== 'premium_unlock') {
+      throw new HttpsError(
+        'invalid-argument',
+        'Promo code is not valid for this redemption type.'
+      )
+    }
+
+    const now = new Date()
+    if (codeData.expiresAt && codeData.expiresAt.toDate() < now) {
+      throw new HttpsError('failed-precondition', 'Promo code has expired.')
+    }
+
+    if (codeData.uses >= codeData.maxUses) {
+      throw new HttpsError(
+        'resource-exhausted',
+        'Promo code has reached its maximum uses.'
+      )
+    }
+
+    const userData = userSnap.data()
+    if (userData?.billingPeriod === 'lifetime') {
+      throw new HttpsError(
+        'failed-precondition',
+        'Account already has a lifetime subscription.'
+      )
+    }
+
+    const premiumExpiresAt = new Date(now)
+    premiumExpiresAt.setMonth(premiumExpiresAt.getMonth() + codeData.durationMonths)
+
+    tx.update(codeRef, { uses: FieldValue.increment(1) })
+    tx.update(userRef, {
+      subscriptionStatus: 'premium',
+      promoCodeId: codeKey,
+      premiumExpiresAt: Timestamp.fromDate(premiumExpiresAt),
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+
+    return { premiumExpiresAt: premiumExpiresAt.toISOString() }
+  })
+
+  logger.info('Promo code redeemed', { uid, code: codeKey })
+  return result
+})
+
+/**
+ * Daily scheduled job: downgrade users whose promo-code premium has expired.
+ * Skips Stripe-managed subscriptions (stripeSubscriptionId set) and lifetime.
+ */
+export const checkExpiredPremium = onSchedule('every 24 hours', async () => {
+  const now = Timestamp.now()
+
+  const snap = await db
+    .collection('users')
+    .where('subscriptionStatus', '==', 'premium')
+    .where('premiumExpiresAt', '<=', now)
+    .get()
+
+  if (snap.empty) {
+    logger.info('checkExpiredPremium: no expired promo users found')
+    return
+  }
+
+  const batch = db.batch()
+  for (const userDoc of snap.docs) {
+    const data = userDoc.data()
+    // Stripe subscriptions and lifetime purchases manage their own state
+    if (data.billingPeriod === 'lifetime' || data.stripeSubscriptionId) continue
+
+    batch.update(userDoc.ref, {
+      subscriptionStatus: 'free',
+      premiumExpiresAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    })
+  }
+
+  await batch.commit()
+  logger.info('checkExpiredPremium: downgraded expired promo users', {
+    checked: snap.size,
+  })
 })
