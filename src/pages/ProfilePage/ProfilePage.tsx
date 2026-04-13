@@ -228,7 +228,7 @@ const ProfilePage: FC = () => {
 
         <ActiveFactPackSection
           activePack={profile?.activePack || ''}
-          enabledPacks={ALL_PACKS as PackKey[]}
+          selectablePacks={ALL_PACKS as PackKey[]}
           isPremium={isPremium}
           onPackChange={handlePackChange}
           onUpgradeClick={() =>

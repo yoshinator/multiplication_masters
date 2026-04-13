@@ -2,7 +2,7 @@ import { useState, type FC } from 'react'
 import { Box, Button, Stack, Typography } from '@mui/material'
 import AppModal from '../AppModal/AppModal'
 import type { PackKey, UserRole } from '../../constants/dataModels'
-import { FREE_PACKS, PACK_LABELS } from '../../constants/appConstants'
+import { FREE_PACKS, PACK_LABELS as ONBOARDING_PACK_LABELS } from '../../constants/appConstants'
 
 const ROLE_OPTIONS: Array<{
   value: UserRole
@@ -102,7 +102,7 @@ const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
                 onClick={() => setDefaultPack(packId)}
                 sx={{ textTransform: 'none', flex: 1 }}
               >
-                {PACK_LABELS[packId]}
+                {ONBOARDING_PACK_LABELS[packId]}
               </Button>
             ))}
           </Stack>

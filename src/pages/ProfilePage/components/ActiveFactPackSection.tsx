@@ -16,7 +16,7 @@ import { PACK_LABELS } from './profileConstants'
 
 type ActiveFactPackSectionProps = {
   activePack: PackKey | ''
-  enabledPacks: PackKey[]
+  selectablePacks: PackKey[]
   isPremium: boolean
   onPackChange: (event: SelectChangeEvent<PackKey | ''>) => void
   onUpgradeClick: () => void
@@ -39,12 +39,12 @@ const getPackSortValue = (packId: PackKey) => {
 
 const ActiveFactPackSection: FC<ActiveFactPackSectionProps> = ({
   activePack,
-  enabledPacks,
+  selectablePacks,
   isPremium,
   onPackChange,
   onUpgradeClick,
 }) => {
-  const orderedPacks = [...enabledPacks].sort(
+  const orderedPacks = [...selectablePacks].sort(
     (a, b) => getPackSortValue(a) - getPackSortValue(b)
   )
 
