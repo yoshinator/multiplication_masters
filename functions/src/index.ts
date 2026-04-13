@@ -189,8 +189,6 @@ async function createProfileInTransaction(
       pinEnabled: false,
       showTour: true,
       onboardingCompleted: false,
-      learnerGradeLevels: [],
-      learnerCount: 1,
       upgradePromptCount: 0,
       totalAccuracy: 100,
       lifetimeCorrect: 0,
@@ -1110,7 +1108,9 @@ export const redeemPromoCode = onCall(async (request) => {
     }
 
     const premiumExpiresAt = new Date(now)
-    premiumExpiresAt.setMonth(premiumExpiresAt.getMonth() + codeData.durationMonths)
+    premiumExpiresAt.setMonth(
+      premiumExpiresAt.getMonth() + codeData.durationMonths
+    )
 
     tx.update(codeRef, { uses: FieldValue.increment(1) })
     tx.update(userRef, {

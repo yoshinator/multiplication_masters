@@ -1,7 +1,17 @@
 import { useMemo, type FC } from 'react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
-import { Box, Button, Card, Container, Grid, Stack, Typography, IconButton } from '@mui/material'
+import {
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  Container,
+  Grid,
+  Stack,
+  Typography,
+  IconButton,
+} from '@mui/material'
 import {
   History,
   Functions,
@@ -24,25 +34,37 @@ import PackMasteryPanel from '../../components/PackMasteryPanel/PackMasteryPanel
 import { countDueCardsInPack } from '../../contexts/cardScheduler/helpers/srsLogic'
 import { MASTERY_BOX_THRESHOLD } from '../../constants/appConstants'
 
-const LockedFactCard: FC = () => (
+type LockedFactCardProps = {
+  onUpgradeClick: () => void
+}
+
+const LockedFactCard: FC<LockedFactCardProps> = ({ onUpgradeClick }) => (
   <Card
     sx={{
-      p: 2,
       height: '100%',
       border: '1px solid',
       borderColor: 'divider',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
       minHeight: 120,
     }}
   >
-    <Stack alignItems="center" spacing={0.5}>
-      <LockOutlined color="action" fontSize="small" />
-      <Typography variant="caption" color="text.disabled">
-        Premium
-      </Typography>
-    </Stack>
+    <CardActionArea
+      onClick={onUpgradeClick}
+      sx={{
+        height: '100%',
+        p: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      aria-label="Upgrade to unlock missed facts"
+    >
+      <Stack alignItems="center" spacing={0.5}>
+        <LockOutlined color="action" fontSize="small" />
+        <Typography variant="caption" color="text.disabled">
+          Premium - tap to upgrade
+        </Typography>
+      </Stack>
+    </CardActionArea>
   </Card>
 )
 
@@ -51,6 +73,8 @@ const StatsPage: FC = () => {
   const { userFacts } = useFirebaseContext()
   const { openModal, closeModal } = useModal()
   const isPremium = user?.subscriptionStatus === 'premium'
+  const openUpgradeModal = () =>
+    openModal(<UpgradeModal onClose={closeModal} />)
 
   const { dueToday, dueTomorrow } = useMemo(() => {
     return countDueCardsInPack(userFacts, activePackMeta, activePackFactIds)
@@ -249,7 +273,7 @@ const StatsPage: FC = () => {
           if (idx > 0 && !isPremium) {
             return (
               <Grid size={{ xs: 6, sm: 4 }} key={`locked-${idx}`}>
-                <LockedFactCard />
+                <LockedFactCard onUpgradeClick={openUpgradeModal} />
               </Grid>
             )
           }
@@ -268,8 +292,14 @@ const StatsPage: FC = () => {
               <Button
                 variant="text"
                 size="small"
-                onClick={() => openModal(<UpgradeModal onClose={closeModal} />)}
-                sx={{ fontWeight: 600, fontSize: 'caption.fontSize', p: 0, minWidth: 0, textTransform: 'none' }}
+                onClick={openUpgradeModal}
+                sx={{
+                  fontWeight: 600,
+                  fontSize: 'caption.fontSize',
+                  p: 0,
+                  minWidth: 0,
+                  textTransform: 'none',
+                }}
               >
                 Upgrade to see all missed facts.
               </Button>

@@ -8,7 +8,6 @@ import { capitalizeFirstLetter } from '../../utilities/stringHelpers'
 import CardLoadingSkeleton from '../CardLoadingSkeleton/CardLoadingSkeleton'
 import { useModal } from '../../contexts/modalContext/modalContext'
 import OnboardingModal from '../Onboarding/OnboardingModal'
-import type { GradeLevel, PackKey } from '../../constants/dataModels'
 import { ALL_PACKS, FREE_PACKS } from '../../constants/appConstants'
 
 const WelcomeBack: FC = () => {
@@ -23,13 +22,6 @@ const WelcomeBack: FC = () => {
     onboardingOpenedRef.current = false
   }, [user?.uid, profile?.id])
 
-  const getDefaultPackForGrades = (grades: GradeLevel[]): PackKey => {
-    if (grades.some((grade) => ['K', '1', '2'].includes(grade))) {
-      return 'add_20'
-    }
-    return 'mul_36'
-  }
-
   const ensureOnboarding = useCallback(() => {
     if (isProfileSession) return true
     if (!profile || profile.onboardingCompleted) return true
@@ -43,8 +35,7 @@ const WelcomeBack: FC = () => {
       onboardingOpenedRef.current = true
       openModal(
         <OnboardingModal
-          onComplete={({ role, gradeLevels, learnerCount }) => {
-            const defaultPack = getDefaultPackForGrades(gradeLevels)
+          onComplete={({ role, defaultPack }) => {
             const isPremium = user?.subscriptionStatus === 'premium'
             const enabledPacks = isPremium ? ALL_PACKS : FREE_PACKS
 
@@ -52,8 +43,6 @@ const WelcomeBack: FC = () => {
               userRole: role,
             })
             updateUser({
-              learnerGradeLevels: gradeLevels,
-              learnerCount: learnerCount ?? undefined,
               onboardingCompleted: true,
               activePack: defaultPack,
               enabledPacks,

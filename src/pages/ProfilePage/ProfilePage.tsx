@@ -89,6 +89,10 @@ const ProfilePage: FC = () => {
   const handlePackChange = (event: SelectChangeEvent<PackKey | ''>) => {
     const nextPack = event.target.value
     if (!nextPack) return
+    if (!isPremium && !FREE_PACKS.includes(nextPack)) {
+      openModal(<UpgradeModal onClose={closeModal} />)
+      return
+    }
     updateUser({ activePack: nextPack })
   }
 
@@ -224,12 +228,12 @@ const ProfilePage: FC = () => {
 
         <ActiveFactPackSection
           activePack={profile?.activePack || ''}
-          enabledPacks={
-            (user?.subscriptionStatus === 'premium'
-              ? ALL_PACKS
-              : FREE_PACKS) as PackKey[]
-          }
+          selectablePacks={ALL_PACKS as PackKey[]}
+          isPremium={isPremium}
           onPackChange={handlePackChange}
+          onUpgradeClick={() =>
+            openModal(<UpgradeModal onClose={closeModal} />)
+          }
         />
 
         <Box
