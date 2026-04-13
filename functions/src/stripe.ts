@@ -8,31 +8,35 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 // Set before deploying:
 //   firebase functions:secrets:set STRIPE_SECRET_KEY
 //   firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+//   firebase functions:secrets:set STRIPE_PRICE_PARENT_MONTHLY
+//   firebase functions:secrets:set STRIPE_PRICE_PARENT_YEARLY
+//   firebase functions:secrets:set STRIPE_PRICE_PARENT_LIFETIME
+//   firebase functions:secrets:set STRIPE_PRICE_TEACHER_MONTHLY
+//   firebase functions:secrets:set STRIPE_PRICE_TEACHER_YEARLY
+//   firebase functions:secrets:set STRIPE_PRICE_TEACHER_LIFETIME
 // For local emulator use functions/.secret.local (see functions/.env.template)
 const stripeSecretKey = defineSecret('STRIPE_SECRET_KEY')
 const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET')
+const stripePriceParentMonthly = defineSecret('STRIPE_PRICE_PARENT_MONTHLY')
+const stripePriceParentYearly = defineSecret('STRIPE_PRICE_PARENT_YEARLY')
+const stripePriceParentLifetime = defineSecret('STRIPE_PRICE_PARENT_LIFETIME')
+const stripePriceTeacherMonthly = defineSecret('STRIPE_PRICE_TEACHER_MONTHLY')
+const stripePriceTeacherYearly = defineSecret('STRIPE_PRICE_TEACHER_YEARLY')
+const stripePriceTeacherLifetime = defineSecret('STRIPE_PRICE_TEACHER_LIFETIME')
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PlanType = 'parent' | 'teacher'
 type BillingPeriod = 'monthly' | 'yearly' | 'lifetime'
 
-// ── Price ID lookup ───────────────────────────────────────────────────────────
-// Non-sensitive price IDs are read from environment variables.
-// Set them as Firebase Functions env vars (functions/.env for emulator,
-// Firebase console or `firebase functions:config:set` for production).
-// See functions/.env.template for the full list.
-const PRICE_ID_ENV: Record<PlanType, Record<BillingPeriod, string>> = {
-  parent: {
-    monthly: process.env.STRIPE_PRICE_PARENT_MONTHLY ?? '',
-    yearly: process.env.STRIPE_PRICE_PARENT_YEARLY ?? '',
-    lifetime: process.env.STRIPE_PRICE_PARENT_LIFETIME ?? '',
-  },
-  teacher: {
-    monthly: process.env.STRIPE_PRICE_TEACHER_MONTHLY ?? '',
-    yearly: process.env.STRIPE_PRICE_TEACHER_YEARLY ?? '',
-    lifetime: process.env.STRIPE_PRICE_TEACHER_LIFETIME ?? '',
-  },
-}
+// Convenience array — passed to every function that reads price IDs.
+const PRICE_SECRETS = [
+  stripePriceParentMonthly,
+  stripePriceParentYearly,
+  stripePriceParentLifetime,
+  stripePriceTeacherMonthly,
+  stripePriceTeacherYearly,
+  stripePriceTeacherLifetime,
+] as const
 
 const ALLOWED_REDIRECT_HOSTS = new Set<string>([
   'mathbuilders.app',
@@ -81,7 +85,19 @@ function validateRedirectUrl(urlStr: string): void {
 }
 
 function getPriceId(planType: PlanType, billingPeriod: BillingPeriod): string {
-  const priceId = PRICE_ID_ENV[planType][billingPeriod]
+  const map: Record<PlanType, Record<BillingPeriod, string>> = {
+    parent: {
+      monthly: stripePriceParentMonthly.value(),
+      yearly: stripePriceParentYearly.value(),
+      lifetime: stripePriceParentLifetime.value(),
+    },
+    teacher: {
+      monthly: stripePriceTeacherMonthly.value(),
+      yearly: stripePriceTeacherYearly.value(),
+      lifetime: stripePriceTeacherLifetime.value(),
+    },
+  }
+  const priceId = map[planType][billingPeriod]
   if (!priceId) {
     throw new HttpsError(
       'internal',
@@ -449,16 +465,63 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
 // ── Exported Cloud Functions ──────────────────────────────────────────────────
 
 /**
+ * Returns live Stripe prices for all plans as formatted currency strings.
+ * Called by UpgradeModal on mount so displayed prices always match the Stripe catalog.
+ * No auth required — pricing is public.
+ */
+export const getPlanPrices = onCall(
+  { secrets: [stripeSecretKey, ...PRICE_SECRETS] },
+  async () => {
+    const stripe = new Stripe(stripeSecretKey.value())
+
+    const [
+      parentMonthly,
+      parentYearly,
+      parentLifetime,
+      teacherMonthly,
+      teacherYearly,
+      teacherLifetime,
+    ] = await Promise.all([
+      stripe.prices.retrieve(stripePriceParentMonthly.value()),
+      stripe.prices.retrieve(stripePriceParentYearly.value()),
+      stripe.prices.retrieve(stripePriceParentLifetime.value()),
+      stripe.prices.retrieve(stripePriceTeacherMonthly.value()),
+      stripe.prices.retrieve(stripePriceTeacherYearly.value()),
+      stripe.prices.retrieve(stripePriceTeacherLifetime.value()),
+    ])
+
+    const format = (price: Stripe.Price): string => {
+      const amount = price.unit_amount ?? 0
+      const currency = price.currency.toUpperCase()
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+      }).format(amount / 100)
+    }
+
+    return {
+      parent: {
+        monthly: format(parentMonthly),
+        yearly: format(parentYearly),
+        lifetime: format(parentLifetime),
+      },
+      teacher: {
+        monthly: format(teacherMonthly),
+        yearly: format(teacherYearly),
+        lifetime: format(teacherLifetime),
+      },
+    }
+  }
+)
+
+/**
  * Creates a Stripe Checkout session for the requested plan.
- * Returns { checkoutUrl } — the client should redirect the user to this URL.
- *
- * TODO (PR 3): After checkout completes, check for a pending promo code
- * redemption (promoCodeId) and apply it via the promo-code callable.
- *
- * TODO (PR 5): Wire checkoutUrl into the shared upgrade modal CTA.
+ * Returns { checkoutUrl } — the client redirects the user to this URL.
+ * Promo-code redemption is handled separately via redeemPromoCode (index.ts).
+ * The UpgradeModal (src/components/UpgradeModal) calls this and redirects on success.
  */
 export const createCheckoutSession = onCall(
-  { secrets: [stripeSecretKey] },
+  { secrets: [stripeSecretKey, ...PRICE_SECRETS] },
   async (request) => {
     const uid = request.auth?.uid
     if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
@@ -548,8 +611,7 @@ export const createCheckoutSession = onCall(
  *   customer.subscription.deleted
  *   charge.refunded
  *
- * TODO (PR 3): Handle promo-code expiry downgrade here or via a scheduled
- * function that checks premiumExpiresAt on login / nightly cron.
+ * Promo-code expiry is handled by the checkExpiredPremium scheduled function (index.ts).
  */
 export const stripeWebhook = onRequest(
   { secrets: [stripeSecretKey, stripeWebhookSecret] },

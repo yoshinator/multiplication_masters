@@ -1,10 +1,11 @@
 import { useMemo, type FC } from 'react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
-import { Box, Container, Grid, Typography, IconButton } from '@mui/material'
+import { Box, Button, Card, Container, Grid, Stack, Typography, IconButton } from '@mui/material'
 import {
   History,
   Functions,
+  LockOutlined,
   Speed,
   DoneAll,
   ErrorOutline,
@@ -15,15 +16,41 @@ import {
 } from '@mui/icons-material'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
+import { useModal } from '../../contexts/modalContext/modalContext'
+import UpgradeModal from '../../components/UpgradeModal/UpgradeModal'
 import StatsCard from '../../components/StatsPanel/StatsCard'
 import MissedFactCard from '../../components/StatsPanel/MissedFactCard'
 import PackMasteryPanel from '../../components/PackMasteryPanel/PackMasteryPanel'
 import { countDueCardsInPack } from '../../contexts/cardScheduler/helpers/srsLogic'
 import { MASTERY_BOX_THRESHOLD } from '../../constants/appConstants'
 
+const LockedFactCard: FC = () => (
+  <Card
+    sx={{
+      p: 2,
+      height: '100%',
+      border: '1px solid',
+      borderColor: 'divider',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 120,
+    }}
+  >
+    <Stack alignItems="center" spacing={0.5}>
+      <LockOutlined color="action" fontSize="small" />
+      <Typography variant="caption" color="text.disabled">
+        Premium
+      </Typography>
+    </Stack>
+  </Card>
+)
+
 const StatsPage: FC = () => {
-  const { profile, activePackFactIds, activePackMeta } = useUser()
+  const { profile, activePackFactIds, activePackMeta, user } = useUser()
   const { userFacts } = useFirebaseContext()
+  const { openModal, closeModal } = useModal()
+  const isPremium = user?.subscriptionStatus === 'premium'
 
   const { dueToday, dueTomorrow } = useMemo(() => {
     return countDueCardsInPack(userFacts, activePackMeta, activePackFactIds)
@@ -218,11 +245,37 @@ const StatsPage: FC = () => {
       </Typography>
 
       <Grid container spacing={2} id="most-missed-stats">
-        {topTenMissedMultiplication.map((props) => (
-          <Grid size={{ xs: 6, sm: 4 }} key={props.expression}>
-            <MissedFactCard {...props} />
+        {topTenMissedMultiplication.map((props, idx) => {
+          if (idx > 0 && !isPremium) {
+            return (
+              <Grid size={{ xs: 6, sm: 4 }} key={`locked-${idx}`}>
+                <LockedFactCard />
+              </Grid>
+            )
+          }
+          return (
+            <Grid size={{ xs: 6, sm: 4 }} key={props.expression}>
+              <MissedFactCard {...props} />
+            </Grid>
+          )
+        })}
+        {!isPremium && topTenMissedMultiplication.length > 1 && (
+          <Grid size={{ xs: 12 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="caption" color="text.secondary">
+                Showing 1 of {topTenMissedMultiplication.length}.
+              </Typography>
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => openModal(<UpgradeModal onClose={closeModal} />)}
+                sx={{ fontWeight: 600, fontSize: 'caption.fontSize', p: 0, minWidth: 0, textTransform: 'none' }}
+              >
+                Upgrade to see all missed facts.
+              </Button>
+            </Stack>
           </Grid>
-        ))}
+        )}
       </Grid>
     </Container>
   )

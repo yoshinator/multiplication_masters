@@ -1,6 +1,9 @@
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
+import { AppBar, Chip, Toolbar, Typography, Button, Box } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { Star } from '@mui/icons-material'
 import LoginModal from '../Login/LoginModal'
+import SaveProgressModal from '../Login/SaveProgressModal'
+import UpgradeModal from '../UpgradeModal/UpgradeModal'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useAuthActions } from '../../hooks/useAuthActions'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -9,14 +12,19 @@ import { useLocation, useNavigate, matchPath } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { useModal } from '../../contexts/modalContext/modalContext'
 import { isPublicInfoPath } from '../../constants/publicInfoRoutes'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 
 const Header = () => {
   const { user, isLoading, isProfileSession } = useUser()
+  const { auth } = useFirebaseContext()
   const isMobile = useIsMobile()
   const { openModal, closeModal } = useModal()
   const { loginAnonymously } = useAuthActions()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const isAnonymous = Boolean(auth?.currentUser?.isAnonymous)
+  const isPremium = user?.subscriptionStatus === 'premium'
 
   const isPublicInfoRoute = isPublicInfoPath(location.pathname)
 
@@ -96,29 +104,66 @@ const Header = () => {
             </Box>
           ) : null}
 
-          {isLoading ? (
-            <UserMenuSkeleton />
-          ) : !user ? (
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="contained"
-                size={isMobile ? 'small' : 'medium'}
-                onClick={loginAnonymously}
-              >
-                Try
-              </Button>
-              <Button
-                size={isMobile ? 'small' : 'medium'}
-                onClick={() => openModal(<LoginModal onClose={closeModal} />)}
-              >
-                Login
-              </Button>
-            </Box>
-          ) : (
-            <Box id="header-user-menu">
-              <UserMenu />
-            </Box>
-          )}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            {user && !isProfileSession && (
+              isAnonymous ? (
+                <Chip
+                  label="Save Progress"
+                  color="warning"
+                  size="small"
+                  onClick={() => openModal(<SaveProgressModal onClose={closeModal} />)}
+                  sx={{ fontWeight: 700, cursor: 'pointer' }}
+                />
+              ) : isPremium ? (
+                <Chip
+                  icon={isMobile ? undefined : <Star fontSize="small" />}
+                  label="Premium"
+                  color="success"
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontWeight: 700 }}
+                />
+              ) : (
+                <Chip
+                  label="Free"
+                  size="small"
+                  variant="outlined"
+                  onClick={() => openModal(<UpgradeModal onClose={closeModal} />)}
+                  sx={{ fontWeight: 700, cursor: 'pointer' }}
+                />
+              )
+            )}
+
+            {isLoading ? (
+              <UserMenuSkeleton />
+            ) : !user ? (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  size={isMobile ? 'small' : 'medium'}
+                  onClick={loginAnonymously}
+                >
+                  Try
+                </Button>
+                <Button
+                  size={isMobile ? 'small' : 'medium'}
+                  onClick={() => openModal(<LoginModal onClose={closeModal} />)}
+                >
+                  Login
+                </Button>
+              </Box>
+            ) : (
+              <Box id="header-user-menu">
+                <UserMenu />
+              </Box>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
     </>

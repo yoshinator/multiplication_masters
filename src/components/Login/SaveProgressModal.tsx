@@ -17,9 +17,14 @@ import { ROUTES } from '../../constants/routeConstants'
 
 type SaveProgressModalProps = {
   onClose: () => void
+  /** When provided, a "Sign out and lose progress" option is shown. */
+  onSignOutAnyway?: () => void
 }
 
-const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
+const SaveProgressModal: FC<SaveProgressModalProps> = ({
+  onClose,
+  onSignOutAnyway,
+}) => {
   const [mode, setMode] = useState<'menu' | 'email'>('menu')
   const [email, setEmail] = useState('')
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -135,34 +140,52 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({ onClose }) => {
         ) : null}
       </Box>
 
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Button
-          onClick={() => {
-            setEmail('')
-            setMode('menu')
-            setAcceptedTerms(false)
-            setShowTermsError(false)
-            onClose()
-          }}
-          color="inherit"
-          sx={{ color: 'text.secondary' }}
-        >
-          Not now
-        </Button>
-        <Button
-          onClick={() => {
-            setEmail('')
-            setMode('menu')
-            setAcceptedTerms(false)
-            setShowTermsError(false)
-            handleSnooze()
-            onClose()
-          }}
-          color="inherit"
-          sx={{ color: 'text.secondary' }}
-        >
-          Remind me later
-        </Button>
+      <Stack spacing={0.5}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Button
+            onClick={() => {
+              setEmail('')
+              setMode('menu')
+              setAcceptedTerms(false)
+              setShowTermsError(false)
+              onClose()
+            }}
+            color="inherit"
+            sx={{ color: 'text.secondary' }}
+          >
+            Not now
+          </Button>
+          <Button
+            onClick={() => {
+              setEmail('')
+              setMode('menu')
+              setAcceptedTerms(false)
+              setShowTermsError(false)
+              handleSnooze()
+              onClose()
+            }}
+            color="inherit"
+            sx={{ color: 'text.secondary' }}
+          >
+            Remind me later
+          </Button>
+        </Stack>
+        {onSignOutAnyway && (
+          <Button
+            size="small"
+            color="error"
+            onClick={() => {
+              setEmail('')
+              setMode('menu')
+              setAcceptedTerms(false)
+              setShowTermsError(false)
+              onSignOutAnyway()
+            }}
+            sx={{ alignSelf: 'center', opacity: 0.7 }}
+          >
+            Sign out and lose progress
+          </Button>
+        )}
       </Stack>
     </AppModal>
   )

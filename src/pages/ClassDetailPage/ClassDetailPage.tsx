@@ -44,6 +44,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useFirestoreDoc, useFirestoreQuery } from '../../hooks/useFirestore'
+import { useModal } from '../../contexts/modalContext/modalContext'
+import UpgradeModal from '../../components/UpgradeModal/UpgradeModal'
 import type {
   Classroom,
   ClassroomRosterEntry,
@@ -56,7 +58,11 @@ import { PACK_LABELS } from '../ProfilePage/components/profileConstants'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
 import AddLearnerModal from '../ProfilePage/components/AddLearnerModal'
-import { ALL_PACKS, CLASS_GRADE_OPTIONS } from '../../constants/appConstants'
+import {
+  ALL_PACKS,
+  CLASS_GRADE_OPTIONS,
+  FREE_TEACHER_MAX_ROSTER,
+} from '../../constants/appConstants'
 
 const formatClassGrade = (grade: GradeLevel) => {
   return (
@@ -174,6 +180,7 @@ const ClassDetailPage: FC = () => {
   const { db } = useFirebaseContext()
   const { user, setActiveProfileId } = useUser()
   const { showNotification } = useNotification()
+  const { openModal, closeModal } = useModal()
   const [isRosterDialogOpen, setIsRosterDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isCreateLearnerOpen, setIsCreateLearnerOpen] = useState(false)
@@ -303,6 +310,10 @@ const ClassDetailPage: FC = () => {
       showNotification('Unable to apply pack defaults.', 'error')
     }
   }
+
+  const isPremium = user?.subscriptionStatus === 'premium'
+  const isAtRosterLimit =
+    !isPremium && (classroom?.rosterCount ?? 0) >= FREE_TEACHER_MAX_ROSTER
 
   const availableProfiles = profiles.filter(
     // Filter out teacher and profiles already in the roster.
@@ -685,12 +696,24 @@ const ClassDetailPage: FC = () => {
               <Button
                 variant="contained"
                 startIcon={<Add />}
-                onClick={() => setIsRosterDialogOpen(true)}
-                disabled={availableProfiles.length === 0}
+                onClick={() => {
+                  if (isAtRosterLimit) {
+                    openModal(<UpgradeModal onClose={closeModal} />)
+                    return
+                  }
+                  setIsRosterDialogOpen(true)
+                }}
+                disabled={availableProfiles.length === 0 && !isAtRosterLimit}
               >
-                Add learners
+                {isAtRosterLimit ? 'Roster limit reached' : 'Add learners'}
               </Button>
             </Stack>
+
+            {isAtRosterLimit && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Free plan supports {FREE_TEACHER_MAX_ROSTER} learners per class. Upgrade for unlimited roster size.
+              </Typography>
+            )}
 
             <Divider sx={{ my: 2 }} />
 

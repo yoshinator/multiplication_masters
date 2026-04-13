@@ -170,13 +170,20 @@ service cloud.firestore {
     }
 
     // Any other subcollections under the user (account-only access)
-    match /users/{userId}/{document=**} {
+    match /users/{userId}/{collection}/{docId} {
       allow read, write: if request.auth != null
         && request.auth.uid == userId
         && !isProfileSession()
         // Exclude classrooms so only the teacher-only rule applies there.
-        && !request.path.matches("^/databases/[^/]+/documents/users/[^/]+/classrooms/[^/]+$")
-        && !request.path.matches("^/databases/[^/]+/documents/users/[^/]+/classrooms/[^/]+/.+$");
+        && collection != 'classrooms';
+    }
+
+    match /users/{userId}/{collection}/{docId}/{rest=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId
+        && !isProfileSession()
+        // Exclude classrooms so only the teacher-only rule applies there.
+        && collection != 'classrooms';
     }
 
     // Feedback (write-only from client)
@@ -198,6 +205,12 @@ service cloud.firestore {
     }
 
     match /profileSecrets/{profileId} {
+      allow read, write: if false;
+    }
+
+    // Promo codes — read and written only by Cloud Functions.
+    // Clients redeem via the redeemPromoCode callable; no direct access.
+    match /promoCodes/{code} {
       allow read, write: if false;
     }
   }
