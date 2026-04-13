@@ -2,12 +2,14 @@ import {
   Box,
   FormControl,
   InputLabel,
+  Link,
   MenuItem,
   Select,
   type SelectChangeEvent,
   Typography,
 } from '@mui/material'
 import type { FC } from 'react'
+import { FREE_PACKS } from '../../../constants/appConstants'
 import type { PackKey } from '../../../constants/dataModels'
 import ProfileSectionCard from './ProfileSectionCard'
 import { PACK_LABELS } from './profileConstants'
@@ -15,14 +17,37 @@ import { PACK_LABELS } from './profileConstants'
 type ActiveFactPackSectionProps = {
   activePack: PackKey | ''
   enabledPacks: PackKey[]
+  isPremium: boolean
   onPackChange: (event: SelectChangeEvent<PackKey | ''>) => void
+  onUpgradeClick: () => void
+}
+
+const PACK_LEARNING_ORDER: PackKey[] = [
+  'add_20',
+  'sub_20',
+  'mul_36',
+  'mul_144',
+  'div_144',
+  'mul_div_144',
+  'mul_576',
+]
+
+const getPackSortValue = (packId: PackKey) => {
+  const index = PACK_LEARNING_ORDER.indexOf(packId)
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index
 }
 
 const ActiveFactPackSection: FC<ActiveFactPackSectionProps> = ({
   activePack,
   enabledPacks,
+  isPremium,
   onPackChange,
+  onUpgradeClick,
 }) => {
+  const orderedPacks = [...enabledPacks].sort(
+    (a, b) => getPackSortValue(a) - getPackSortValue(b)
+  )
+
   return (
     <ProfileSectionCard
       sx={{
@@ -46,15 +71,34 @@ const ActiveFactPackSection: FC<ActiveFactPackSectionProps> = ({
             onChange={onPackChange}
             value={activePack}
           >
-            {enabledPacks.map((packId) => {
+            {orderedPacks.map((packId) => {
+              const isPremiumPack = !FREE_PACKS.includes(packId)
               return (
                 <MenuItem key={packId} value={packId}>
                   {PACK_LABELS[packId] || packId}
+                  {!isPremium && isPremiumPack ? ' *' : ''}
                 </MenuItem>
               )
             })}
           </Select>
         </FormControl>
+        {!isPremium && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 1, display: 'block' }}
+          >
+            *{' '}
+            <Link
+              component="button"
+              type="button"
+              onClick={onUpgradeClick}
+              underline="hover"
+            >
+              Upgrade to premium
+            </Link>
+          </Typography>
+        )}
       </Box>
     </ProfileSectionCard>
   )

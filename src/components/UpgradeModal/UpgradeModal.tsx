@@ -7,8 +7,6 @@ import {
   CardContent,
   Chip,
   Stack,
-  Tab,
-  Tabs,
   Typography,
 } from '@mui/material'
 import { CheckCircleOutline } from '@mui/icons-material'
@@ -98,9 +96,7 @@ const TEACHER_FEATURES = [
 const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
   const { user } = useUser()
   const { showNotification } = useNotification()
-  const defaultTab: PlanType =
-    user?.userRole === 'teacher' ? 'teacher' : 'parent'
-  const [planType, setPlanType] = useState<PlanType>(defaultTab)
+  const planType: PlanType = user?.userRole === 'teacher' ? 'teacher' : 'parent'
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod>('yearly')
 
   const [livePrices, setLivePrices] = useState<LivePrices | null>(null)
@@ -112,8 +108,12 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
 
   useEffect(() => {
     fetchPrices({})
-      .then((result) => { if (result?.data) setLivePrices(result.data) })
-      .catch(() => { /* fall back to hardcoded prices */ })
+      .then((result) => {
+        if (result?.data) setLivePrices(result.data)
+      })
+      .catch(() => {
+        /* fall back to hardcoded prices */
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -149,19 +149,19 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
   return (
     <AppModal open onClose={onClose} title="Upgrade to Premium" maxWidth="sm">
       <Stack spacing={3}>
-        <Tabs
-          value={planType}
-          onChange={(_e, val) => setPlanType(val as PlanType)}
-          variant="fullWidth"
+        <Typography
+          variant="subtitle2"
+          color="text.secondary"
+          textAlign="center"
         >
-          <Tab label="Parent" value="parent" />
-          <Tab label="Teacher" value="teacher" />
-        </Tabs>
+          {planType === 'teacher' ? 'Teacher Plan' : 'Parent Plan'}
+        </Typography>
 
         <Stack spacing={1}>
           {plans.map((plan) => {
             const selected = plan.billingPeriod === selectedPeriod
-            const displayPrice = livePrices?.[planType]?.[plan.billingPeriod] ?? plan.price
+            const displayPrice =
+              livePrices?.[planType]?.[plan.billingPeriod] ?? plan.price
             return (
               <Card
                 key={plan.billingPeriod}

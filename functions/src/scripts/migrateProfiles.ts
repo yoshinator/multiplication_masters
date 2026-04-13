@@ -264,8 +264,6 @@ const migrateUser = async (
           pinEnabled: false,
           showTour: userData.showTour ?? true,
           onboardingCompleted: userData.onboardingCompleted ?? false,
-          learnerGradeLevels: userData.learnerGradeLevels ?? [],
-          learnerCount: userData.learnerCount ?? 1,
           upgradePromptCount: userData.upgradePromptCount ?? 0,
           totalAccuracy: userData.totalAccuracy ?? 100,
           lifetimeCorrect: userData.lifetimeCorrect ?? 0,

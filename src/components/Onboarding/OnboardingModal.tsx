@@ -1,15 +1,8 @@
-import { useEffect, useMemo, useState, type FC } from 'react'
-import {
-  Box,
-  Button,
-  Divider,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { useState, type FC } from 'react'
+import { Box, Button, Stack, Typography } from '@mui/material'
 import AppModal from '../AppModal/AppModal'
-import type { GradeLevel, UserRole } from '../../constants/dataModels'
-import { CLASS_GRADE_OPTIONS } from '../../constants/appConstants'
+import type { PackKey, UserRole } from '../../constants/dataModels'
+import { FREE_PACKS, PACK_LABELS } from '../../constants/appConstants'
 
 const ROLE_OPTIONS: Array<{
   value: UserRole
@@ -39,60 +32,18 @@ const ROLE_OPTIONS: Array<{
 ]
 
 type OnboardingModalProps = {
-  onComplete: (data: {
-    role: UserRole
-    gradeLevels: GradeLevel[]
-    learnerCount: number | null
-  }) => void
+  onComplete: (data: { role: UserRole; defaultPack: PackKey }) => void
 }
 
 const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
-  const [step, setStep] = useState(0)
   const [role, setRole] = useState<UserRole | null>(null)
-  const [gradeLevels, setGradeLevels] = useState<GradeLevel[]>([])
-  const [learnerCount, setLearnerCount] = useState<string>('1')
-
-  const isMultiLearner = role === 'parent' || role === 'teacher'
-
-  useEffect(() => {
-    setGradeLevels([])
-    setLearnerCount('1')
-  }, [role])
-
-  const defaultPackLabel = useMemo(() => {
-    if (gradeLevels.some((grade) => ['K', '1', '2'].includes(grade))) {
-      return 'Addition within 20'
-    }
-    return 'Multiplication to 36'
-  }, [gradeLevels])
-
-  const toggleGrade = (grade: GradeLevel) => {
-    if (isMultiLearner) {
-      setGradeLevels((prev) =>
-        prev.includes(grade)
-          ? prev.filter((g) => g !== grade)
-          : [...prev, grade]
-      )
-      return
-    }
-    setGradeLevels([grade])
-  }
-
-  const canContinueRole = Boolean(role)
-  const canContinueGrades = gradeLevels.length > 0
-
-  const parsedLearnerCount = Number.parseInt(learnerCount, 10)
-  const learnerCountValue =
-    isMultiLearner && Number.isFinite(parsedLearnerCount)
-      ? Math.min(40, Math.max(1, parsedLearnerCount))
-      : null
+  const [defaultPack, setDefaultPack] = useState<PackKey>(FREE_PACKS[0])
 
   const handleComplete = () => {
-    if (!role || gradeLevels.length === 0) return
+    if (!role || !FREE_PACKS.includes(defaultPack)) return
     onComplete({
       role,
-      gradeLevels,
-      learnerCount: learnerCountValue,
+      defaultPack,
     })
   }
 
@@ -107,175 +58,65 @@ const OnboardingModal: FC<OnboardingModalProps> = ({ onComplete }) => {
     >
       <Stack spacing={2.5}>
         <Box>
-          <Typography variant="overline" color="text.secondary">
-            Step {step + 1} of 3
-          </Typography>
           <Typography variant="h5" sx={{ fontWeight: 800 }}>
-            {step === 0
-              ? 'Tell us who you are'
-              : step === 1
-                ? 'Which grade levels are you supporting?'
-                : 'We will personalize your first session'}
+            Tell us who you are
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {step === 0
-              ? 'This helps us tailor practice and highlight the right wins.'
-              : step === 1
-                ? 'Select all that apply so we can set the right starting pack.'
-                : 'You can always adjust packs and settings later in Profile.'}
+            Pick your role and choose your starting free pack.
           </Typography>
         </Box>
 
-        {step === 0 && (
-          <Stack spacing={1.5}>
-            {ROLE_OPTIONS.map((option) => (
+        <Stack spacing={1.5}>
+          {ROLE_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              variant={role === option.value ? 'contained' : 'outlined'}
+              onClick={() => setRole(option.value)}
+              sx={{
+                justifyContent: 'flex-start',
+                textTransform: 'none',
+                py: 1.5,
+                px: 2,
+                borderRadius: 2,
+              }}
+            >
+              <Box textAlign="left">
+                <Typography sx={{ fontWeight: 700 }}>{option.label}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {option.helper}
+                </Typography>
+              </Box>
+            </Button>
+          ))}
+        </Stack>
+
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+            Choose your starting pack
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            {FREE_PACKS.map((packId) => (
               <Button
-                key={option.value}
-                variant={role === option.value ? 'contained' : 'outlined'}
-                onClick={() => setRole(option.value)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  textTransform: 'none',
-                  py: 1.5,
-                  px: 2,
-                  borderRadius: 2,
-                }}
+                key={packId}
+                variant={defaultPack === packId ? 'contained' : 'outlined'}
+                onClick={() => setDefaultPack(packId)}
+                sx={{ textTransform: 'none', flex: 1 }}
               >
-                <Box textAlign="left">
-                  <Typography sx={{ fontWeight: 700 }}>
-                    {option.label}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {option.helper}
-                  </Typography>
-                </Box>
+                {PACK_LABELS[packId]}
               </Button>
             ))}
           </Stack>
-        )}
+        </Box>
 
-        {step === 1 && (
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: 'repeat(3, minmax(0, 1fr))',
-                  sm: 'repeat(6, minmax(0, 1fr))',
-                },
-                gap: 1,
-              }}
-            >
-              {CLASS_GRADE_OPTIONS.map((option) => {
-                const selected = gradeLevels.includes(option.value)
-                return (
-                  <Button
-                    key={option.value}
-                    variant={selected ? 'contained' : 'outlined'}
-                    onClick={() => toggleGrade(option.value)}
-                    sx={{
-                      minWidth: 0,
-                      px: 0,
-                      py: 1,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {option.label}
-                  </Button>
-                )
-              })}
-            </Box>
+        <Typography variant="caption" color="text.secondary">
+          You can change packs later in Profile. Premium unlocks additional
+          packs.
+        </Typography>
 
-            {isMultiLearner && (
-              <TextField
-                label="Number of learners"
-                type="number"
-                value={learnerCount}
-                onChange={(event) => setLearnerCount(event.target.value)}
-                helperText={
-                  role === 'parent'
-                    ? 'Enter how many you have. You can add more learners later (max 40).'
-                    : 'Enter how many you support (max 40).'
-                }
-                inputProps={{ min: 1, max: 40 }}
-              />
-            )}
-          </Stack>
-        )}
-
-        {step === 2 && (
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: 'action.hover',
-              }}
-            >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Starting pack
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                We will start with {defaultPackLabel} based on the grades you
-                selected.
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Other packs are available after upgrade.
-              </Typography>
-            </Box>
-
-            {role === 'student' ? (
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Want more practice packs?
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Ask a parent or teacher to unlock packs up to 576, division,
-                  and subtraction.
-                </Typography>
-              </Box>
-            ) : (
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Keep them motivated
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Upgrading unlocks packs up to 576, division, and subtraction,
-                  plus deeper progress insights to keep learners on track.
-                </Typography>
-              </Box>
-            )}
-
-            <Divider />
-
-            <Typography variant="body2" color="text.secondary">
-              You can manage packs, goals, and tour settings in Profile after
-              onboarding.
-            </Typography>
-          </Stack>
-        )}
-
-        <Box display="flex" justifyContent="space-between" gap={2}>
-          <Button
-            variant="text"
-            disabled={step === 0}
-            onClick={() => setStep((prev) => Math.max(0, prev - 1))}
-          >
-            Back
+        <Box display="flex" justifyContent="flex-end" gap={2}>
+          <Button variant="contained" onClick={handleComplete} disabled={!role}>
+            Start Session
           </Button>
-          {step < 2 ? (
-            <Button
-              variant="contained"
-              onClick={() => setStep((prev) => prev + 1)}
-              disabled={step === 0 ? !canContinueRole : !canContinueGrades}
-            >
-              Continue
-            </Button>
-          ) : (
-            <Button variant="contained" onClick={handleComplete}>
-              Start Session
-            </Button>
-          )}
         </Box>
       </Stack>
     </AppModal>

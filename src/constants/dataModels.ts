@@ -145,8 +145,6 @@ export type UserProfile = {
 
   showTour?: boolean
   onboardingCompleted?: boolean
-  learnerGradeLevels?: GradeLevel[]
-  learnerCount?: number
   upgradePromptCount?: number
 
   totalAccuracy?: number
