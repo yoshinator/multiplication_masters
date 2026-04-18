@@ -55,6 +55,11 @@ service cloud.firestore {
         'subscriptionStatus', 'planType', 'billingPeriod',
         'stripeCustomerId', 'stripeSubscriptionId', 'stripePriceId',
         'promoCodeId', 'premiumExpiresAt',
+        // Transactional email campaign metadata — server managed.
+        'emailWelcomeSentAt', 'emailWelcomeSource',
+        'nonPremiumCampaignStartedAt', 'nonPremiumEmailCount',
+        'nonPremiumLastSentAt', 'premiumLastWeeklySentAt',
+        'emailLastErrorAt', 'emailLastErrorCode', 'emailLastErrorMessage',
         // classroomCount is server-maintained (Cloud Function trigger, PR 2).
         // Blocking client writes here prevents free-tier classroom-limit bypass.
         'classroomCount',

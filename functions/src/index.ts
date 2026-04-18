@@ -1,4 +1,7 @@
-import { onDocumentCreated } from 'firebase-functions/v2/firestore'
+import {
+  onDocumentCreated,
+  onDocumentUpdated,
+} from 'firebase-functions/v2/firestore'
 import { logger } from 'firebase-functions'
 import { auth as authV1 } from 'firebase-functions/v1'
 import { initializeApp } from 'firebase-admin/app'
@@ -8,6 +11,14 @@ import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { getAuth } from 'firebase-admin/auth'
 import bcrypt from 'bcryptjs'
 import { MASTER_FACTS, PackMeta } from './masterCards'
+import {
+  EMAIL_SECRETS,
+  OnboardingTemplateModel,
+  recordEmailError,
+  sendOnboardingEmail,
+  sendPremiumWeeklyEmail,
+  sendWelcomeEmail,
+} from './email'
 
 initializeApp()
 const db = getFirestore()
@@ -23,6 +34,102 @@ const PROFILE_NAME_MAX_LEN = 20
 const PROFILE_NAME_REGEX_VALIDATION = new RegExp(
   `^[a-zA-Z0-9_]{${PROFILE_NAME_MIN_LEN},${PROFILE_NAME_MAX_LEN}}$`
 )
+const ONBOARDING_EMAILS_TOTAL = 5
+const ONBOARDING_INTERVAL_MS = 23 * 60 * 60 * 1000
+const WEEK_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+const EMAIL_TIMEZONE = 'America/New_York'
+const IDENTIFIED_METHODS = new Set(['google', 'emailLink'])
+
+type EmailSourceMethod = 'google' | 'emailLink'
+
+type EmailCampaignState = {
+  emailWelcomeSentAt: number | null
+  onboardingStartedAt: number | null
+  onboardingEmailsSent: number
+  onboardingLastSentAt: number | null
+  premiumLastWeeklySentAt: number | null
+}
+
+const timestampToMillis = (value: unknown): number | null => {
+  if (value instanceof Timestamp) return value.toMillis()
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  return null
+}
+
+const clampPercentage = (value: number): number => {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(100, Number(value.toFixed(1))))
+}
+
+const getCampaignState = (
+  userData: FirebaseFirestore.DocumentData | undefined
+): EmailCampaignState => {
+  return {
+    emailWelcomeSentAt: timestampToMillis(userData?.emailWelcomeSentAt),
+    onboardingStartedAt: timestampToMillis(userData?.onboardingStartedAt),
+    onboardingEmailsSent:
+      typeof userData?.onboardingEmailsSent === 'number'
+        ? userData.onboardingEmailsSent
+        : 0,
+    onboardingLastSentAt: timestampToMillis(userData?.onboardingLastSentAt),
+    premiumLastWeeklySentAt: timestampToMillis(
+      userData?.premiumLastWeeklySentAt
+    ),
+  }
+}
+
+const getPreferredProfileId = (
+  userData: FirebaseFirestore.DocumentData | undefined
+): string | null => {
+  if (
+    typeof userData?.activeProfileId === 'string' &&
+    userData.activeProfileId
+  ) {
+    return userData.activeProfileId
+  }
+  if (
+    typeof userData?.primaryProfileId === 'string' &&
+    userData.primaryProfileId
+  ) {
+    return userData.primaryProfileId
+  }
+  return null
+}
+
+const getFirstName = (
+  profileData: FirebaseFirestore.DocumentData | undefined
+): string => {
+  const rawName =
+    typeof profileData?.displayName === 'string' ? profileData.displayName : ''
+  const trimmed = rawName.trim()
+  if (!trimmed) return 'there'
+  const [first] = trimmed.split(/\s+/)
+  return first || 'there'
+}
+
+const getUserEmailAddress = async (uid: string): Promise<string | null> => {
+  try {
+    const userRecord = await getAuth().getUser(uid)
+    const email = userRecord.email?.trim()
+    return email ? email : null
+  } catch (error: unknown) {
+    logger.warn('Unable to fetch auth user for email send', { uid, error })
+    return null
+  }
+}
+
+const getEmailErrorDetails = (
+  error: unknown
+): { code: string; message: string } => {
+  if (error instanceof Error) {
+    const maybeCode =
+      typeof (error as Error & { code?: unknown }).code === 'string'
+        ? (error as Error & { code: string }).code
+        : 'unknown'
+    return { code: maybeCode, message: error.message }
+  }
+  return { code: 'unknown', message: String(error) }
+}
 
 const normalizePackSelection = (
   rawEnabled: unknown,
@@ -267,6 +374,15 @@ async function createUserAccountInTransaction(
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
       primaryProfileId,
+      emailWelcomeSentAt: null,
+      emailWelcomeSource: null,
+      onboardingStartedAt: null,
+      onboardingEmailsSent: 0,
+      onboardingLastSentAt: null,
+      premiumLastWeeklySentAt: null,
+      emailLastErrorAt: null,
+      emailLastErrorCode: null,
+      emailLastErrorMessage: null,
     },
     { merge: true }
   )
@@ -471,6 +587,200 @@ export const initializeUserMeta = onDocumentCreated(
     })
 
     logger.info(`Initialized default profile for user: ${userId}`)
+  }
+)
+
+const resolveProfileId = async (
+  uid: string,
+  userData: FirebaseFirestore.DocumentData | undefined
+): Promise<string | null> => {
+  const preferredId = getPreferredProfileId(userData)
+  if (preferredId) return preferredId
+
+  const profilesSnap = await db
+    .collection('users')
+    .doc(uid)
+    .collection('profiles')
+    .limit(1)
+    .get()
+
+  if (profilesSnap.empty) return null
+  return profilesSnap.docs[0].id
+}
+
+type ProfileSummary = {
+  firstName: string
+  lifetimeAccuracy: number
+  totalSessions: number
+  weeklySessions: number
+  weeklyCorrect: number
+  weeklyIncorrect: number
+  weeklyAccuracy: number
+  masteryPercent: number
+}
+
+const getProfileSummary = async (
+  uid: string,
+  profileId: string,
+  weekStartMs: number
+): Promise<ProfileSummary> => {
+  const profileRef = db
+    .collection('users')
+    .doc(uid)
+    .collection('profiles')
+    .doc(profileId)
+  const sessionsRef = profileRef.collection('Sessions')
+  const factsRef = profileRef.collection('UserFacts')
+
+  const [profileSnap, sessionsSnap, masteredAgg, totalAgg] = await Promise.all([
+    profileRef.get(),
+    sessionsRef.where('endedAt', '>=', weekStartMs).get(),
+    factsRef.where('box', '>', 3).count().get(),
+    factsRef.count().get(),
+  ])
+
+  const profileData = profileSnap.data()
+
+  let weeklyCorrect = 0
+  let weeklyIncorrect = 0
+
+  for (const sessionDoc of sessionsSnap.docs) {
+    const sessionData = sessionDoc.data() as {
+      correct?: unknown
+      incorrect?: unknown
+    }
+    weeklyCorrect +=
+      typeof sessionData.correct === 'number' ? sessionData.correct : 0
+    weeklyIncorrect +=
+      typeof sessionData.incorrect === 'number' ? sessionData.incorrect : 0
+  }
+
+  const weeklyTotal = weeklyCorrect + weeklyIncorrect
+  const weeklyAccuracy =
+    weeklyTotal > 0 ? clampPercentage((weeklyCorrect / weeklyTotal) * 100) : 0
+
+  const totalFacts = totalAgg.data().count
+  const masteredFacts = masteredAgg.data().count
+  const masteryPercent =
+    totalFacts > 0 ? clampPercentage((masteredFacts / totalFacts) * 100) : 0
+
+  const lifetimeCorrect =
+    typeof profileData?.lifetimeCorrect === 'number'
+      ? profileData.lifetimeCorrect
+      : 0
+  const lifetimeIncorrect =
+    typeof profileData?.lifetimeIncorrect === 'number'
+      ? profileData.lifetimeIncorrect
+      : 0
+  const lifetimeTotal = lifetimeCorrect + lifetimeIncorrect
+
+  return {
+    firstName: getFirstName(profileData),
+    totalSessions:
+      typeof profileData?.totalSessions === 'number'
+        ? profileData.totalSessions
+        : 0,
+    lifetimeAccuracy:
+      lifetimeTotal > 0
+        ? clampPercentage((lifetimeCorrect / lifetimeTotal) * 100)
+        : 0,
+    weeklySessions: sessionsSnap.size,
+    weeklyCorrect,
+    weeklyIncorrect,
+    weeklyAccuracy,
+    masteryPercent,
+  }
+}
+
+export const sendWelcomeOnIdentifiedSignIn = onDocumentUpdated(
+  {
+    document: 'users/{userId}',
+    secrets: [...EMAIL_SECRETS],
+  },
+  async (event) => {
+    const beforeData = event.data?.before.data()
+    const afterData = event.data?.after.data()
+    if (!afterData) return
+
+    const userId = event.params.userId
+    const afterMethod =
+      typeof afterData.lastSignInMethod === 'string'
+        ? afterData.lastSignInMethod
+        : null
+    const beforeMethod =
+      typeof beforeData?.lastSignInMethod === 'string'
+        ? beforeData.lastSignInMethod
+        : null
+
+    if (!afterMethod || !IDENTIFIED_METHODS.has(afterMethod)) return
+
+    const campaignState = getCampaignState(afterData)
+    if (campaignState.emailWelcomeSentAt) return
+
+    const transitionedFromAnonymous =
+      beforeMethod === null || beforeMethod === 'anonymous'
+    if (!transitionedFromAnonymous) return
+
+    const userEmail = await getUserEmailAddress(userId)
+    if (!userEmail) {
+      logger.info('Welcome email skipped: no email address found', { userId })
+      return
+    }
+
+    const profileId = await resolveProfileId(userId, afterData)
+    const profileData = profileId
+      ? (
+          await db
+            .collection('users')
+            .doc(userId)
+            .collection('profiles')
+            .doc(profileId)
+            .get()
+        ).data()
+      : undefined
+
+    const userRef = db.collection('users').doc(userId)
+
+    try {
+      await sendWelcomeEmail(userEmail, {
+        first_name: getFirstName(profileData),
+      })
+
+      const updates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> =
+        {
+          emailWelcomeSentAt: FieldValue.serverTimestamp(),
+          emailWelcomeSource: afterMethod as EmailSourceMethod,
+          emailLastErrorAt: null,
+          emailLastErrorCode: null,
+          emailLastErrorMessage: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        }
+
+      if (
+        afterData.subscriptionStatus !== 'premium' &&
+        !campaignState.onboardingStartedAt
+      ) {
+        updates.onboardingStartedAt = FieldValue.serverTimestamp()
+        updates.onboardingEmailsSent = 0
+        updates.onboardingLastSentAt = FieldValue.serverTimestamp()
+      }
+
+      await userRef.set(updates, { merge: true })
+
+      logger.info('Welcome email sent', { userId, source: afterMethod })
+    } catch (error: unknown) {
+      recordEmailError('sendWelcomeOnIdentifiedSignIn', userId, error)
+      const details = getEmailErrorDetails(error)
+      await userRef.set(
+        {
+          emailLastErrorAt: FieldValue.serverTimestamp(),
+          emailLastErrorCode: details.code,
+          emailLastErrorMessage: details.message,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+    }
   }
 )
 
@@ -1163,3 +1473,208 @@ export const checkExpiredPremium = onSchedule('every 24 hours', async () => {
     checked: snap.size,
   })
 })
+
+export const sendPremiumWeeklySummaryEmails = onSchedule(
+  {
+    schedule: 'every monday 09:00',
+    timeZone: EMAIL_TIMEZONE,
+    secrets: [...EMAIL_SECRETS],
+  },
+  async () => {
+    const nowMs = Date.now()
+    const weekStartMs = nowMs - WEEK_WINDOW_MS
+
+    const usersSnap = await db
+      .collection('users')
+      .where('subscriptionStatus', '==', 'premium')
+      .get()
+
+    let sent = 0
+    let skipped = 0
+
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id
+      const userData = userDoc.data()
+      const campaignState = getCampaignState(userData)
+
+      if (
+        campaignState.premiumLastWeeklySentAt &&
+        campaignState.premiumLastWeeklySentAt >= weekStartMs
+      ) {
+        skipped += 1
+        continue
+      }
+
+      const userEmail = await getUserEmailAddress(uid)
+      if (!userEmail) {
+        skipped += 1
+        continue
+      }
+
+      const profileId = await resolveProfileId(uid, userData)
+      if (!profileId) {
+        skipped += 1
+        continue
+      }
+
+      try {
+        const summary = await getProfileSummary(uid, profileId, weekStartMs)
+        const lastLoginMs = timestampToMillis(userData.lastLogin)
+        const inactiveWeek =
+          !lastLoginMs ||
+          lastLoginMs < weekStartMs ||
+          summary.weeklySessions === 0
+
+        await sendPremiumWeeklyEmail(userEmail, {
+          first_name: summary.firstName,
+          weekly_sessions: summary.weeklySessions,
+          weekly_correct: summary.weeklyCorrect,
+          weekly_incorrect: summary.weeklyIncorrect,
+          weekly_accuracy: summary.weeklyAccuracy,
+          mastery_percent: summary.masteryPercent,
+          inactive_week: inactiveWeek,
+        })
+
+        await userDoc.ref.set(
+          {
+            premiumLastWeeklySentAt: FieldValue.serverTimestamp(),
+            emailLastErrorAt: null,
+            emailLastErrorCode: null,
+            emailLastErrorMessage: null,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+
+        sent += 1
+      } catch (error: unknown) {
+        recordEmailError('sendPremiumWeeklySummaryEmails', uid, error)
+        const details = getEmailErrorDetails(error)
+        await userDoc.ref.set(
+          {
+            emailLastErrorAt: FieldValue.serverTimestamp(),
+            emailLastErrorCode: details.code,
+            emailLastErrorMessage: details.message,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      }
+    }
+
+    logger.info('sendPremiumWeeklySummaryEmails complete', {
+      processed: usersSnap.size,
+      sent,
+      skipped,
+    })
+  }
+)
+
+export const sendOnboardingEmails = onSchedule(
+  {
+    schedule: 'every day 09:00',
+    timeZone: EMAIL_TIMEZONE,
+    secrets: [...EMAIL_SECRETS],
+  },
+  async () => {
+    const nowMs = Date.now()
+
+    const usersSnap = await db
+      .collection('users')
+      .where('subscriptionStatus', '==', 'free')
+      .get()
+
+    let sent = 0
+    let skipped = 0
+
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id
+      const userData = userDoc.data()
+      const campaignState = getCampaignState(userData)
+
+      if (campaignState.onboardingEmailsSent >= ONBOARDING_EMAILS_TOTAL) {
+        skipped += 1
+        continue
+      }
+
+      if (!campaignState.onboardingStartedAt) {
+        skipped += 1
+        continue
+      }
+
+      const lastSentBase =
+        campaignState.onboardingLastSentAt ?? campaignState.onboardingStartedAt
+      if (nowMs - lastSentBase < ONBOARDING_INTERVAL_MS) {
+        skipped += 1
+        continue
+      }
+
+      const userEmail = await getUserEmailAddress(uid)
+      if (!userEmail) {
+        skipped += 1
+        continue
+      }
+
+      const profileId = await resolveProfileId(uid, userData)
+      if (!profileId) {
+        skipped += 1
+        continue
+      }
+
+      const dayNumber = campaignState.onboardingEmailsSent + 1
+
+      try {
+        const profileSnap = await db
+          .collection('users')
+          .doc(uid)
+          .collection('profiles')
+          .doc(profileId)
+          .get()
+        const firstName = getFirstName(profileSnap.data())
+
+        const model: OnboardingTemplateModel = {
+          first_name: firstName,
+          day_1: dayNumber === 1,
+          day_2: dayNumber === 2,
+          day_3: dayNumber === 3,
+          day_4: dayNumber === 4,
+          day_5: dayNumber === 5,
+        }
+
+        await sendOnboardingEmail(userEmail, dayNumber, model)
+
+        await userDoc.ref.set(
+          {
+            onboardingEmailsSent: FieldValue.increment(1),
+            onboardingLastSentAt: FieldValue.serverTimestamp(),
+            emailLastErrorAt: null,
+            emailLastErrorCode: null,
+            emailLastErrorMessage: null,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+
+        sent += 1
+      } catch (error: unknown) {
+        recordEmailError('sendOnboardingEmails', uid, error)
+        const details = getEmailErrorDetails(error)
+        await userDoc.ref.set(
+          {
+            emailLastErrorAt: FieldValue.serverTimestamp(),
+            emailLastErrorCode: details.code,
+            emailLastErrorMessage: details.message,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+      }
+    }
+
+    logger.info('sendOnboardingEmails complete', {
+      processed: usersSnap.size,
+      sent,
+      skipped,
+    })
+  }
+)
