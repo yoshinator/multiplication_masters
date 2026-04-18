@@ -97,6 +97,15 @@ type NonEditableUserField =
   | 'stripePriceId'
   | 'promoCodeId'
   | 'premiumExpiresAt'
+  | 'emailWelcomeSentAt'
+  | 'emailWelcomeSource'
+  | 'onboardingStartedAt'
+  | 'onboardingEmailsSent'
+  | 'onboardingLastSentAt'
+  | 'premiumLastWeeklySentAt'
+  | 'emailLastErrorAt'
+  | 'emailLastErrorCode'
+  | 'emailLastErrorMessage'
   | 'classroomCount'
   // Server-set identity fields
   | 'primaryProfileId'
@@ -131,6 +140,15 @@ export interface UserAccount {
   stripePriceId?: string | null
   promoCodeId?: string | null
   premiumExpiresAt?: Timestamp | null
+  emailWelcomeSentAt?: Timestamp | null
+  emailWelcomeSource?: 'google' | 'emailLink' | null
+  onboardingStartedAt?: Timestamp | null
+  onboardingEmailsSent?: number
+  onboardingLastSentAt?: Timestamp | null
+  premiumLastWeeklySentAt?: Timestamp | null
+  emailLastErrorAt?: Timestamp | null
+  emailLastErrorCode?: string | null
+  emailLastErrorMessage?: string | null
   classroomCount?: number
 }
 
