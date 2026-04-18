@@ -590,6 +590,16 @@ export const initializeUserMeta = onDocumentCreated(
   }
 )
 
+async function withConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  for (let i = 0; i < items.length; i += concurrency) {
+    await Promise.allSettled(items.slice(i, i + concurrency).map(fn))
+  }
+}
+
 const resolveProfileId = async (
   uid: string,
   userData: FirebaseFirestore.DocumentData | undefined
@@ -762,7 +772,7 @@ export const sendWelcomeOnIdentifiedSignIn = onDocumentUpdated(
       ) {
         updates.onboardingStartedAt = FieldValue.serverTimestamp()
         updates.onboardingEmailsSent = 0
-        updates.onboardingLastSentAt = FieldValue.serverTimestamp()
+        updates.onboardingLastSentAt = null
       }
 
       await userRef.set(updates, { merge: true })
@@ -1492,29 +1502,29 @@ export const sendPremiumWeeklySummaryEmails = onSchedule(
     let sent = 0
     let skipped = 0
 
-    for (const userDoc of usersSnap.docs) {
+    await withConcurrency(usersSnap.docs, 10, async (userDoc) => {
       const uid = userDoc.id
       const userData = userDoc.data()
       const campaignState = getCampaignState(userData)
 
       if (
         campaignState.premiumLastWeeklySentAt &&
-        campaignState.premiumLastWeeklySentAt >= weekStartMs
+        nowMs - campaignState.premiumLastWeeklySentAt < WEEK_WINDOW_MS
       ) {
         skipped += 1
-        continue
+        return
       }
 
       const userEmail = await getUserEmailAddress(uid)
       if (!userEmail) {
         skipped += 1
-        continue
+        return
       }
 
       const profileId = await resolveProfileId(uid, userData)
       if (!profileId) {
         skipped += 1
-        continue
+        return
       }
 
       try {
@@ -1560,7 +1570,7 @@ export const sendPremiumWeeklySummaryEmails = onSchedule(
           { merge: true }
         )
       }
-    }
+    })
 
     logger.info('sendPremiumWeeklySummaryEmails complete', {
       processed: usersSnap.size,
@@ -1579,46 +1589,41 @@ export const sendOnboardingEmails = onSchedule(
   async () => {
     const nowMs = Date.now()
 
+    // Only fetch free users who have started the campaign and haven't finished it.
+    // Requires a composite index on (subscriptionStatus ASC, onboardingStartedAt ASC,
+    // onboardingEmailsSent ASC) — see firestore.indexes.json.
     const usersSnap = await db
       .collection('users')
       .where('subscriptionStatus', '==', 'free')
+      .where('onboardingStartedAt', '!=', null)
+      .where('onboardingEmailsSent', '<', ONBOARDING_EMAILS_TOTAL)
       .get()
 
     let sent = 0
     let skipped = 0
 
-    for (const userDoc of usersSnap.docs) {
+    await withConcurrency(usersSnap.docs, 10, async (userDoc) => {
       const uid = userDoc.id
       const userData = userDoc.data()
       const campaignState = getCampaignState(userData)
 
-      if (campaignState.onboardingEmailsSent >= ONBOARDING_EMAILS_TOTAL) {
-        skipped += 1
-        continue
-      }
-
-      if (!campaignState.onboardingStartedAt) {
-        skipped += 1
-        continue
-      }
-
       const lastSentBase =
         campaignState.onboardingLastSentAt ?? campaignState.onboardingStartedAt
-      if (nowMs - lastSentBase < ONBOARDING_INTERVAL_MS) {
+      if (!lastSentBase || nowMs - lastSentBase < ONBOARDING_INTERVAL_MS) {
         skipped += 1
-        continue
+        return
       }
 
       const userEmail = await getUserEmailAddress(uid)
       if (!userEmail) {
         skipped += 1
-        continue
+        return
       }
 
       const profileId = await resolveProfileId(uid, userData)
       if (!profileId) {
         skipped += 1
-        continue
+        return
       }
 
       const dayNumber = campaignState.onboardingEmailsSent + 1
@@ -1669,7 +1674,7 @@ export const sendOnboardingEmails = onSchedule(
           { merge: true }
         )
       }
-    }
+    })
 
     logger.info('sendOnboardingEmails complete', {
       processed: usersSnap.size,
