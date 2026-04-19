@@ -1,4 +1,4 @@
-import { useEffect, type FC, useRef, useMemo, useCallback } from 'react'
+import { useEffect, type FC, useRef, useMemo } from 'react'
 import { Box, LinearProgress } from '@mui/material'
 import { driver, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
@@ -40,26 +40,6 @@ const PracticePage: FC = () => {
   const internalDestroyRef = useRef(false)
   const { db } = useFirebaseContext()
 
-  const disableTourClose = useCallback(() => {
-    document.body.classList.add('tour-close-disabled')
-  }, [])
-
-  const enableTourClose = useCallback(() => {
-    document.body.classList.remove('tour-close-disabled')
-  }, [])
-
-  const attachEnableCloseOnNext = useCallback(() => {
-    const nextButton = document.querySelector(
-      '.driver-popover-next-btn'
-    ) as HTMLElement | null
-    if (!nextButton) return
-
-    const handler = () => enableTourClose()
-    nextButton.addEventListener('click', handler, { once: true })
-    tourListenersRef.current.push(() => {
-      nextButton.removeEventListener('click', handler)
-    })
-  }, [enableTourClose])
 
   const isPlayedSession =
     (latestSession?.endedAt ?? 0) >= (user?.lastLogin?.toMillis() ?? 0)
@@ -74,8 +54,6 @@ const PracticePage: FC = () => {
       if (driverRef.current) {
         driverRef.current.destroy()
       }
-      enableTourClose()
-      // Execute all stored cleanup functions for event listeners
       tourListenersRef.current.forEach((fn) => fn())
       tourListenersRef.current = []
     }
@@ -84,7 +62,7 @@ const PracticePage: FC = () => {
       cleanup()
       tourState.current = INITIAL_TOUR_STATE
     }
-  }, [profile?.showTour, enableTourClose])
+  }, [profile?.showTour])
 
   useEffect(() => {
     if (!profile?.showTour || profile?.onboardingCompleted === false) return
@@ -94,7 +72,6 @@ const PracticePage: FC = () => {
         internalDestroyRef.current = false
         return
       }
-      enableTourClose()
       updateUser({ showTour: false })
       tourState.current = INITIAL_TOUR_STATE
     }
@@ -108,6 +85,13 @@ const PracticePage: FC = () => {
         prevBtnText: 'Previous',
         doneBtnText: 'Done',
         onDestroyed: handleTourDismissed,
+        onPopoverRender: (popover, { driver: d }) => {
+          const skipBtn = document.createElement('button')
+          skipBtn.textContent = 'Skip tour'
+          skipBtn.className = 'driver-skip-btn'
+          popover.footer.appendChild(skipBtn)
+          skipBtn.addEventListener('click', () => d.destroy(), { once: true })
+        },
       })
     }
 
@@ -140,10 +124,6 @@ const PracticePage: FC = () => {
           popover: {
             title: 'Go Home',
             description: 'Click here anytime to go back to the main screen.',
-            onPopoverRender: () => {
-              disableTourClose()
-              attachEnableCloseOnNext()
-            },
           },
         },
         {
@@ -152,15 +132,6 @@ const PracticePage: FC = () => {
             title: 'Your Profile',
             description:
               'Change your settings here. You can make the game easier or harder, or change how many cards you play.',
-            onPopoverRender: enableTourClose,
-          },
-        },
-        {
-          element: '#pack-mastery-panel',
-          popover: {
-            title: 'Pack Mastery',
-            description:
-              'This bar shows how much of the current pack you have mastered (Box 4+).',
           },
         },
         {
@@ -251,16 +222,11 @@ const PracticePage: FC = () => {
 
       driverObj.setConfig({
         onDestroyed: () => {
-          /**
-           * Initial session is short during the tour. Here after the tour is complete
-           * we update the user session length to default and stop showing the tour.
-           */
           updateUser({
             showTour: false,
             userDefaultSessionLength: DEFAULT_SESSION_LENGTH,
           })
           tourState.current = INITIAL_TOUR_STATE
-          enableTourClose()
         },
       })
 
@@ -290,9 +256,6 @@ const PracticePage: FC = () => {
       driverObj.drive()
     }
   }, [
-    attachEnableCloseOnNext,
-    disableTourClose,
-    enableTourClose,
     isPlayedSession,
     isSessionActive,
     stopTimer,

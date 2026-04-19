@@ -6,9 +6,14 @@ import {
   CardActionArea,
   CardContent,
   Chip,
+  Collapse,
+  Divider,
+  InputAdornment,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material'
+import { CardGiftcard } from '@mui/icons-material'
 import { CheckCircleOutline } from '@mui/icons-material'
 import AppModal from '../AppModal/AppModal'
 import { useUser } from '../../contexts/userContext/useUserContext'
@@ -100,6 +105,8 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod>('yearly')
 
   const [livePrices, setLivePrices] = useState<LivePrices | null>(null)
+  const [promoOpen, setPromoOpen] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
 
   const { execute: fetchPrices } = useCloudFunction<
     Record<string, never>,
@@ -117,6 +124,11 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const { execute: redeemCode, isPending: isRedeeming } = useCloudFunction<
+    { code: string },
+    { premiumExpiresAt: string }
+  >('redeemPromoCode')
+
   const { execute: createCheckout, isPending } = useCloudFunction<
     {
       planType: PlanType
@@ -129,6 +141,19 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
 
   const plans = planType === 'teacher' ? TEACHER_PLANS : PARENT_PLANS
   const features = planType === 'teacher' ? TEACHER_FEATURES : PARENT_FEATURES
+
+  const handleRedeem = async () => {
+    if (!promoCode.trim() || isRedeeming) return
+    try {
+      await redeemCode({ code: promoCode.trim() })
+      showNotification('Code applied! You now have premium access.', 'success')
+      onClose()
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Invalid or expired code.'
+      showNotification(message, 'error')
+    }
+  }
 
   const handleUpgrade = async () => {
     try {
@@ -231,6 +256,49 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
         <Typography variant="caption" color="text.secondary" textAlign="center">
           Secure checkout via Stripe. Cancel anytime.
         </Typography>
+
+        <Divider />
+
+        <Stack spacing={1}>
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<CardGiftcard fontSize="small" />}
+            onClick={() => setPromoOpen((o) => !o)}
+            sx={{ alignSelf: 'center', color: 'text.secondary' }}
+          >
+            Have a redemption code?
+          </Button>
+
+          <Collapse in={promoOpen}>
+            <Stack direction="row" spacing={1}>
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Enter code"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleRedeem()}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CardGiftcard fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button
+                variant="outlined"
+                onClick={handleRedeem}
+                disabled={isRedeeming || !promoCode.trim()}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {isRedeeming ? 'Applying…' : 'Apply'}
+              </Button>
+            </Stack>
+          </Collapse>
+        </Stack>
       </Stack>
     </AppModal>
   )
