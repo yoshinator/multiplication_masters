@@ -4,6 +4,7 @@ export const ROUTES = {
   TRAIN: '/train',
   BUILDER: '/builder',
   PROFILE: '/profile',
+  MANAGE_SUBSCRIPTION: '/manage-subscription',
   STATS: '/stats',
   CLASSES: '/classes',
   CLASS_DETAIL: '/classes/:classId',

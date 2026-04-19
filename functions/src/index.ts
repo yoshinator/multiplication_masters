@@ -29,6 +29,9 @@ const MAX_PIN_ATTEMPTS = 5
 const PIN_LOCKOUT_MS = 60 * 60 * 1000
 const MAX_PROFILE_LOGIN_ATTEMPTS = 12
 const DEFAULT_ENABLED_PACKS = ['add_20', 'mul_36'] as const
+const FREE_ENABLED_PACKS = ['add_20', 'sub_20', 'mul_36'] as const
+const FREE_PACK_SET = new Set<string>(FREE_ENABLED_PACKS)
+const FREE_ACTIVE_PACK_DEFAULT = 'mul_36' as const
 const PROFILE_NAME_MIN_LEN = 3
 const PROFILE_NAME_MAX_LEN = 20
 const PROFILE_NAME_REGEX_VALIDATION = new RegExp(
@@ -155,6 +158,14 @@ const normalizePackSelection = (
 
   return { enabledPacks: uniqueEnabled, activePack: active }
 }
+
+const normalizeToFreePackSelection = (): {
+  enabledPacks: string[]
+  activePack: string
+} => ({
+  enabledPacks: [...FREE_ENABLED_PACKS],
+  activePack: FREE_ACTIVE_PACK_DEFAULT,
+})
 
 const normalizeLoginNameKey = (loginName: string): string =>
   loginName.trim().toLowerCase()
@@ -794,6 +805,106 @@ export const sendWelcomeOnIdentifiedSignIn = onDocumentUpdated(
   }
 )
 
+export const normalizePacksOnPremiumDowngrade = onDocumentUpdated(
+  { document: 'users/{userId}' },
+  async (event) => {
+    const beforeData = event.data?.before.data()
+    const afterData = event.data?.after.data()
+    if (!afterData || !event.data?.after.ref) return
+
+    const beforeStatus =
+      typeof beforeData?.subscriptionStatus === 'string'
+        ? beforeData.subscriptionStatus
+        : null
+    const afterStatus =
+      typeof afterData.subscriptionStatus === 'string'
+        ? afterData.subscriptionStatus
+        : null
+
+    if (beforeStatus !== 'premium' || afterStatus !== 'free') return
+
+    const uid = event.params.userId
+    const userRef = event.data.after.ref
+    const freeSelection = normalizeToFreePackSelection()
+
+    logger.info('Normalizing packs on premium downgrade', { uid })
+
+    let batch = db.batch()
+    let opCount = 0
+    const commitThreshold = 400
+
+    const commitBatch = async () => {
+      if (opCount === 0) return
+      await batch.commit()
+      batch = db.batch()
+      opCount = 0
+    }
+
+    const profileSnap = await userRef.collection('profiles').get()
+    for (const profileDoc of profileSnap.docs) {
+      batch.set(
+        profileDoc.ref,
+        {
+          enabledPacks: freeSelection.enabledPacks,
+          activePack: freeSelection.activePack,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+      opCount++
+
+      if (opCount >= commitThreshold) {
+        await commitBatch()
+      }
+    }
+
+    const classSnap = await userRef.collection('classrooms').get()
+    for (const classDoc of classSnap.docs) {
+      const classRef = classDoc.ref
+
+      batch.set(
+        classRef,
+        {
+          defaultEnabledPacks: freeSelection.enabledPacks,
+          defaultActivePack: freeSelection.activePack,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+      opCount++
+
+      const rosterSnap = await classRef.collection('roster').get()
+      for (const rosterDoc of rosterSnap.docs) {
+        batch.set(
+          rosterDoc.ref,
+          {
+            enabledPacks: freeSelection.enabledPacks,
+            activePack: freeSelection.activePack,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+        opCount++
+
+        if (opCount >= commitThreshold) {
+          await commitBatch()
+        }
+      }
+
+      if (opCount >= commitThreshold) {
+        await commitBatch()
+      }
+    }
+
+    await commitBatch()
+    logger.info('Pack normalization complete for downgraded user', {
+      uid,
+      profiles: profileSnap.size,
+      classrooms: classSnap.size,
+    })
+  }
+)
+
 export const setProfilePin = onCall(async (request) => {
   const uid = request.auth?.uid
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
@@ -1080,8 +1191,18 @@ export const provisionFacts = onCall(async (request) => {
   const uid = request.auth?.uid
 
   if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+
   if (typeof packName !== 'string' || !(packName in MASTER_FACTS)) {
     throw new HttpsError('not-found', 'Pack name not recognized.')
+  }
+
+  const userSnap = await db.collection('users').doc(uid).get()
+  const isPremium = userSnap.data()?.subscriptionStatus === 'premium'
+  if (!isPremium && !FREE_PACK_SET.has(packName)) {
+    throw new HttpsError(
+      'permission-denied',
+      'This fact pack requires an active premium subscription.'
+    )
   }
   const masterList = MASTER_FACTS[packName as keyof typeof MASTER_FACTS]
   if (!masterList)
@@ -1231,7 +1352,12 @@ export const applyClassroomPackDefaults = onCall(async (request) => {
   return { success: true, updated: rosterSnap.size }
 })
 
-export { createCheckoutSession, stripeWebhook, getPlanPrices } from './stripe'
+export {
+  createCheckoutSession,
+  createBillingPortalSession,
+  stripeWebhook,
+  getPlanPrices,
+} from './stripe'
 
 export const saveUserScene = onCall(async (request) => {
   const uid = request.auth?.uid

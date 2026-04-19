@@ -360,6 +360,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
       stripeSubscriptionId: extractSubscriptionId(
         invoice.parent?.subscription_details?.subscription
       ),
+      stripeLastPaymentFailedAt: null,
       premiumExpiresAt: null,
       updatedAt: FieldValue.serverTimestamp(),
     },
@@ -369,6 +370,35 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   if (!updated) return
 
   logger.info('invoice.paid: premium confirmed', { customerId })
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+  const customerId = extractCustomerId(invoice.customer)
+  if (!customerId) return
+
+  const userRef = await getUserRefByCustomerId(customerId)
+  if (!userRef) {
+    logger.warn('invoice.payment_failed: no user found for customer', {
+      customerId,
+    })
+    return
+  }
+
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      stripeLastPaymentFailedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'invoice.payment_failed',
+    { customerId, invoiceId: invoice.id }
+  )
+  if (!updated) return
+
+  logger.info('invoice.payment_failed: recorded payment failure', {
+    customerId,
+    invoiceId: invoice.id,
+  })
 }
 
 async function handleSubscriptionUpdated(
@@ -432,6 +462,69 @@ async function handleSubscriptionDeleted(
   if (!updated) return
 
   logger.info('subscription.deleted: downgraded to free', { customerId })
+}
+
+async function handleSubscriptionPaused(
+  subscription: Stripe.Subscription
+): Promise<void> {
+  const customerId = extractCustomerId(subscription.customer)
+  if (!customerId) return
+
+  const userRef = await getUserRefByCustomerId(customerId)
+  if (!userRef) return
+
+  const snap = await userRef.get()
+  if (snap.data()?.billingPeriod === 'lifetime') return
+
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      subscriptionStatus: 'free',
+      planType: null,
+      billingPeriod: null,
+      stripeSubscriptionId: subscription.id,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'customer.subscription.paused',
+    { customerId, subscriptionId: subscription.id }
+  )
+  if (!updated) return
+
+  logger.info('subscription.paused: downgraded to free', {
+    customerId,
+    subscriptionId: subscription.id,
+  })
+}
+
+async function handleSubscriptionResumed(
+  subscription: Stripe.Subscription
+): Promise<void> {
+  const customerId = extractCustomerId(subscription.customer)
+  if (!customerId) return
+
+  const userRef = await getUserRefByCustomerId(customerId)
+  if (!userRef) return
+
+  const snap = await userRef.get()
+  if (snap.data()?.billingPeriod === 'lifetime') return
+
+  const updated = await updateUserIfExists(
+    userRef,
+    {
+      subscriptionStatus: 'premium',
+      stripeSubscriptionId: subscription.id,
+      premiumExpiresAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    'customer.subscription.resumed',
+    { customerId, subscriptionId: subscription.id }
+  )
+  if (!updated) return
+
+  logger.info('subscription.resumed: premium restored', {
+    customerId,
+    subscriptionId: subscription.id,
+  })
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
@@ -600,6 +693,57 @@ export const createCheckoutSession = onCall(
 )
 
 /**
+ * Creates a Stripe Billing Portal session for self-serve subscription changes,
+ * including cancellation and plan updates.
+ */
+export const createBillingPortalSession = onCall(
+  { secrets: [stripeSecretKey] },
+  async (request) => {
+    const uid = request.auth?.uid
+    if (!uid) throw new HttpsError('unauthenticated', 'User must be signed in.')
+    if (request.auth?.token?.profileId) {
+      throw new HttpsError(
+        'permission-denied',
+        'Profile sessions cannot manage billing. Switch to your account first.'
+      )
+    }
+
+    const { returnUrl } = request.data ?? {}
+    if (typeof returnUrl !== 'string') {
+      throw new HttpsError('invalid-argument', 'returnUrl is required.')
+    }
+    validateRedirectUrl(returnUrl)
+
+    const db = getFirestore()
+    const userSnap = await db.collection('users').doc(uid).get()
+    if (!userSnap.exists) {
+      throw new HttpsError('not-found', 'User account not found.')
+    }
+
+    const stripe = new Stripe(stripeSecretKey.value())
+    const customerId = await getOrCreateStripeCustomerId(
+      uid,
+      userSnap.ref,
+      stripe
+    )
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    })
+
+    if (!session.url) {
+      throw new HttpsError(
+        'internal',
+        'Failed to create Stripe billing portal session.'
+      )
+    }
+
+    return { portalUrl: session.url }
+  }
+)
+
+/**
  * Stripe webhook endpoint (HTTPS, not callable).
  * Register this URL in the Stripe dashboard under Developers > Webhooks:
  *   https://REGION-PROJECT_ID.cloudfunctions.net/stripeWebhook
@@ -607,7 +751,10 @@ export const createCheckoutSession = onCall(
  * Required events to enable:
  *   checkout.session.completed
  *   invoice.paid
+ *   invoice.payment_failed
  *   customer.subscription.updated
+ *   customer.subscription.paused
+ *   customer.subscription.resumed
  *   customer.subscription.deleted
  *   charge.refunded
  *
@@ -655,8 +802,21 @@ export const stripeWebhook = onRequest(
         case 'invoice.paid':
           await handleInvoicePaid(event.data.object as Stripe.Invoice)
           break
+        case 'invoice.payment_failed':
+          await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
+          break
         case 'customer.subscription.updated':
           await handleSubscriptionUpdated(
+            event.data.object as Stripe.Subscription
+          )
+          break
+        case 'customer.subscription.paused':
+          await handleSubscriptionPaused(
+            event.data.object as Stripe.Subscription
+          )
+          break
+        case 'customer.subscription.resumed':
+          await handleSubscriptionResumed(
             event.data.object as Stripe.Subscription
           )
           break
