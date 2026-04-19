@@ -118,6 +118,7 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
   >('getPlanPrices')
 
   useEffect(() => {
+    if (isAnonymous) return
     fetchPrices({})
       .then((result) => {
         if (result?.data) setLivePrices(result.data)
@@ -126,7 +127,7 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
         /* fall back to hardcoded prices */
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isAnonymous])
 
   const { execute: redeemCode, isPending: isRedeeming } = useCloudFunction<
     { code: string },

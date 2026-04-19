@@ -1,5 +1,6 @@
 import { type FC, type ReactElement, useMemo } from 'react'
 import { Box, Button, Typography, Stack, Card, Paper } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
@@ -139,7 +140,7 @@ const SessionSummary: FC = () => {
             p: 2,
             borderRadius: 2,
             borderColor: 'warning.main',
-            bgcolor: 'warning.50',
+            bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
             textAlign: 'center',
           }}
         >
