@@ -16,9 +16,11 @@ import {
 import { CardGiftcard } from '@mui/icons-material'
 import { CheckCircleOutline } from '@mui/icons-material'
 import AppModal from '../AppModal/AppModal'
+import SaveProgressModal from '../Login/SaveProgressModal'
 import { useUser } from '../../contexts/userContext/useUserContext'
 import { useCloudFunction } from '../../hooks/useCloudFunction'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 import type { BillingPeriod, PlanType } from '../../constants/dataModels'
 
 type UpgradeModalProps = {
@@ -100,7 +102,9 @@ const TEACHER_FEATURES = [
 
 const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
   const { user } = useUser()
+  const { auth } = useFirebaseContext()
   const { showNotification } = useNotification()
+  const isAnonymous = Boolean(auth?.currentUser?.isAnonymous)
   const planType: PlanType = user?.userRole === 'teacher' ? 'teacher' : 'parent'
   const [selectedPeriod, setSelectedPeriod] = useState<BillingPeriod>('yearly')
 
@@ -169,6 +173,15 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
     } catch {
       showNotification('Unable to start checkout. Please try again.', 'error')
     }
+  }
+
+  if (isAnonymous) {
+    return (
+      <SaveProgressModal
+        onClose={onClose}
+        preMessage="You'll need a free account first — it takes about 10 seconds."
+      />
+    )
   }
 
   return (

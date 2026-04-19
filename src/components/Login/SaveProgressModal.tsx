@@ -19,11 +19,14 @@ type SaveProgressModalProps = {
   onClose: () => void
   /** When provided, a "Sign out and lose progress" option is shown. */
   onSignOutAnyway?: () => void
+  /** Override the default body message. */
+  preMessage?: string
 }
 
 const SaveProgressModal: FC<SaveProgressModalProps> = ({
   onClose,
   onSignOutAnyway,
+  preMessage,
 }) => {
   const [mode, setMode] = useState<'menu' | 'email'>('menu')
   const [email, setEmail] = useState('')
@@ -55,7 +58,7 @@ const SaveProgressModal: FC<SaveProgressModalProps> = ({
     <AppModal open onClose={onClose} title="Save your progress?" maxWidth="xs">
       <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
-          Create an account to keep streaks, levels, and unlocks across devices.
+          {preMessage ?? 'Create an account to keep streaks, levels, and unlocks across devices.'}
         </Typography>
       </Box>
 

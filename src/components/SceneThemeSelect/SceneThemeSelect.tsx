@@ -58,6 +58,7 @@ const SceneThemeSelect: FC<Props> = ({
                 cursor: isDisabled ? 'default' : 'pointer',
                 aspectRatio: { xs: '4 / 3', sm: '16 / 10' },
                 minHeight: { xs: 110, sm: 140 },
+                bgcolor: scene.backgroundColor,
                 p: 0,
               }}
             >
