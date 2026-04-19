@@ -195,6 +195,16 @@ export async function create(
   const targetDb = options.db ?? getDb()
   const targetCollection = options.collection ?? 'promoCodes'
 
+  if (!/^[A-Z0-9_-]+$/.test(code.toUpperCase())) {
+    throw new Error(`Invalid code "${code}": only letters, digits, hyphens, and underscores allowed.`)
+  }
+  if (months <= 0 || !Number.isInteger(months)) {
+    throw new Error(`months must be a positive integer, got ${months}`)
+  }
+  if (maxUses <= 0 || !Number.isInteger(maxUses)) {
+    throw new Error(`maxUses must be a positive integer, got ${maxUses}`)
+  }
+
   await targetDb.collection(targetCollection).doc(code.toUpperCase()).set({
     type: 'premium_unlock',
     durationMonths: months,

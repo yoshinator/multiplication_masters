@@ -143,7 +143,7 @@ const UpgradeModal: FC<UpgradeModalProps> = ({ onClose }) => {
   const features = planType === 'teacher' ? TEACHER_FEATURES : PARENT_FEATURES
 
   const handleRedeem = async () => {
-    if (!promoCode.trim()) return
+    if (!promoCode.trim() || isRedeeming) return
     try {
       await redeemCode({ code: promoCode.trim() })
       showNotification('Code applied! You now have premium access.', 'success')

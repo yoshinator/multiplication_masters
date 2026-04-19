@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "promo:create": "node scripts/createPromoCodes.ts",
-    "promo:create:emulator": "node scripts/createPromoCodes.ts --emulator-host 127.0.0.1:8080",
+    "promo:create": "tsx scripts/createPromoCodes.ts",
+    "promo:create:emulator": "tsx scripts/createPromoCodes.ts --emulator-host 127.0.0.1:8080",
     "emulators": "npm --prefix functions run build && firebase emulators:start --import=./firebase-data --export-on-exit --project multiplicationmaster"
   },
   "dependencies": {
@@ -19,7 +19,6 @@
     "@mui/material": "^7.3.4",
     "datastructures-js": "^13.0.0",
     "driver.js": "^1.4.0",
-    "firebase-admin": "^12.0.0",
     "firebase": "^12.5.0",
     "framer-motion": "^12.23.24",
     "konva": "^10.0.12",
@@ -43,7 +42,9 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "firebase-admin": "^12.0.0",
     "prettier": "^3.6.2",
+    "tsx": "^4.19.4",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7",
