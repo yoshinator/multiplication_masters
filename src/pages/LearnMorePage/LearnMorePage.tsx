@@ -13,12 +13,18 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { ROUTES } from '../../constants/routeConstants'
 import { useNavigate } from 'react-router-dom'
 import { useAuthActions } from '../../hooks/useAuthActions'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
 
 const LearnMorePage = () => {
   const navigate = useNavigate()
   const { loginAnonymously } = useAuthActions()
+  const { auth } = useFirebaseContext()
 
   const handleTryItOut = async () => {
+    if (auth?.currentUser) {
+      navigate(ROUTES.TRAIN)
+      return
+    }
     try {
       await loginAnonymously()
       navigate(ROUTES.TRAIN)

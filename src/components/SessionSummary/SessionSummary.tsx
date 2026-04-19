@@ -1,5 +1,6 @@
 import { type FC, type ReactElement, useMemo } from 'react'
-import { Box, Button, Typography, Stack, Card } from '@mui/material'
+import { Box, Button, Typography, Stack, Card, Paper } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
@@ -7,13 +8,17 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import FlashOnIcon from '@mui/icons-material/FlashOn'
 import SlowMotionVideoIcon from '@mui/icons-material/SlowMotionVideo'
 import ReplayIcon from '@mui/icons-material/Replay'
+import SaveIcon from '@mui/icons-material/Save'
 
 import StatsCard from '../StatsPanel/StatsCard'
+import SaveProgressModal from '../Login/SaveProgressModal'
 
 import { useReviewSession } from '../../contexts/reviewSession/reviewSessionContext'
 import { useCardSchedulerContext } from '../../contexts/cardScheduler/cardSchedulerContext'
 import { useSessionStatusContext } from '../../contexts/SessionStatusContext/sessionStatusContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useFirebaseContext } from '../../contexts/firebase/firebaseContext'
+import { useModal } from '../../contexts/modalContext/modalContext'
 
 const SessionSummary: FC = () => {
   const { correctCount, incorrectCount, latestSession } = useReviewSession()
@@ -21,6 +26,10 @@ const SessionSummary: FC = () => {
 
   const { startSession, isLoading } = useCardSchedulerContext()
   const { setIsSessionActive } = useSessionStatusContext()
+  const { auth } = useFirebaseContext()
+  const { openModal, closeModal } = useModal()
+
+  const isAnonymous = Boolean(auth?.currentUser?.isAnonymous)
 
   const s = latestSession
 
@@ -29,7 +38,7 @@ const SessionSummary: FC = () => {
   const total = correct + incorrect
 
   const accuracy = useMemo(() => {
-    if (total === 0) return 100
+    if (total === 0) return null
     return Math.round((correct / total) * 100)
   }, [correct, total])
 
@@ -93,7 +102,7 @@ const SessionSummary: FC = () => {
         <StatsCard
           icon={<TrendingUpIcon color="primary" />}
           label="Accuracy"
-          value={`${accuracy}%`}
+          value={accuracy === null ? '—' : `${accuracy}%`}
           color="primary.main"
         />
       </Stack>
@@ -124,8 +133,37 @@ const SessionSummary: FC = () => {
         </Stack>
       </Stack>
 
+      {isAnonymous && (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            borderColor: 'warning.main',
+            bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+            Save your progress!
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Your session won't be saved without an account. It's free and takes 10 seconds.
+          </Typography>
+          <Button
+            variant="contained"
+            color="warning"
+            size="small"
+            startIcon={<SaveIcon />}
+            onClick={() => openModal(<SaveProgressModal onClose={closeModal} />)}
+          >
+            Create Free Account
+          </Button>
+        </Paper>
+      )}
+
       {/* Actions */}
-      <Stack spacing={2} sx={{ mt: { xs: 1, sm: 3 } }}>
+      <Stack spacing={2} sx={{ mt: { xs: 1, sm: 2 } }}>
         <Button
           disabled={isLoading}
           id="play-again-btn"
