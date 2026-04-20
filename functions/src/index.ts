@@ -167,6 +167,35 @@ const normalizeToFreePackSelection = (): {
   activePack: FREE_ACTIVE_PACK_DEFAULT,
 })
 
+const PAGE_SIZE = 200
+
+const forEachDocPage = async (
+  collectionRef: FirebaseFirestore.CollectionReference,
+  onDoc: (doc: FirebaseFirestore.QueryDocumentSnapshot) => Promise<void> | void
+): Promise<number> => {
+  let processed = 0
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null
+
+  while (true) {
+    let query = collectionRef.orderBy('__name__').limit(PAGE_SIZE)
+    if (lastDoc) {
+      query = query.startAfter(lastDoc)
+    }
+
+    const snap = await query.get()
+    if (snap.empty) break
+
+    for (const doc of snap.docs) {
+      await onDoc(doc)
+      processed++
+    }
+
+    lastDoc = snap.docs[snap.docs.length - 1]
+  }
+
+  return processed
+}
+
 const normalizeLoginNameKey = (loginName: string): string =>
   loginName.trim().toLowerCase()
 
@@ -832,6 +861,9 @@ export const normalizePacksOnPremiumDowngrade = onDocumentUpdated(
     let batch = db.batch()
     let opCount = 0
     const commitThreshold = 400
+    let profileCount = 0
+    let classroomCount = 0
+    let rosterCount = 0
 
     const commitBatch = async () => {
       if (opCount === 0) return
@@ -840,43 +872,11 @@ export const normalizePacksOnPremiumDowngrade = onDocumentUpdated(
       opCount = 0
     }
 
-    const profileSnap = await userRef.collection('profiles').get()
-    for (const profileDoc of profileSnap.docs) {
-      batch.set(
-        profileDoc.ref,
-        {
-          enabledPacks: freeSelection.enabledPacks,
-          activePack: freeSelection.activePack,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      )
-      opCount++
-
-      if (opCount >= commitThreshold) {
-        await commitBatch()
-      }
-    }
-
-    const classSnap = await userRef.collection('classrooms').get()
-    for (const classDoc of classSnap.docs) {
-      const classRef = classDoc.ref
-
-      batch.set(
-        classRef,
-        {
-          defaultEnabledPacks: freeSelection.enabledPacks,
-          defaultActivePack: freeSelection.activePack,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      )
-      opCount++
-
-      const rosterSnap = await classRef.collection('roster').get()
-      for (const rosterDoc of rosterSnap.docs) {
+    profileCount = await forEachDocPage(
+      userRef.collection('profiles'),
+      async (profileDoc) => {
         batch.set(
-          rosterDoc.ref,
+          profileDoc.ref,
           {
             enabledPacks: freeSelection.enabledPacks,
             activePack: freeSelection.activePack,
@@ -890,17 +890,56 @@ export const normalizePacksOnPremiumDowngrade = onDocumentUpdated(
           await commitBatch()
         }
       }
+    )
 
-      if (opCount >= commitThreshold) {
-        await commitBatch()
+    classroomCount = await forEachDocPage(
+      userRef.collection('classrooms'),
+      async (classDoc) => {
+        const classRef = classDoc.ref
+
+        batch.set(
+          classRef,
+          {
+            defaultEnabledPacks: freeSelection.enabledPacks,
+            defaultActivePack: freeSelection.activePack,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        )
+        opCount++
+
+        rosterCount += await forEachDocPage(
+          classRef.collection('roster'),
+          async (rosterDoc) => {
+            batch.set(
+              rosterDoc.ref,
+              {
+                enabledPacks: freeSelection.enabledPacks,
+                activePack: freeSelection.activePack,
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            )
+            opCount++
+
+            if (opCount >= commitThreshold) {
+              await commitBatch()
+            }
+          }
+        )
+
+        if (opCount >= commitThreshold) {
+          await commitBatch()
+        }
       }
-    }
+    )
 
     await commitBatch()
     logger.info('Pack normalization complete for downgraded user', {
       uid,
-      profiles: profileSnap.size,
-      classrooms: classSnap.size,
+      profiles: profileCount,
+      classrooms: classroomCount,
+      rosterEntries: rosterCount,
     })
   }
 )

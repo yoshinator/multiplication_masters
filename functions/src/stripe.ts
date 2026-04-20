@@ -480,8 +480,6 @@ async function handleSubscriptionPaused(
     userRef,
     {
       subscriptionStatus: 'free',
-      planType: null,
-      billingPeriod: null,
       stripeSubscriptionId: subscription.id,
       updatedAt: FieldValue.serverTimestamp(),
     },
@@ -719,13 +717,46 @@ export const createBillingPortalSession = onCall(
     if (!userSnap.exists) {
       throw new HttpsError('not-found', 'User account not found.')
     }
+    const userData = userSnap.data()
+    const stripeSubscriptionId =
+      typeof userData?.stripeSubscriptionId === 'string' &&
+      userData.stripeSubscriptionId.length > 0
+        ? userData.stripeSubscriptionId
+        : null
+    if (!stripeSubscriptionId) {
+      throw new HttpsError(
+        'failed-precondition',
+        'No active Stripe subscription is available for this account.'
+      )
+    }
 
     const stripe = new Stripe(stripeSecretKey.value())
-    const customerId = await getOrCreateStripeCustomerId(
-      uid,
-      userSnap.ref,
-      stripe
-    )
+    let customerId =
+      typeof userData?.stripeCustomerId === 'string' &&
+      userData.stripeCustomerId.length > 0
+        ? userData.stripeCustomerId
+        : null
+
+    if (!customerId) {
+      const subscription = await stripe.subscriptions.retrieve(
+        stripeSubscriptionId
+      )
+      customerId = extractCustomerId(subscription.customer)
+      if (!customerId) {
+        throw new HttpsError(
+          'internal',
+          'Stripe subscription is missing a customer record.'
+        )
+      }
+
+      await userSnap.ref.set(
+        {
+          stripeCustomerId: customerId,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      )
+    }
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
