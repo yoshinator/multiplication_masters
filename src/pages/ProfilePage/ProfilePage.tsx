@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { Box, type SelectChangeEvent } from '@mui/material'
+import { Box, Button, Typography, type SelectChangeEvent } from '@mui/material'
 import {
   collection,
   doc,
@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
+import { useNavigate } from 'react-router-dom'
 
 import SaveProgressModal from '../../components/Login/SaveProgressModal'
 import SetPinModal from '../../components/Login/SetPinModal'
@@ -34,6 +35,7 @@ import { useFirestoreQuery } from '../../hooks/useFirestore'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useNotification } from '../../contexts/notificationContext/notificationContext'
 import UpgradeModal from '../../components/UpgradeModal/UpgradeModal'
+import { ROUTES } from '../../constants/routeConstants'
 import ActiveFactPackSection from './components/ActiveFactPackSection'
 import AddLearnerModal from './components/AddLearnerModal'
 import DisplayPreferencesSection from './components/DisplayPreferencesSection'
@@ -45,6 +47,7 @@ import { getProfileOptionButtonStyle } from './components/profileUi'
 
 const ProfilePage: FC = () => {
   const { auth, db } = useFirebaseContext()
+  const navigate = useNavigate()
   const { showNotification } = useNotification()
   const { openModal, closeModal } = useModal()
   const isMobile = useIsMobile()
@@ -274,6 +277,18 @@ const ProfilePage: FC = () => {
           />
           <SavedScenesGallery />
         </ProfileSectionCard>
+
+        <Box sx={{ textAlign: 'center', pt: 1 }}>
+          <Button
+            variant="text"
+            onClick={() => navigate(ROUTES.MANAGE_SUBSCRIPTION)}
+          >
+            Manage Subscription
+          </Button>
+          <Typography variant="caption" color="text.secondary" display="block">
+            Upgrade, change plan, or cancel your subscription.
+          </Typography>
+        </Box>
       </Box>
     </Box>
   )

@@ -28,6 +28,7 @@ import { isPublicInfoPath } from './constants/publicInfoRoutes'
 import RequireTeacher from './components/RequireTeacher/RequireTeacher'
 import ClassesPage from './pages/ClassesPage/ClassesPage'
 import ClassDetailPage from './pages/ClassDetailPage/ClassDetailPage'
+import ManageSubscriptionPage from './pages/ManageSubscriptionPage/ManageSubscriptionPage'
 
 const App: FC = () => {
   const location = useLocation()
@@ -95,6 +96,15 @@ const App: FC = () => {
           element={
             <RequireUser>
               <ProfilePage />
+            </RequireUser>
+          }
+        />
+
+        <Route
+          path={ROUTES.MANAGE_SUBSCRIPTION}
+          element={
+            <RequireUser>
+              <ManageSubscriptionPage />
             </RequireUser>
           }
         />
